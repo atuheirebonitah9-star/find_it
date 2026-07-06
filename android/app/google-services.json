@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "148508225506",
+    "project_id": "find-it-f5d35",
+    "storage_bucket": "find-it-f5d35.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:148508225506:android:d554638ff27e161b2753bb",
+        "android_client_info": {
+          "package_name": "com.group22.find_it"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "148508225506-r5ap84g2obdsuj7punjvtn8qadk4ht4u.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAu8Bbj-BBYwqHfCAEF-vM8zulklNH5ALY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "148508225506-r5ap84g2obdsuj7punjvtn8qadk4ht4u.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
