@@ -29,6 +29,13 @@
             {
               "client_id": "148508225506-r5ap84g2obdsuj7punjvtn8qadk4ht4u.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "148508225506-7ip9p8l8v8lg8nrphvprlappj5okqmqd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.group22.findIt"
+              }
             }
           ]
         }
