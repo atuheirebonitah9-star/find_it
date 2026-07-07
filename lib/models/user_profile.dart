@@ -7,7 +7,7 @@ class UserProfile {
   final String? photoUrl;
   final DateTime createdAt;
 
-  userProfile({
+  UserProfile({
     required this.uid,
     required this.fullName,
     required this.email,
