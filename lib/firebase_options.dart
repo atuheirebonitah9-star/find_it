@@ -60,7 +60,6 @@ class DefaultFirebaseOptions {
     projectId: 'find-it-f5d35',
     storageBucket: 'find-it-f5d35.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyCifKFR7BbsJdUyVvRaF6fO-T2sjeEcmS8',
     appId: '1:148508225506:ios:0962d30708775af72753bb',
