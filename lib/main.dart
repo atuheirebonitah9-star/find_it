@@ -1,7 +1,79 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/material.dart';
 
-void main() {
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  debugPrint('Background FCM message: ${message.messageId}');
+}
+
+Future<void> _showForegroundNotification(RemoteMessage message) async {
+  final notification = message.notification;
+  if (notification == null) return;
+
+  const androidDetails = AndroidNotificationDetails(
+    'default_channel',
+    'Default Notifications',
+    channelDescription: 'General notifications',
+    importance: Importance.max,
+    priority: Priority.high,
+  );
+
+  const platformDetails = NotificationDetails(android: androidDetails);
+  await flutterLocalNotificationsPlugin.show(
+    notification.hashCode,
+    notification.title,
+    notification.body,
+    platformDetails,
+    payload: message.data['payload'] as String?,
+  );
+}
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const iosInit = DarwinInitializationSettings();
+  const initSettings = InitializationSettings(
+    android: androidInit,
+    iOS: iosInit,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(
+    initSettings,
+    onDidReceiveNotificationResponse: (response) {
+      debugPrint('Notification tapped: ${response.payload}');
+    },
+  );
+
+  final messaging = FirebaseMessaging.instance;
+  final settings = await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    final token = await messaging.getToken();
+    debugPrint('FCM token: $token');
+  }
+
+  FirebaseMessaging.onMessage.listen((message) {
+    debugPrint('Foreground FCM message: ${message.notification?.title}');
+    _showForegroundNotification(message);
+  });
+
+  FirebaseMessaging.onMessageOpenedApp.listen((message) {
+    debugPrint('Notification opened: ${message.data}');
+  });
+
   runApp(const MyApp());
 }
 
