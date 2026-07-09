@@ -1,24 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'signup_screen.dart';
 
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _studentNumberController = TextEditingController();
-  final _regNumberController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
-  bool _agreedToTerms = false;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -32,12 +29,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   static const Color onSurfaceVariant = Color(0xFF45464D);
   static const Color errorColor = Color(0xFFBA1A1A);
 
-  Future<void> _handleSignUp() async {
+  Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_agreedToTerms) {
-      setState(() => _errorMessage = 'Please agree to the Terms of Service and Privacy Policy');
-      return;
-    }
 
     setState(() {
       _isLoading = true;
@@ -45,84 +38,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
-
-      await credential.user?.updateDisplayName(_nameController.text.trim());
-
-      await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).set({
-        'name': _nameController.text.trim(),
-        'studentNumber': _studentNumberController.text.trim(),
-        'regNumber': _regNumberController.text.trim(),
-        'email': _emailController.text.trim(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-
-      if (mounted) _showSuccessDialog();
+      // AuthGate handles navigation automatically once signed in
     } on FirebaseAuthException catch (e) {
-      setState(() => _errorMessage = e.message ?? 'Sign up failed');
+      setState(() => _errorMessage = e.message ?? 'Login failed');
     } catch (e) {
       setState(() => _errorMessage = 'Something went wrong. Please try again.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: const BoxDecoration(
-                  color: secondaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check_circle, color: secondaryColor, size: 40),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Account Created!',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: primaryColor),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "Welcome to the network. Let's start by securing your first item.",
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: onSurfaceVariant),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // close dialog
-                    Navigator.of(context).pop(); // back out of signup, AuthGate takes over
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: secondaryColor,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text('Get Started', style: TextStyle(fontWeight: FontWeight.w600)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   InputDecoration _fieldDecoration({required String hint, required IconData icon}) {
@@ -162,17 +89,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      appBar: AppBar(
-        backgroundColor: backgroundColor.withOpacity(0.8),
-        elevation: 0,
-        title: const Text('FindIt', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 22)),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close, color: onSurface),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ],
-      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -181,13 +97,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const SizedBox(height: 40),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.search, size: 44, color: primaryColor),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 const Text(
-                  'Welcome to the Network',
+                  'FindIt',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: primaryColor),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Welcome Back',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: primaryColor, height: 1.2),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Join a global community dedicated to reuniting lost items with their owners. Dependable, precise, and built for peace of mind.',
+                  'Log in to keep track of your lost and found items, and stay connected with the network.',
                   style: TextStyle(fontSize: 16, color: onSurfaceVariant, height: 1.5),
                 ),
                 const SizedBox(height: 24),
@@ -225,30 +155,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                _label('Full Name'),
-                TextFormField(
-                  controller: _nameController,
-                  decoration: _fieldDecoration(hint: 'Enter your name', icon: Icons.person_outline),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 16),
-
-                _label('Student Number'),
-                TextFormField(
-                  controller: _studentNumberController,
-                  decoration: _fieldDecoration(hint: 'e.g., 20230001', icon: Icons.badge_outlined),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 16),
-
-                _label('Registration Number'),
-                TextFormField(
-                  controller: _regNumberController,
-                  decoration: _fieldDecoration(hint: 'e.g., 25/U/03343/EVE', icon: Icons.description_outlined),
-                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                ),
-                const SizedBox(height: 16),
-
                 _label('Email Address'),
                 TextFormField(
                   controller: _emailController,
@@ -266,7 +172,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  decoration: _fieldDecoration(hint: 'Min. 8 characters', icon: Icons.lock_outline).copyWith(
+                  decoration: _fieldDecoration(hint: 'Enter your password', icon: Icons.lock_outline).copyWith(
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
@@ -277,50 +183,30 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Required';
-                    if (v.length < 8) return 'Minimum 8 characters';
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
 
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Checkbox(
-                        value: _agreedToTerms,
-                        activeColor: secondaryColor,
-                        onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
-                      ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      // Hook up password reset flow here later
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Password reset coming soon')),
+                      );
+                    },
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                    child: const Text(
+                      'Forgot Password?',
+                      style: TextStyle(color: secondaryColor, fontWeight: FontWeight.w600, fontSize: 13),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: const TextStyle(fontSize: 12, color: onSurfaceVariant, height: 1.4),
-                          children: [
-                            const TextSpan(text: 'I agree to the '),
-                            TextSpan(
-                              text: 'Terms of Service',
-                              style: const TextStyle(color: secondaryColor, fontWeight: FontWeight.bold),
-                            ),
-                            const TextSpan(text: ' and '),
-                            TextSpan(
-                              text: 'Privacy Policy',
-                              style: const TextStyle(color: secondaryColor, fontWeight: FontWeight.bold),
-                            ),
-                            const TextSpan(text: '.'),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
 
                 if (_errorMessage != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(_errorMessage!, style: const TextStyle(color: errorColor, fontSize: 13)),
                 ],
 
@@ -330,7 +216,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _handleSignUp,
+                    onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryColor,
                       foregroundColor: Colors.white,
@@ -342,7 +228,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       height: 22,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
                     )
-                        : const Text('Create Account', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                        : const Text('Log In', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -352,12 +238,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     text: TextSpan(
                       style: const TextStyle(fontSize: 16, color: onSurfaceVariant),
                       children: [
-                        const TextSpan(text: 'Already have an account? '),
+                        const TextSpan(text: "Don't have an account? "),
                         TextSpan(
-                          text: 'Log in',
+                          text: 'Sign Up',
                           style: const TextStyle(color: secondaryColor, fontWeight: FontWeight.bold),
                           recognizer: TapGestureRecognizer()
-                            ..onTap = () => Navigator.of(context).pop(),
+                            ..onTap = () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const SignUpScreen()),
+                              );
+                            },
                         ),
                       ],
                     ),
