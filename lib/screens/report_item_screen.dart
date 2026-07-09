@@ -63,7 +63,8 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                 ),
                 const SizedBox(height: 16),
                 _buildDatePicker(),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
+                _buildSubmitButton(),
               ],
             ),
           ),
@@ -190,5 +191,57 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildSubmitButton() {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF1B2A4A),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      onPressed: _handleSubmit,
+      child: Text(
+        isLost ? 'Report Lost Item' : 'Report Found Item',
+        style: const TextStyle(color: Colors.white, fontSize: 16),
+      ),
+    );
+  }
+
+  Future<void> _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (selectedDate == null) return;
+
+    final report = Report(
+      category: selectedCategory!,
+      location: locationController.text,
+      date: selectedDate!,
+      description: descriptionController.text,
+    );
+
+    if (isLost) {
+      await _reportService.submitLostReport(report);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Lost report submitted!')));
+      }
+    } else {
+      await _reportService.submitFoundReport(report);
+      final results = await _reportService.checkForMatches(report);
+      final hasStrongMatch = results.contains(MatchResult.strong);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              hasStrongMatch
+                  ? 'Strong match found!'
+                  : 'Found report submitted. No match yet.',
+            ),
+          ),
+        );
+      }
+    }
   }
 }
