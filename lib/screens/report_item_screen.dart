@@ -32,7 +32,163 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(child: Text('Report Item Screen - coming soon')),
+      backgroundColor: const Color(0xFFF7F7F5),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1B2A4A),
+        title: const Text('Report an Item'),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildLostFoundToggle(),
+                const SizedBox(height: 24),
+                _buildCategoryDropdown(),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: locationController,
+                  label: 'Location',
+                  hint: 'e.g. Main Library, Cafeteria',
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: descriptionController,
+                  label: 'Description',
+                  hint: 'Describe the item in detail',
+                  maxLines: 4,
+                ),
+                const SizedBox(height: 16),
+                _buildDatePicker(),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLostFoundToggle() {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => isLost = true),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: isLost ? const Color(0xFF1B2A4A) : Colors.transparent,
+                border: Border.all(color: const Color(0xFF1B2A4A)),
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Lost',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isLost ? Colors.white : const Color(0xFF1B2A4A),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => setState(() => isLost = false),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: !isLost ? const Color(0xFF1B2A4A) : Colors.transparent,
+                border: Border.all(color: const Color(0xFF1B2A4A)),
+                borderRadius: const BorderRadius.horizontal(
+                  right: Radius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Found',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: !isLost ? Colors.white : const Color(0xFF1B2A4A),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return DropdownButtonFormField<String>(
+      initialValue: selectedCategory,
+      decoration: InputDecoration(
+        labelText: 'Category',
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      items: categories
+          .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+          .toList(),
+      onChanged: (value) => setState(() => selectedCategory = value),
+      validator: (value) => value == null ? 'Please select a category' : null,
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      validator: (value) =>
+          (value == null || value.isEmpty) ? 'This field is required' : null,
+    );
+  }
+
+  Widget _buildDatePicker() {
+    return InkWell(
+      onTap: () async {
+        final pickedDate = await showDatePicker(
+          context: context,
+          initialDate: DateTime.now(),
+          firstDate: DateTime(2020),
+          lastDate: DateTime.now(),
+        );
+        if (pickedDate != null) {
+          setState(() => selectedDate = pickedDate);
+        }
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Date',
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: Text(
+          selectedDate == null
+              ? 'Select a date'
+              : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
+        ),
+      ),
     );
   }
 }
