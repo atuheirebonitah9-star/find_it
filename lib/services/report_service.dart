@@ -11,7 +11,7 @@ class ReportService {
 
   Future<void> submitLostReport(Report report) async {
     await lostReports.add({
-      'category': report.category,
+      'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
       'description': report.description,
@@ -22,7 +22,7 @@ class ReportService {
 
   Future<void> submitFoundReport(Report report) async {
     await foundReports.add({
-      'category': report.category,
+      'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
       'description': report.description,
@@ -33,7 +33,7 @@ class ReportService {
 
   Future<List<MatchResult>> checkForMatches(Report newFoundReport) async {
     final querySnapshot = await lostReports
-        .where('category', isEqualTo: newFoundReport.category)
+        .where('category', isEqualTo: newFoundReport.category.toLowerCase())
         .where('status', isEqualTo: 'open')
         .get();
 
