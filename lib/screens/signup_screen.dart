@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/user_profile.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -52,13 +54,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       await credential.user?.updateDisplayName(_nameController.text.trim());
 
-      await FirebaseFirestore.instance.collection('users').doc(credential.user!.uid).set({
-        'name': _nameController.text.trim(),
-        'studentNumber': _studentNumberController.text.trim(),
-        'regNumber': _regNumberController.text.trim(),
-        'email': _emailController.text.trim(),
-        'createdAt': FieldValue.serverTimestamp(),
-      });
+      final userProfile = UserProfile(
+        uid: credential.user!.uid,
+        fullName: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        studentId: _studentNumberController.text.trim(),
+        regNumber: _regNumberController.text.trim(),
+        createdAt: DateTime.now(),
+      );
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(credential.user!.uid)
+          .set(userProfile.toMap());
 
       if (mounted) _showSuccessDialog();
     } on FirebaseAuthException catch (e) {

@@ -3,6 +3,7 @@ class UserProfile {
   final String fullName;
   final String email;
   final String studentId;
+  final String? regNumber;
   final String? course;
   final String? photoUrl;
   final DateTime createdAt;
@@ -12,6 +13,7 @@ class UserProfile {
     required this.fullName,
     required this.email,
     required this.studentId,
+    this.regNumber,
     this.course,
     this.photoUrl,
     required this.createdAt,
@@ -21,6 +23,7 @@ Map<String, dynamic> toMap() =>{
     'fullName': fullName,
     'email': email,
     'studentId': studentId,
+    'regNumber': regNumber,
     'course': course,
     'photoUrl': photoUrl,
     'createdAt': createdAt.toIso8601String(),
@@ -32,6 +35,7 @@ factory UserProfile.fromMap(String uid, Map<String, dynamic> map) {
     fullName: map['fullName'] ?? '',
     email: map['email'] ?? '',
     studentId: map['studentId'] ?? '',
+    regNumber: map['regNumber'] ?? '',
     course: map['course'] ?? '',
     photoUrl: map['photoUrl'] ?? '',
     createdAt: DateTime.parse(map['createdAt']),
