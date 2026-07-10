@@ -3,10 +3,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
-import 'auth_gate.dart';
+import 'screens/report_item_screen.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-FlutterLocalNotificationsPlugin();
+    FlutterLocalNotificationsPlugin();
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -27,10 +27,10 @@ Future<void> _showForegroundNotification(RemoteMessage message) async {
 
   const platformDetails = NotificationDetails(android: androidDetails);
   await flutterLocalNotificationsPlugin.show(
-    notification.hashCode,
-    notification.title,
-    notification.body,
-    platformDetails,
+    id: notification.hashCode,
+    title: notification.title,
+    body: notification.body,
+    notificationDetails: platformDetails,
     payload: message.data['payload'] as String?,
   );
 }
@@ -40,10 +40,13 @@ Future<void> _initNotifications() async {
 
   const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
   const iosInit = DarwinInitializationSettings();
-  const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
+  const initSettings = InitializationSettings(
+    android: androidInit,
+    iOS: iosInit,
+  );
 
   await flutterLocalNotificationsPlugin.initialize(
-    initSettings,
+    settings: initSettings,
     onDidReceiveNotificationResponse: (response) {
       debugPrint('Notification tapped: ${response.payload}');
     },
@@ -92,7 +95,7 @@ class FindItApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const AuthGate(),
+      home: const ReportItemScreen(),
     );
   }
 }
