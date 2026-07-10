@@ -225,6 +225,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Lost report submitted!')));
+        _clearForm();
       }
     } else {
       await _reportService.submitFoundReport(report);
@@ -241,7 +242,17 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
             ),
           ),
         );
+        _clearForm();
       }
     }
+  }
+
+  void _clearForm() {
+    setState(() {
+      selectedCategory = null;
+      selectedDate = null;
+      locationController.clear();
+      descriptionController.clear();
+    });
   }
 }
