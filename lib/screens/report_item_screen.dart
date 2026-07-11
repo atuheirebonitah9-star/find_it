@@ -42,8 +42,8 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
   }
 
   Future<void> _submitReport() async {
-    if (_formKey.currentState!.validate() && 
-        selectedCategory != null && 
+    if (_formKey.currentState!.validate() &&
+        selectedCategory != null &&
         selectedDate != null) {
       try {
         final report = Report(
@@ -55,15 +55,29 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
 
         if (isLost) {
           await _reportService.submitLostReport(report);
+          if (mounted) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Lost report submitted!')),
+            );
+          }
         } else {
           await _reportService.submitFoundReport(report);
-        }
+          final results = await _reportService.checkForMatches(report);
+          final hasStrongMatch = results.contains(MatchResult.strong);
 
-        if (mounted) {
-          Navigator.of(context).pop();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Report submitted successfully!')),
-          );
+          if (mounted) {
+            Navigator.of(context).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  hasStrongMatch
+                      ? 'Strong match found!'
+                      : 'Found report submitted. No match yet.',
+                ),
+              ),
+            );
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -137,7 +151,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
         border: Border.all(color: Colors.grey[300]!),
       ),
       child: DropdownButtonFormField<String>(
-        value: selectedCategory,
+        initialValue: selectedCategory,
         decoration: const InputDecoration(
           contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           border: InputBorder.none,
@@ -171,8 +185,8 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              selectedDate == null 
-                  ? 'Select Date' 
+              selectedDate == null
+                  ? 'Select Date'
                   : '${selectedDate!.month}/${selectedDate!.day}/${selectedDate!.year}',
               style: TextStyle(
                 color: selectedDate == null ? Colors.grey[600] : Colors.black,
@@ -209,14 +223,20 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
             hintText: hint,
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[300]!),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF1B2A4A), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF1B2A4A),
+                width: 1.5,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -227,7 +247,8 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
               borderSide: const BorderSide(color: Colors.red, width: 1.5),
             ),
           ),
-          validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+          validator: (value) =>
+              value == null || value.isEmpty ? 'Required' : null,
         ),
       ],
     );
