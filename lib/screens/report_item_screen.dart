@@ -56,7 +56,6 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
         if (isLost) {
           await _reportService.submitLostReport(report);
           if (mounted) {
-            Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Lost report submitted!')),
             );
@@ -67,7 +66,6 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
           final hasStrongMatch = results.contains(MatchResult.strong);
 
           if (mounted) {
-            Navigator.of(context).pop();
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
