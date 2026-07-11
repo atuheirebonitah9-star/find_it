@@ -78,7 +78,11 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  await _initNotifications();
+  try {
+    await _initNotifications();
+  } catch (e) {
+    debugPrint('Notifications setup failed (safe to ignore on web): $e');
+  }
 
   runApp(const FindItApp());
 }
