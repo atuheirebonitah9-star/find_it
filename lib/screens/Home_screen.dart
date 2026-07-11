@@ -2,9 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'report_item_screen.dart'; // screen for reporting a lost/found item
-import 'item_details_screen.dart'; // screen for viewing one item
-import 'profile_screen.dart'; // user profile screen
+import 'report_item_screen.dart';
+import 'item_details_screen.dart';
+import 'profile_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,7 +15,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _searchQuery = '';
-  String _statusFilter = 'All'; // All, Lost, Found
+  String _statusFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -110,8 +110,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                 final filteredDocs = docs.where((doc) {
                   if (_searchQuery.isEmpty) return true;
-                  final name =
-                  (doc.data()['itemName'] ?? '').toString().toLowerCase();
+                  final name = (doc.data()['itemName'] ?? '').toString().toLowerCase();
                   return name.contains(_searchQuery);
                 }).toList();
 
@@ -149,8 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  ItemDetailsScreen(itemId: itemId, data: data),
+                              builder: (_) => ItemDetailsScreen(itemId: itemId, data: data),
                             ),
                           );
                         },
