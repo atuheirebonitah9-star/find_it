@@ -3,7 +3,10 @@ import 'package:flutter/foundation.dart';
 import '../matching_logic.dart';
 import 'notification_event_service.dart';
 
-
+class ReportService {
+  final CollectionReference lostReports = FirebaseFirestore.instance.collection(
+    'lost_reports',
+  );
 
   final CollectionReference foundReports = FirebaseFirestore.instance
       .collection('found_reports');
