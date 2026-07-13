@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'firebase_options.dart';
 import 'auth_gate.dart';
+import 'services/notification_event_service.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -11,6 +12,18 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   debugPrint('Background FCM message: ${message.messageId}');
+
+  // Emit event for background message
+  NotificationEventService().emit(NotificationEvent(
+    type: NotificationEventType.foregroundMessage,
+    data: {
+      'title': message.notification?.title,
+      'body': message.notification?.body,
+      'messageId': message.messageId,
+      'data': message.data,
+      'isBackground': true,
+    },
+  ));
 }
 
 Future<void> _showForegroundNotification(RemoteMessage message) async {
@@ -33,6 +46,18 @@ Future<void> _showForegroundNotification(RemoteMessage message) async {
     notificationDetails: platformDetails,
     payload: message.data['payload'] as String?,
   );
+
+  // Emit event for foreground notification
+  NotificationEventService().emit(NotificationEvent(
+    type: NotificationEventType.foregroundMessage,
+    data: {
+      'title': notification.title,
+      'body': notification.body,
+      'messageId': message.messageId,
+      'data': message.data,
+      'isBackground': false,
+    },
+  ));
 }
 
 Future<void> _initNotifications() async {
@@ -49,6 +74,16 @@ Future<void> _initNotifications() async {
     settings: initSettings,
     onDidReceiveNotificationResponse: (response) {
       debugPrint('Notification tapped: ${response.payload}');
+      
+      // Emit event for notification tap
+      NotificationEventService().emit(NotificationEvent(
+        type: NotificationEventType.notificationTapped,
+        data: {
+          'payload': response.payload,
+          'notificationId': response.id,
+          'actionId': response.actionId,
+        },
+      ));
     },
   );
 
@@ -71,6 +106,18 @@ Future<void> _initNotifications() async {
 
   FirebaseMessaging.onMessageOpenedApp.listen((message) {
     debugPrint('Notification opened: ${message.data}');
+    
+    // Emit event for notification opened
+    NotificationEventService().emit(NotificationEvent(
+      type: NotificationEventType.notificationTapped,
+      data: {
+        'title': message.notification?.title,
+        'body': message.notification?.body,
+        'messageId': message.messageId,
+        'data': message.data,
+        'source': 'onMessageOpenedApp',
+      },
+    ));
   });
 }
 
