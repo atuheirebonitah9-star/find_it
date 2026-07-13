@@ -1,5 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../matching_logic.dart';
+
+class MatchDocument {
+  final String docId;
+  final Map<String, dynamic> data;
+  final Report report;
+
+  MatchDocument({
+    required this.docId,
+    required this.data,
+    required this.report,
+  });
+}
 
 class ReportService {
   final CollectionReference lostReports = FirebaseFirestore.instance.collection(
@@ -9,35 +22,43 @@ class ReportService {
   final CollectionReference foundReports = FirebaseFirestore.instance
       .collection('found_reports');
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   Future<void> submitLostReport(Report report) async {
+    final currentUser = _auth.currentUser;
     await lostReports.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
       'description': report.description,
+      'itemName': report.itemName,
+      'userId': currentUser?.uid,
       'status': 'open',
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
   Future<void> submitFoundReport(Report report) async {
+    final currentUser = _auth.currentUser;
     await foundReports.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
       'description': report.description,
+      'itemName': report.itemName,
+      'userId': currentUser?.uid,
       'status': 'open',
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
-  Future<List<MatchResult>> checkForMatches(Report newFoundReport) async {
+  Future<List<MatchDocument>> checkForMatches(Report newFoundReport) async {
     final querySnapshot = await lostReports
         .where('category', isEqualTo: newFoundReport.category.toLowerCase())
         .where('status', isEqualTo: 'open')
         .get();
 
-    List<MatchResult> results = [];
+    List<MatchDocument> strongMatches = [];
 
     for (var doc in querySnapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
@@ -47,12 +68,18 @@ class ReportService {
         location: data['location'],
         date: (data['date'] as Timestamp).toDate(),
         description: data['description'],
+        itemName: data['itemName'] ?? 'Lost Item',
+        userId: data['userId'],
       );
 
       final result = compareReports(lostReport, newFoundReport);
-      results.add(result);
+      if (result == MatchResult.strong) {
+        strongMatches.add(
+          MatchDocument(docId: doc.id, data: data, report: lostReport),
+        );
+      }
     }
 
-    return results;
+    return strongMatches;
   }
 }

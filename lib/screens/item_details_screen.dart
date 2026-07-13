@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../providers/chat_provider.dart';
+import 'chat/chat_screen.dart';
 
 class ItemDetailsScreen extends StatelessWidget {
   final String itemId;
@@ -135,11 +139,60 @@ class ItemDetailsScreen extends StatelessWidget {
                     SizedBox(
                       height: 56,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          // TODO: Implement contact action
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Contact feature coming soon!')),
-                          );
+                        onPressed: () async {
+                          final currentUser = FirebaseAuth.instance.currentUser;
+                          final reporterUid = data['userId'];
+
+                          if (currentUser != null && reporterUid != null) {
+                            // Determine who is finder and owner (based on item status)
+                            final isLost = data['status'] == 'lost';
+                            final String finderUid;
+                            final String ownerUid;
+
+                            if (isLost) {
+                              // Current user is finder if they're viewing a lost item and want to contact owner
+                              finderUid = currentUser.uid;
+                              ownerUid = reporterUid;
+                            } else {
+                              // Current user is owner if viewing a found item and want to contact finder
+                              finderUid = reporterUid;
+                              ownerUid = currentUser.uid;
+                            }
+
+                            try {
+                              final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+                              final chatId = await chatProvider.createChat(
+                                finderUid: finderUid,
+                                ownerUid: ownerUid,
+                                itemName: data['itemName'] ?? 'Item',
+                              );
+
+                              if (context.mounted) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ChatScreen(
+                                      chatId: chatId,
+                                      otherUserUid: reporterUid,
+                                      itemName: data['itemName'] ?? 'Item',
+                                    ),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to open chat: $e')),
+                                );
+                              }
+                            }
+                          } else {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Could not contact reporter')),
+                              );
+                            }
+                          }
                         },
                         icon: const Icon(Icons.message_outlined),
                         label: const Text('Contact Reporter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),

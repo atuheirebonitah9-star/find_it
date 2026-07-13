@@ -3,12 +3,16 @@ class Report {
   final String location;
   final DateTime date;
   final String description;
+  final String? userId;
+  final String itemName;
 
   Report({
     required this.category,
     required this.location,
     required this.date,
     required this.description,
+    this.userId,
+    required this.itemName,
   });
 }
 
