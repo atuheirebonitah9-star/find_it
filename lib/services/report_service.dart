@@ -1,10 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../matching_logic.dart';
+import 'notification_event_service.dart';
 
-class ReportService {
-  final CollectionReference lostReports = FirebaseFirestore.instance.collection(
-    'lost_reports',
-  );
+
 
   final CollectionReference foundReports = FirebaseFirestore.instance
       .collection('found_reports');
@@ -38,6 +37,7 @@ class ReportService {
         .get();
 
     List<MatchResult> results = [];
+    final eventService = NotificationEventService();
 
     for (var doc in querySnapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
@@ -51,6 +51,32 @@ class ReportService {
 
       final result = compareReports(lostReport, newFoundReport);
       results.add(result);
+
+      // Trigger event when matches are found
+      if (result == MatchResult.strong) {
+        eventService.emit(NotificationEvent(
+          type: NotificationEventType.matchFound,
+          data: {
+            'lostReportId': doc.id,
+            'lostItem': lostReport.category,
+            'location': lostReport.location,
+            'matchStrength': 'strong',
+            'description': '${lostReport.category} found at ${lostReport.location}',
+          },
+        ));
+        debugPrint('[ReportService] Strong match found for ${lostReport.category}');
+      } else if (result == MatchResult.weak) {
+        eventService.emit(NotificationEvent(
+          type: NotificationEventType.matchFound_weak,
+          data: {
+            'lostReportId': doc.id,
+            'lostItem': lostReport.category,
+            'location': lostReport.location,
+            'matchStrength': 'weak',
+            'description': '${lostReport.category} might be at ${lostReport.location}',
+          },
+        ));
+      }
     }
 
     return results;
