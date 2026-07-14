@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../matching_logic.dart';
+import 'notification_event_service.dart';
+import 'notification_service.dart';
 
 class MatchDocument {
   final String docId;
@@ -34,6 +36,7 @@ class ReportService {
       'itemName': report.itemName,
       'userId': currentUser?.uid,
       'status': 'open',
+      'userId': FirebaseAuth.instance.currentUser?.uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -48,6 +51,7 @@ class ReportService {
       'itemName': report.itemName,
       'userId': currentUser?.uid,
       'status': 'open',
+      'userId': FirebaseAuth.instance.currentUser?.uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
