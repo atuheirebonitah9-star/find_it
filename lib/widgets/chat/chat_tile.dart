@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/chat_model.dart';
+import '../../models/user_profile.dart';
+import '../../services/chat_service.dart';
 
-class ChatTile extends StatelessWidget {
+class ChatTile extends StatefulWidget {
   final ChatModel chat;
   final VoidCallback onTap;
 
@@ -13,6 +15,35 @@ class ChatTile extends StatelessWidget {
   });
 
   @override
+  State<ChatTile> createState() => _ChatTileState();
+}
+
+class _ChatTileState extends State<ChatTile> {
+  final ChatService _chatService = ChatService();
+  UserProfile? _otherUserProfile;
+  int _unreadCount = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final otherUserUid = _chatService.getOtherUserUid(widget.chat.finderUid, widget.chat.ownerUid);
+    final profile = await _chatService.getUserProfile(otherUserUid);
+    final unreadCount = await _chatService.getUnreadCount(widget.chat.chatId);
+    if (mounted) {
+      setState(() {
+        _otherUserProfile = profile;
+        _unreadCount = unreadCount;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(
@@ -20,11 +51,11 @@ class ChatTile extends StatelessWidget {
         child: const Icon(Icons.person, color: Colors.blue),
       ),
       title: Text(
-        chat.itemName,
+        _isLoading ? 'Loading...' : _otherUserProfile?.fullName ?? widget.chat.itemName,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: Text(
-        chat.lastMessage,
+        widget.chat.lastMessage,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
@@ -33,25 +64,26 @@ class ChatTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            DateFormat('h:mm a').format(chat.lastMessageTime),
+            DateFormat('h:mm a').format(widget.chat.lastMessageTime),
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
           const SizedBox(height: 4),
-          // Unread count indicator (optional)
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: const BoxDecoration(
-              color: Colors.blue,
-              shape: BoxShape.circle,
+          // Unread count indicator
+          if (_unreadCount > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: const BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                _unreadCount > 9 ? '9+' : _unreadCount.toString(),
+                style: const TextStyle(color: Colors.white, fontSize: 10),
+              ),
             ),
-            child: const Text(
-              '1',
-              style: TextStyle(color: Colors.white, fontSize: 10),
-            ),
-          ),
         ],
       ),
-      onTap: onTap,
+      onTap: widget.onTap,
     );
   }
 }
