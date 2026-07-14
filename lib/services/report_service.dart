@@ -1,9 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import '../matching_logic.dart';
 import 'notification_event_service.dart';
 import 'notification_service.dart';
+
+class MatchDocument {
+  final String docId;
+  final Map<String, dynamic> data;
+  final Report report;
+
+  MatchDocument({
+    required this.docId,
+    required this.data,
+    required this.report,
+  });
+}
 
 class ReportService {
   final CollectionReference lostReports = FirebaseFirestore.instance.collection(
@@ -13,12 +24,17 @@ class ReportService {
   final CollectionReference foundReports = FirebaseFirestore.instance
       .collection('found_reports');
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   Future<void> submitLostReport(Report report) async {
+    final currentUser = _auth.currentUser;
     await lostReports.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
       'description': report.description,
+      'itemName': report.itemName,
+      'userId': currentUser?.uid,
       'status': 'open',
       'userId': FirebaseAuth.instance.currentUser?.uid,
       'createdAt': FieldValue.serverTimestamp(),
@@ -26,25 +42,27 @@ class ReportService {
   }
 
   Future<void> submitFoundReport(Report report) async {
+    final currentUser = _auth.currentUser;
     await foundReports.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
       'description': report.description,
+      'itemName': report.itemName,
+      'userId': currentUser?.uid,
       'status': 'open',
       'userId': FirebaseAuth.instance.currentUser?.uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
-  Future<List<MatchResult>> checkForMatches(Report newFoundReport) async {
+  Future<List<MatchDocument>> checkForMatches(Report newFoundReport) async {
     final querySnapshot = await lostReports
         .where('category', isEqualTo: newFoundReport.category.toLowerCase())
         .where('status', isEqualTo: 'open')
         .get();
 
-    List<MatchResult> results = [];
-    final eventService = NotificationEventService();
+    List<MatchDocument> strongMatches = [];
 
     for (var doc in querySnapshot.docs) {
       final data = doc.data() as Map<String, dynamic>;
@@ -54,49 +72,18 @@ class ReportService {
         location: data['location'],
         date: (data['date'] as Timestamp).toDate(),
         description: data['description'],
+        itemName: data['itemName'] ?? 'Lost Item',
+        userId: data['userId'],
       );
 
       final result = compareReports(lostReport, newFoundReport);
-      results.add(result);
-
-      // Trigger event when matches are found
       if (result == MatchResult.strong) {
-        final targetUserId = data['userId'] as String?;
-
-        if (targetUserId != null && targetUserId.isNotEmpty) {
-          await NotificationService().sendMatchNotification(
-            userId: targetUserId,
-            matchId: doc.id,
-            itemName: lostReport.category,
-            matchScore: 1.0,
-          );
-        }
-
-        eventService.emit(NotificationEvent(
-          type: NotificationEventType.matchFound,
-          data: {
-            'lostReportId': doc.id,
-            'lostItem': lostReport.category,
-            'location': lostReport.location,
-            'matchStrength': 'strong',
-            'description': '${lostReport.category} found at ${lostReport.location}',
-          },
-        ));
-        debugPrint('[ReportService] Strong match found for ${lostReport.category}');
-      } else if (result == MatchResult.weak) {
-        eventService.emit(NotificationEvent(
-          type: NotificationEventType.matchFound_weak,
-          data: {
-            'lostReportId': doc.id,
-            'lostItem': lostReport.category,
-            'location': lostReport.location,
-            'matchStrength': 'weak',
-            'description': '${lostReport.category} might be at ${lostReport.location}',
-          },
-        ));
+        strongMatches.add(
+          MatchDocument(docId: doc.id, data: data, report: lostReport),
+        );
       }
     }
 
-    return results;
+    return strongMatches;
   }
 }

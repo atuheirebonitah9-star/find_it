@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/chat/message_bubble.dart';
 import '../../widgets/chat/message_input_field.dart';
+import '../../services/chat_service.dart';
+import '../../models/user_profile.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -22,16 +24,30 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
+  final ChatService _chatService = ChatService();
+  UserProfile? _otherUserProfile;
+  bool _isLoadingProfile = true;
 
   @override
   void initState() {
     super.initState();
-    // Load messages and mark as read when entering chat
+    // Load messages, mark as read, and load other user profile when entering chat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
       chatProvider.loadMessages(widget.chatId);
       chatProvider.markMessagesAsRead(widget.chatId);
+      _loadOtherUserProfile();
     });
+  }
+
+  Future<void> _loadOtherUserProfile() async {
+    final profile = await _chatService.getUserProfile(widget.otherUserUid);
+    if (mounted) {
+      setState(() {
+        _otherUserProfile = profile;
+        _isLoadingProfile = false;
+      });
+    }
   }
 
   @override
@@ -68,7 +84,7 @@ class _ChatScreenState extends State<ChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Finder-Owner Chat',
+                  _isLoadingProfile ? 'Loading...' : _otherUserProfile?.fullName ?? 'User',
                   style: const TextStyle(fontSize: 16),
                 ),
                 Text(
@@ -119,6 +135,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
 
+                // Scroll to bottom when messages are loaded/updated
+                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
@@ -172,6 +191,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
               ),
               ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text('Delete Chat', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteChatDialog(context);
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.block, color: Colors.red),
                 title: const Text('Block User', style: TextStyle(color: Colors.red)),
                 onTap: () {
@@ -184,6 +211,43 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       },
     );
+  }
+
+  void _showDeleteChatDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete Chat'),
+          content: const Text('Are you sure you want to permanently delete this chat? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () {
+                Navigator.pop(context);
+                _deleteChat();
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _deleteChat() async {
+    await Provider.of<ChatProvider>(context, listen: false)
+        .deleteChat(widget.chatId);
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Chat deleted successfully')),
+      );
+    }
   }
 
   void _showReportDialog(BuildContext context) {

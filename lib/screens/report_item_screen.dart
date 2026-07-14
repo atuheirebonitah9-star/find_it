@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 import '../matching_logic.dart';
 import '../services/report_service.dart';
+import '../providers/chat_provider.dart';
+import 'chat/chat_screen.dart';
 
 class ReportItemScreen extends StatefulWidget {
   const ReportItemScreen({super.key});
@@ -17,6 +21,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
   String? selectedCategory;
   DateTime? selectedDate;
 
+  final TextEditingController itemNameController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
@@ -51,6 +56,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
           location: locationController.text.trim(),
           date: selectedDate!,
           description: descriptionController.text.trim(),
+          itemName: itemNameController.text.trim(),
         );
 
         if (isLost) {
@@ -63,18 +69,33 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
           }
         } else {
           await _reportService.submitFoundReport(report);
-          final results = await _reportService.checkForMatches(report);
-          final hasStrongMatch = results.contains(MatchResult.strong);
+          final matches = await _reportService.checkForMatches(report);
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  hasStrongMatch
-                      ? 'Strong match found!'
-                      : 'Found report submitted. No match yet.',
+          if (matches.isNotEmpty && mounted) {
+            // Get first strong match
+            final match = matches.first;
+            final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+            final chatId = await chatProvider.createChat(
+              finderUid: FirebaseAuth.instance.currentUser?.uid ?? '',
+              ownerUid: match.report.userId ?? '',
+              itemName: match.report.itemName,
+            );
+
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    chatId: chatId,
+                    otherUserUid: match.report.userId ?? '',
+                    itemName: match.report.itemName,
+                  ),
                 ),
-              ),
+              );
+            }
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Found report submitted. No match yet.')),
             );
             _clearForm();
           }
@@ -93,6 +114,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     setState(() {
       selectedCategory = null;
       selectedDate = null;
+      itemNameController.clear();
       locationController.clear();
       descriptionController.clear();
     });
@@ -265,6 +287,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
 
   @override
   void dispose() {
+    itemNameController.dispose();
     locationController.dispose();
     descriptionController.dispose();
     super.dispose();
@@ -298,6 +321,13 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                 const SizedBox(height: 24),
 
                 _buildCategoryDropdown(),
+                const SizedBox(height: 16),
+
+                _buildTextField(
+                  controller: itemNameController,
+                  hint: 'e.g., Black Leather Wallet',
+                  label: 'Item Name',
+                ),
                 const SizedBox(height: 16),
 
                 _buildDatePicker(),

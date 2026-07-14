@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/message_model.dart';
 import '../models/chat_model.dart';
+import '../models/user_profile.dart';
 
 class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -35,7 +36,7 @@ class ChatService {
       'finderUid': finderUid,
       'ownerUid': ownerUid,
       'itemName': itemName,
-      'lastMessage': 'Chat started',
+      'lastMessage': '',
       'lastMessageTime': FieldValue.serverTimestamp(),
       'isActive': true,
       'createdAt': FieldValue.serverTimestamp(),
@@ -92,10 +93,9 @@ class ChatService {
     return _firestore
         .collection('chats')
         .where('isActive', isEqualTo: true)
-        .orderBy('lastMessageTime', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      final chats = snapshot.docs
           .where((doc) {
             // Only show chats where user is either finder or owner
             String finderUid = doc.data()['finderUid'] ?? '';
@@ -105,6 +105,10 @@ class ChatService {
           .map((doc) {
             return ChatModel.fromFirestore(doc.data(), doc.id);
           }).toList();
+      
+      // Sort chats by lastMessageTime on client to avoid needing composite index
+      chats.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
+      return chats;
     });
   }
 
@@ -125,24 +129,62 @@ class ChatService {
     }
   }
 
-  // Get other user's info from chat
-  Future<Map<String, dynamic>> getOtherUserInfo(String chatId) async {
-    DocumentSnapshot doc = await _firestore.collection('chats').doc(chatId).get();
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    
-    String finderUid = data['finderUid'] ?? '';
-    String ownerUid = data['ownerUid'] ?? '';
-    String otherUid = (finderUid == currentUserUid) ? ownerUid : finderUid;
-
-    // Get user details from users collection (assumes you have a users collection)
-    DocumentSnapshot userDoc = await _firestore.collection('users').doc(otherUid).get();
-    return userDoc.data() as Map<String, dynamic>;
+  // Get other user's UID from chat
+  String getOtherUserUid(String finderUid, String ownerUid) {
+    return (finderUid == currentUserUid) ? ownerUid : finderUid;
   }
 
-  // Delete/Archive a chat
+  // Get UserProfile for a user UID
+  Future<UserProfile?> getUserProfile(String uid) async {
+    try {
+      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      if (!doc.exists) return null;
+      return UserProfile.fromMap(uid, doc.data() as Map<String, dynamic>);
+    } catch (e) {
+      print('Error getting user profile: $e');
+      return null;
+    }
+  }
+
+  // Get unread message count for a chat
+  Future<int> getUnreadCount(String chatId) async {
+    if (currentUserUid == null) return 0;
+    try {
+      QuerySnapshot snapshot = await _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .where('senderUid', isNotEqualTo: currentUserUid)
+          .where('isRead', isEqualTo: false)
+          .get();
+      return snapshot.docs.length;
+    } catch (e) {
+      print('Error getting unread count: $e');
+      return 0;
+    }
+  }
+
+  // Archive a chat
   Future<void> archiveChat(String chatId) async {
     await _firestore.collection('chats').doc(chatId).update({
       'isActive': false,
     });
+  }
+
+  // Delete a chat (permanently removes it from Firestore)
+  Future<void> deleteChat(String chatId) async {
+    // First delete all messages in the chat
+    final messagesSnapshot = await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .get();
+    
+    for (var doc in messagesSnapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    // Then delete the chat document itself
+    await _firestore.collection('chats').doc(chatId).delete();
   }
 }

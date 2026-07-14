@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/chat/chat_tile.dart';
 import 'chat_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -18,6 +19,38 @@ class _ChatListScreenState extends State<ChatListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<ChatProvider>(context, listen: false).loadChats();
     });
+  }
+
+  void _showDeleteChatDialog(BuildContext context, String chatId) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete Chat'),
+          content: const Text('Are you sure you want to permanently delete this chat? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: () async {
+                Navigator.pop(context);
+                await Provider.of<ChatProvider>(context, listen: false)
+                    .deleteChat(chatId);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Chat deleted successfully')),
+                  );
+                }
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -68,22 +101,36 @@ class _ChatListScreenState extends State<ChatListScreen> {
             itemCount: chatProvider.chats.length,
             itemBuilder: (context, index) {
               final chat = chatProvider.chats[index];
-              return ChatTile(
-                chat: chat,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatScreen(
-                        chatId: chat.chatId,
-                        otherUserUid: chat.finderUid == chatProvider.currentUserUid
-                            ? chat.ownerUid
-                            : chat.finderUid,
-                        itemName: chat.itemName,
-                      ),
-                    ),
-                  );
+              return Dismissible(
+                key: Key(chat.chatId),
+                direction: DismissDirection.endToStart,
+                background: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: const Icon(Icons.delete, color: Colors.white),
+                ),
+                confirmDismiss: (direction) async {
+                  _showDeleteChatDialog(context, chat.chatId);
+                  return false; // Don't auto-dismiss, we'll handle it in the dialog
                 },
+                child: ChatTile(
+                  chat: chat,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatScreen(
+                          chatId: chat.chatId,
+                          otherUserUid: chat.finderUid == chatProvider.currentUserUid
+                              ? chat.ownerUid
+                              : chat.finderUid,
+                          itemName: chat.itemName,
+                        ),
+                      ),
+                    );
+                  },
+                ),
               );
             },
           );

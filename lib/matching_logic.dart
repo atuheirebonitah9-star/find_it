@@ -3,12 +3,16 @@ class Report {
   final String location;
   final DateTime date;
   final String description;
+  final String? userId;
+  final String itemName;
 
   Report({
     required this.category,
     required this.location,
     required this.date,
     required this.description,
+    this.userId,
+    required this.itemName,
   });
 }
 
@@ -74,6 +78,7 @@ void main() {
     location: 'Library',
     date: DateTime(2026, 7, 1),
     description: 'black wallet with torn corner and student ID inside',
+    itemName: 'Black Wallet',
   );
 
   final foundReport = Report(
@@ -81,6 +86,7 @@ void main() {
     location: 'Library',
     date: DateTime(2026, 7, 3),
     description: 'found a black wallet near the library entrance',
+    itemName: 'Black Wallet',
   );
 
   final result = compareReports(lostReport, foundReport);

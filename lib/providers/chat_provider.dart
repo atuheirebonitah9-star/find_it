@@ -72,6 +72,13 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Delete chat
+  Future<void> deleteChat(String chatId) async {
+    await _chatService.deleteChat(chatId);
+    _chats.removeWhere((chat) => chat.chatId == chatId);
+    notifyListeners();
+  }
+
   // Create new chat
   Future<String> createChat({
     required String finderUid,
