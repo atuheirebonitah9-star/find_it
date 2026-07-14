@@ -92,10 +92,9 @@ class ChatService {
     return _firestore
         .collection('chats')
         .where('isActive', isEqualTo: true)
-        .orderBy('lastMessageTime', descending: true)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
+      final chats = snapshot.docs
           .where((doc) {
             // Only show chats where user is either finder or owner
             String finderUid = doc.data()['finderUid'] ?? '';
@@ -105,6 +104,10 @@ class ChatService {
           .map((doc) {
             return ChatModel.fromFirestore(doc.data(), doc.id);
           }).toList();
+      
+      // Sort chats by lastMessageTime on client to avoid needing composite index
+      chats.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
+      return chats;
     });
   }
 

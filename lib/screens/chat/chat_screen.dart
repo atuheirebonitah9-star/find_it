@@ -119,6 +119,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
 
+                // Scroll to bottom when messages are loaded/updated
+                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
