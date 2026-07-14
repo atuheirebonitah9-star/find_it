@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
+import 'notification_event_service.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -141,17 +142,46 @@ class NotificationService {
   void _handleForegroundMessage(RemoteMessage message) {
     print('📨 Foreground message received: ${message.data}');
     _showLocalNotification(message);
+
+    NotificationEventService().emit(NotificationEvent(
+      type: NotificationEventType.foregroundMessage,
+      data: {
+        'title': message.notification?.title,
+        'body': message.notification?.body,
+        'messageId': message.messageId,
+        'data': message.data,
+        'isBackground': false,
+      },
+    ));
   }
 
   /// Handle background messages (when app is opened from notification)
   void _handleBackgroundMessage(RemoteMessage message) {
     print('📨 Background message opened: ${message.data}');
+    NotificationEventService().emit(NotificationEvent(
+      type: NotificationEventType.notificationTapped,
+      data: {
+        'title': message.notification?.title,
+        'body': message.notification?.body,
+        'messageId': message.messageId,
+        'data': message.data,
+        'source': 'onMessageOpenedApp',
+      },
+    ));
     _navigateToRelevantScreen(message.data);
   }
 
   /// Handle notification tap when app is in foreground
   void _onNotificationTap(NotificationResponse response) {
     print('🔔 Notification tapped: ${response.payload}');
+    NotificationEventService().emit(NotificationEvent(
+      type: NotificationEventType.notificationTapped,
+      data: {
+        'payload': response.payload,
+        'notificationId': response.id,
+        'actionId': response.actionId,
+      },
+    ));
     if (response.payload != null) {
       _navigateToRelevantScreen({'payload': response.payload});
     }

@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../matching_logic.dart';
 import 'notification_event_service.dart';
+import 'notification_service.dart';
 
 class ReportService {
   final CollectionReference lostReports = FirebaseFirestore.instance.collection(
@@ -18,6 +20,7 @@ class ReportService {
       'date': report.date,
       'description': report.description,
       'status': 'open',
+      'userId': FirebaseAuth.instance.currentUser?.uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -29,6 +32,7 @@ class ReportService {
       'date': report.date,
       'description': report.description,
       'status': 'open',
+      'userId': FirebaseAuth.instance.currentUser?.uid,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
@@ -57,6 +61,17 @@ class ReportService {
 
       // Trigger event when matches are found
       if (result == MatchResult.strong) {
+        final targetUserId = data['userId'] as String?;
+
+        if (targetUserId != null && targetUserId.isNotEmpty) {
+          await NotificationService().sendMatchNotification(
+            userId: targetUserId,
+            matchId: doc.id,
+            itemName: lostReport.category,
+            matchScore: 1.0,
+          );
+        }
+
         eventService.emit(NotificationEvent(
           type: NotificationEventType.matchFound,
           data: {
