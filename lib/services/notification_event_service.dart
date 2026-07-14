@@ -27,7 +27,7 @@ class NotificationEvent {
 }
 
 /// Callback type for notification event listeners
-typedef NotificationEventListener = void Function(NotificationEvent event);
+typedef NotificationEventCallback = void Function(NotificationEvent event);
 
 /// Service to manage notification events
 class NotificationEventService extends ChangeNotifier {
@@ -40,18 +40,18 @@ class NotificationEventService extends ChangeNotifier {
 
   NotificationEventService._internal();
 
-  final List<NotificationEventListener> _listeners = [];
+  final List<NotificationEventCallback> _listeners = [];
   final List<NotificationEvent> _eventHistory = [];
 
   /// Subscribe to notification events
-  void subscribe(NotificationEventListener listener) {
+  void subscribe(NotificationEventCallback listener) {
     if (!_listeners.contains(listener)) {
       _listeners.add(listener);
     }
   }
 
   /// Unsubscribe from notification events
-  void unsubscribe(NotificationEventListener listener) {
+  void unsubscribe(NotificationEventCallback listener) {
     _listeners.remove(listener);
   }
 
