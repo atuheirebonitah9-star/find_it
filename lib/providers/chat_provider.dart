@@ -55,9 +55,18 @@ class ChatProvider extends ChangeNotifier {
     );
   }
 
-  // Send message
+  // Send text message
   Future<void> sendMessage(String chatId, String text) async {
     await _chatService.sendMessage(chatId: chatId, text: text);
+  }
+
+  // Send voice message
+  Future<void> sendVoiceMessage(String chatId, String voiceUrl, int voiceDuration) async {
+    await _chatService.sendVoiceMessage(
+      chatId: chatId,
+      voiceUrl: voiceUrl,
+      voiceDuration: voiceDuration,
+    );
   }
 
   // Mark messages as read

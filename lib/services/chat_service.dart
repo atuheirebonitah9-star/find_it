@@ -45,7 +45,7 @@ class ChatService {
     return chatId;
   }
 
-  // Send a message
+  // Send a text message
   Future<void> sendMessage({
     required String chatId,
     required String text,
@@ -62,11 +62,42 @@ class ChatService {
       'senderUid': currentUserUid,
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': false,
+      'type': 'text',
     });
 
     // Update last message in chat document
     await _firestore.collection('chats').doc(chatId).update({
       'lastMessage': text,
+      'lastMessageTime': FieldValue.serverTimestamp(),
+    });
+  }
+
+  // Send a voice message
+  Future<void> sendVoiceMessage({
+    required String chatId,
+    required String voiceUrl,
+    required int voiceDuration,
+  }) async {
+    if (currentUserUid == null) throw Exception('User not logged in');
+
+    // Add message to subcollection
+    await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .add({
+      'text': '',
+      'senderUid': currentUserUid,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'type': 'voice',
+      'voiceUrl': voiceUrl,
+      'voiceDuration': voiceDuration,
+    });
+
+    // Update last message in chat document
+    await _firestore.collection('chats').doc(chatId).update({
+      'lastMessage': 'Voice message',
       'lastMessageTime': FieldValue.serverTimestamp(),
     });
   }

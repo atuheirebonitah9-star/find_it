@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
+import 'terms_screen.dart';
 import '../services/notification_event_service.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _nameController = TextEditingController();
   final _studentNumberController = TextEditingController();
   final _regNumberController = TextEditingController();
+  final _courseController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -61,6 +63,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: _emailController.text.trim(),
         studentId: _studentNumberController.text.trim(),
         regNumber: _regNumberController.text.trim(),
+        course: _courseController.text.trim(),
         createdAt: DateTime.now(),
       );
 
@@ -210,39 +213,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Google button (UI only — wire up google_sign_in package to activate)
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Google sign-in not yet connected')),
-                      );
-                    },
-                    icon: const Icon(Icons.g_mobiledata, size: 24, color: primaryColor),
-                    label: const Text('Google', style: TextStyle(fontWeight: FontWeight.w600, color: primaryColor)),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: surfaceLowest,
-                      side: const BorderSide(color: outlineVariant),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                Row(
-                  children: [
-                    const Expanded(child: Divider(color: outlineVariant)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('OR CONTINUE WITH', style: TextStyle(fontSize: 12, color: outlineVariant, letterSpacing: 1)),
-                    ),
-                    const Expanded(child: Divider(color: outlineVariant)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
                 _label('Full Name'),
                 TextFormField(
                   controller: _nameController,
@@ -263,6 +233,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 TextFormField(
                   controller: _regNumberController,
                   decoration: _fieldDecoration(hint: 'e.g., 25/U/03343/EVE', icon: Icons.description_outlined),
+                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+
+                _label('Course'),
+                TextFormField(
+                  controller: _courseController,
+                  decoration: _fieldDecoration(hint: 'e.g., Computer Science', icon: Icons.school_outlined),
                   validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 16),
@@ -323,11 +301,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             TextSpan(
                               text: 'Terms of Service',
                               style: const TextStyle(color: secondaryColor, fontWeight: FontWeight.bold),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const TermsScreen()),
+                                  );
+                                },
                             ),
                             const TextSpan(text: ' and '),
                             TextSpan(
                               text: 'Privacy Policy',
                               style: const TextStyle(color: secondaryColor, fontWeight: FontWeight.bold),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const TermsScreen()),
+                                  );
+                                },
                             ),
                             const TextSpan(text: '.'),
                           ],
