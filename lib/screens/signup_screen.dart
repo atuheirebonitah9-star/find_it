@@ -17,6 +17,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _nameController = TextEditingController();
   final _studentNumberController = TextEditingController();
   final _regNumberController = TextEditingController();
+  final _courseController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
@@ -61,6 +62,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: _emailController.text.trim(),
         studentId: _studentNumberController.text.trim(),
         regNumber: _regNumberController.text.trim(),
+        course: _courseController.text.trim(),
         createdAt: DateTime.now(),
       );
 
@@ -221,6 +223,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 TextFormField(
                   controller: _regNumberController,
                   decoration: _fieldDecoration(hint: 'e.g., 25/U/03343/EVE', icon: Icons.description_outlined),
+                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+
+                _label('Course'),
+                TextFormField(
+                  controller: _courseController,
+                  decoration: _fieldDecoration(hint: 'e.g., Computer Science', icon: Icons.school_outlined),
                   validator: (v) => v == null || v.isEmpty ? 'Required' : null,
                 ),
                 const SizedBox(height: 16),

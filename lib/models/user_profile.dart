@@ -4,7 +4,7 @@ class UserProfile {
   final String email;
   final String studentId;
   final String? regNumber;
-  final String? course;
+  final String course;
   final String? photoUrl;
   final DateTime createdAt;
 
@@ -14,7 +14,7 @@ class UserProfile {
     required this.email,
     required this.studentId,
     this.regNumber,
-    this.course,
+    required this.course,
     this.photoUrl,
     required this.createdAt,
 });

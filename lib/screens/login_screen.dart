@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -22,7 +23,6 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color primaryColor = Color(0xFF131B2E);
   static const Color secondaryColor = Color(0xFF006A61);
   static const Color secondaryContainer = Color(0xFF86F2E4);
-  static const Color backgroundColor = Color.fromARGB(255, 240, 241, 243);
   static const Color surfaceLowest = Color.fromARGB(255, 253, 251, 251);
   static const Color outlineVariant = Color(0xFFC6C6CD);
   static const Color onSurface = Color(0xFF191C1E);
@@ -159,9 +159,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () {
-                      // Hook up password reset flow here later
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Password reset coming soon')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
                       );
                     },
                     style: TextButton.styleFrom(padding: EdgeInsets.zero),
