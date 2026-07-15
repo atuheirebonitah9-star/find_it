@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
@@ -23,6 +26,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
   String? selectedCategory;
   DateTime? selectedDate;
   bool _isListening = false;
+  XFile? _pickedImage;  
 
   final TextEditingController itemNameController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
@@ -36,6 +40,55 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     'Bag',
     'Other',
   ];
+Future<void> _pickImage() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Take a photo'),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Choose from gallery'),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        imageQuality: 80,
+      );
+
+      if (image != null) {
+        setState(() => _pickedImage = image);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            source == ImageSource.camera
+                ? 'Could not access camera. Check app permissions.'
+                : 'Could not access photos. Check app permissions.',
+          ),
+        ),
+      );
+    }
+  }
 
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
@@ -97,10 +150,19 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     }
   }
 
-  Future<void> _submitReport() async {
+Future<void> _submitReport() async {
+    if (_pickedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please upload a photo of the item.'),
+        ),
+      );
+      return;
+    }
+
     if (_formKey.currentState!.validate() &&
         selectedCategory != null &&
-        selectedDate != null) {
+        selectedDate != null) {  
       try {
         final report = Report(
           category: selectedCategory!,
@@ -399,8 +461,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                   label: 'Location',
                 ),
                 const SizedBox(height: 16),
-
-                _buildTextField(
+_buildTextField(
                   controller: descriptionController,
                   hint: 'Describe the item...',
                   label: 'Description',
@@ -419,6 +480,53 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                     },
                   ),
                 ),
+                const SizedBox(height: 16),
+
+                OutlinedButton.icon(
+                  onPressed: _pickImage,
+                  icon: const Icon(Icons.photo_camera_outlined,
+                      color: Color(0xFF1B2A4A)),
+                  label: const Text(
+                    'Upload a photo',
+                    style: TextStyle(color: Color(0xFF1B2A4A)),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF1B2A4A)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+                if (_pickedImage != null) ...[
+                  const SizedBox(height: 16),
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          File(_pickedImage!.path),
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: CircleAvatar(
+                          backgroundColor: Colors.black54,
+                          child: IconButton(
+                            icon: const Icon(Icons.close,
+                                color: Colors.white, size: 18),
+                            onPressed: () =>
+                                setState(() => _pickedImage = null),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 32),
 
                 SizedBox(
