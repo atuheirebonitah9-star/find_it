@@ -14,7 +14,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   UserProfile? _userProfile;
   bool _isLoading = true;
 
-  static const Color primaryColor = Color(0xFF131B2E);
   static const Color secondaryColor = Color(0xFF006A61);
   static const Color backgroundColor = Color(0xFFF7F9FB);
   static const Color surfaceLowest = Color(0xFFFFFFFF);
