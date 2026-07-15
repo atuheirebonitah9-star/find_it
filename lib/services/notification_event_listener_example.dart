@@ -48,7 +48,7 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
       case NotificationEventType.matchFound:
         _handleStrongMatch(event);
         break;
-      case NotificationEventType.matchFound_weak:
+      case NotificationEventType.matchFoundWeak:
         _handleWeakMatch(event);
         break;
       case NotificationEventType.notificationTapped:
@@ -59,6 +59,30 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
         break;
       case NotificationEventType.notificationClosed:
         _handleNotificationClosed(event);
+        break;
+      case NotificationEventType.itemReported:
+        _handleItemReported(event);
+        break;
+      case NotificationEventType.matchConfirmed:
+        _handleMatchConfirmed(event);
+        break;
+      case NotificationEventType.messageReceived:
+        _handleMessageReceived(event);
+        break;
+      case NotificationEventType.itemMarkedFound:
+        _handleItemMarkedFound(event);
+        break;
+      case NotificationEventType.itemClaimed:
+        _handleItemClaimed(event);
+        break;
+      case NotificationEventType.reminder:
+        _handleReminder(event);
+        break;
+      case NotificationEventType.verificationRequest:
+        _handleVerificationRequest(event);
+        break;
+      case NotificationEventType.signUpSuccess:
+        _handleSignUpSuccess(event);
         break;
     }
   }
@@ -71,14 +95,14 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Strong match found! ${event.data['description']}',
+            'Strong match found! ${event.data['itemName']} at ${event.data['location']}',
           ),
           duration: const Duration(seconds: 5),
           action: SnackBarAction(
             label: 'View',
             onPressed: () {
               // Navigate to match details
-              debugPrint('Navigate to match: ${event.data['lostReportId']}');
+              debugPrint('Navigate to match');
             },
           ),
         ),
@@ -93,11 +117,117 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Possible match: ${event.data['description']}'),
+          content: Text('Possible match: ${event.data['itemName']} at ${event.data['location']}'),
           duration: const Duration(seconds: 3),
         ),
       );
     }
+  }
+
+  void _handleItemReported(NotificationEvent event) {
+    debugPrint('[UI] New item reported: ${event.data}');
+    
+    if (mounted) {
+      final isLost = event.data['isLost'] as bool;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'New ${isLost ? 'lost' : 'found'} item: ${event.data['itemName']} at ${event.data['location']}',
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _handleMatchConfirmed(NotificationEvent event) {
+    debugPrint('[UI] Match confirmed: ${event.data}');
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Match confirmed! Check your messages.'),
+          duration: const Duration(seconds: 5),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  void _handleMessageReceived(NotificationEvent event) {
+    debugPrint('[UI] Message received: ${event.data}');
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('New message from ${event.data['senderName'] ?? 'someone'}'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  void _handleItemMarkedFound(NotificationEvent event) {
+    debugPrint('[UI] Item marked as found: ${event.data}');
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Great! Your ${event.data['itemName']} has been marked as found!'),
+          duration: const Duration(seconds: 5),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
+  void _handleItemClaimed(NotificationEvent event) {
+    debugPrint('[UI] Item claimed: ${event.data}');
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Someone claimed your ${event.data['itemName']}! Check your messages.'),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+
+  void _handleReminder(NotificationEvent event) {
+    debugPrint('[UI] Reminder: ${event.data}');
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Reminder: Follow up on your lost item reports!'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  void _handleVerificationRequest(NotificationEvent event) {
+    debugPrint('[UI] Verification request: ${event.data}');
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please verify the match for ${event.data['itemName']}'),
+          duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Verify',
+            onPressed: () {
+              debugPrint('Navigate to verification');
+            },
+          ),
+        ),
+      );
+    }
+  }
+
+  void _handleSignUpSuccess(NotificationEvent event) {
+    debugPrint('[UI] Sign up successful: ${event.data}');
   }
 
   void _handleNotificationTapped(NotificationEvent event) {
@@ -190,7 +320,7 @@ class _NotificationEventDebugPanelState
     switch (type) {
       case NotificationEventType.matchFound:
         return Icons.check_circle;
-      case NotificationEventType.matchFound_weak:
+      case NotificationEventType.matchFoundWeak:
         return Icons.help;
       case NotificationEventType.notificationTapped:
         return Icons.touch_app;
@@ -198,6 +328,22 @@ class _NotificationEventDebugPanelState
         return Icons.message;
       case NotificationEventType.notificationClosed:
         return Icons.close;
+      case NotificationEventType.itemReported:
+        return Icons.add_alert;
+      case NotificationEventType.matchConfirmed:
+        return Icons.verified_user;
+      case NotificationEventType.messageReceived:
+        return Icons.message;
+      case NotificationEventType.itemMarkedFound:
+        return Icons.check;
+      case NotificationEventType.itemClaimed:
+        return Icons.person_add;
+      case NotificationEventType.reminder:
+        return Icons.access_alarm;
+      case NotificationEventType.verificationRequest:
+        return Icons.question_answer;
+      case NotificationEventType.signUpSuccess:
+        return Icons.person_add;
     }
   }
 
@@ -205,7 +351,7 @@ class _NotificationEventDebugPanelState
     switch (type) {
       case NotificationEventType.matchFound:
         return Colors.green;
-      case NotificationEventType.matchFound_weak:
+      case NotificationEventType.matchFoundWeak:
         return Colors.orange;
       case NotificationEventType.notificationTapped:
         return Colors.blue;
@@ -213,6 +359,22 @@ class _NotificationEventDebugPanelState
         return Colors.purple;
       case NotificationEventType.notificationClosed:
         return Colors.grey;
+      case NotificationEventType.itemReported:
+        return Colors.blue;
+      case NotificationEventType.matchConfirmed:
+        return Colors.green;
+      case NotificationEventType.messageReceived:
+        return Colors.indigo;
+      case NotificationEventType.itemMarkedFound:
+        return Colors.green;
+      case NotificationEventType.itemClaimed:
+        return Colors.amber;
+      case NotificationEventType.reminder:
+        return Colors.orange;
+      case NotificationEventType.verificationRequest:
+        return Colors.purple;
+      case NotificationEventType.signUpSuccess:
+        return Colors.green;
     }
   }
 }

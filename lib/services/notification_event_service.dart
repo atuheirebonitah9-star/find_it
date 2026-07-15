@@ -3,10 +3,18 @@ import 'package:flutter/foundation.dart';
 /// Defines the types of notification events
 enum NotificationEventType {
   matchFound,           // Strong match between lost and found item
-  matchFound_weak,      // Weak match found
+  matchFoundWeak,       // Weak match found (renamed for consistency)
   notificationTapped,   // User tapped on notification
   notificationClosed,   // Notification was closed
   foregroundMessage,    // Foreground FCM message received
+  itemReported,         // New lost/found item reported nearby or in category
+  matchConfirmed,       // Both parties confirmed a match
+  messageReceived,      // New chat message received
+  itemMarkedFound,      // User's lost item was marked as found
+  itemClaimed,          // Someone claimed user's lost item
+  reminder,             // Reminder about open lost reports
+  verificationRequest,  // Match needs user verification
+  signUpSuccess,        // User successfully signed up
 }
 
 /// Represents a notification event

@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
+import '../services/notification_event_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -67,6 +68,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
           .collection('users')
           .doc(credential.user!.uid)
           .set(userProfile.toMap());
+
+      // Emit sign up success event
+      NotificationEventService().emit(NotificationEvent(
+        type: NotificationEventType.signUpSuccess,
+        data: {
+          'fullName': userProfile.fullName,
+          'email': userProfile.email,
+        },
+      ));
 
       if (mounted) _showSuccessDialog();
     } on FirebaseAuthException catch (e) {
