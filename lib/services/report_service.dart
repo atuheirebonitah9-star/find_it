@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../matching_logic.dart';
+import 'notification_event_service.dart';
 
 class ReportService {
   final CollectionReference lostReports = FirebaseFirestore.instance.collection(
@@ -11,6 +12,7 @@ class ReportService {
       .collection('found_reports');
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final NotificationEventService _eventService = NotificationEventService();
 
   Future<void> submitLostReport(Report report) async {
     final currentUser = _auth.currentUser;
@@ -24,6 +26,17 @@ class ReportService {
       'status': 'open',
       'createdAt': FieldValue.serverTimestamp(),
     });
+
+    // Emit itemReported event for new lost item
+    _eventService.emit(NotificationEvent(
+      type: NotificationEventType.itemReported,
+      data: {
+        'itemName': report.itemName,
+        'category': report.category,
+        'location': report.location,
+        'isLost': true,
+      },
+    ));
   }
 
   Future<void> submitFoundReport(Report report) async {
@@ -38,6 +51,41 @@ class ReportService {
       'status': 'open',
       'createdAt': FieldValue.serverTimestamp(),
     });
+
+    // Emit itemReported event for new found item
+    _eventService.emit(NotificationEvent(
+      type: NotificationEventType.itemReported,
+      data: {
+        'itemName': report.itemName,
+        'category': report.category,
+        'location': report.location,
+        'isLost': false,
+      },
+    ));
+
+    // Check for matches and emit events
+    final matches = await checkForMatches(report);
+    for (var match in matches) {
+      if (match.result == MatchResult.strong) {
+        _eventService.emit(NotificationEvent(
+          type: NotificationEventType.matchFound,
+          data: {
+            'itemName': match.report.itemName,
+            'location': match.report.location,
+            'lostReportUserId': match.report.userId,
+            'foundReportUserId': _auth.currentUser?.uid,
+          },
+        ));
+      } else if (match.result == MatchResult.weak) {
+        _eventService.emit(NotificationEvent(
+          type: NotificationEventType.matchFoundWeak,
+          data: {
+            'itemName': match.report.itemName,
+            'location': match.report.location,
+          },
+        ));
+      }
+    }
   }
 
   Future<List<MatchDocument>> checkForMatches(Report newFoundReport) async {
@@ -70,7 +118,6 @@ class ReportService {
       matches.add(MatchDocument(report: lostReport, result: result));
     }
 
-    // Return only strong matches
-    return matches.where((match) => match.result == MatchResult.strong).toList();
+    return matches;
   }
 }

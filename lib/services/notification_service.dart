@@ -4,6 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import 'notification_event_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -20,21 +21,34 @@ class NotificationService {
   String? _token;
   bool _isInitialized = false;
 
+  // Android notification channel constants
+  static const String channelId = 'find_it_channel';
+  static const String channelName = 'Find It Notifications';
+  static const String channelDescription = 'Notifications for matches and messages';
+
   Future<void> initialize() async {
     if (_isInitialized) return;
     try {
       await _requestPermissions();
-      await _initializeLocalNotifications();
+      if (!kIsWeb) {
+        await _initializeLocalNotifications();
+        await _createAndroidNotificationChannel();
+      }
       await _getFCMToken();
       _setupMessageHandlers();
       _isInitialized = true;
+      debugPrint('✅ Notification service initialized');
     } catch (e) {
-      print('❌ Failed to initialize notification service: $e');
+      debugPrint('❌ Failed to initialize notification service: $e');
     }
   }
 
   Future<void> _requestPermissions() async {
-    if (Platform.isIOS) {
+    if (kIsWeb) {
+      // Web permissions handled by browser
+      return;
+    }
+    if (Platform.isIOS || Platform.isAndroid) {
       await _fcm.requestPermission(
         alert: true,
         badge: true,
@@ -44,7 +58,22 @@ class NotificationService {
     }
   }
 
+  Future<void> _createAndroidNotificationChannel() async {
+    if (!Platform.isAndroid) return;
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      channelId,
+      channelName,
+      description: channelDescription,
+      importance: Importance.high,
+    );
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
   Future<void> _initializeLocalNotifications() async {
+    if (kIsWeb) return;
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iosSettings =
@@ -66,9 +95,10 @@ class NotificationService {
   Future<void> _getFCMToken() async {
     try {
       _token = await _fcm.getToken();
+      debugPrint('🔑 FCM Token: $_token');
       _saveTokenToFirestore();
     } catch (e) {
-      print('❌ Failed to get FCM token: $e');
+      debugPrint('❌ Failed to get FCM token: $e');
     }
   }
 
@@ -79,10 +109,11 @@ class NotificationService {
       await _firestore.collection('users').doc(user.uid).set({
         'fcmToken': _token,
         'lastTokenUpdate': FieldValue.serverTimestamp(),
-        'deviceType': Platform.operatingSystem,
+        'deviceType': kIsWeb ? 'web' : Platform.operatingSystem,
       }, SetOptions(merge: true));
+      debugPrint('💾 FCM token saved to Firestore');
     } catch (e) {
-      print('❌ Failed to save FCM token: $e');
+      debugPrint('❌ Failed to save FCM token: $e');
     }
   }
 
@@ -94,13 +125,17 @@ class NotificationService {
     FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     FirebaseMessaging.onMessageOpenedApp.listen(_handleBackgroundMessage);
     _fcm.onTokenRefresh.listen((newToken) {
+      debugPrint('🔄 FCM token refreshed');
       _token = newToken;
       _saveTokenToFirestore();
     });
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
-    _showLocalNotification(message);
+    debugPrint('📱 Foreground message received: ${message.notification?.title}');
+    if (!kIsWeb) {
+      _showLocalNotification(message);
+    }
 
     NotificationEventService().emit(NotificationEvent(
       type: NotificationEventType.foregroundMessage,
@@ -115,7 +150,7 @@ class NotificationService {
   }
 
   void _handleBackgroundMessage(RemoteMessage message) {
-    print('📨 Background message opened: ${message.data}');
+    debugPrint('📨 Background message opened: ${message.data}');
     NotificationEventService().emit(NotificationEvent(
       type: NotificationEventType.notificationTapped,
       data: {
@@ -130,7 +165,7 @@ class NotificationService {
   }
 
   void _onNotificationTap(NotificationResponse response) {
-    print('🔔 Notification tapped: ${response.payload}');
+    debugPrint('🔔 Notification tapped: ${response.payload}');
     NotificationEventService().emit(NotificationEvent(
       type: NotificationEventType.notificationTapped,
       data: {
@@ -145,12 +180,13 @@ class NotificationService {
   }
 
   Future<void> _showLocalNotification(RemoteMessage message) async {
+    if (kIsWeb) return;
     try {
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
-            'find_it_channel',
-            'Find It Notifications',
-            channelDescription: 'Notifications for matches and messages',
+            channelId,
+            channelName,
+            channelDescription: channelDescription,
             importance: Importance.high,
             priority: Priority.high,
             icon: '@mipmap/ic_launcher',
@@ -177,7 +213,7 @@ class NotificationService {
         payload: payload,
       );
     } catch (e) {
-      print('❌ Failed to show local notification: $e');
+      debugPrint('❌ Failed to show local notification: $e');
     }
   }
 
@@ -185,16 +221,16 @@ class NotificationService {
     final type = data['type'] ?? 'general';
     switch (type) {
       case 'match':
-        print('🔀 Navigate to match: ${data['matchId']}');
+        debugPrint('🔀 Navigate to match: ${data['matchId']}');
         break;
       case 'message':
-        print('🔀 Navigate to chat: ${data['chatId']}');
+        debugPrint('🔀 Navigate to chat: ${data['chatId']}');
         break;
       case 'confirmation':
-        print('🔀 Navigate to confirmation: ${data['matchId']}');
+        debugPrint('🔀 Navigate to confirmation: ${data['matchId']}');
         break;
       default:
-        print('🔀 Navigate to home');
+        debugPrint('🔀 Navigate to home');
         break;
     }
   }
@@ -205,7 +241,7 @@ class NotificationService {
       if (!doc.exists) return null;
       return doc.data()?['fcmToken'] as String?;
     } catch (e) {
-      print('❌ Failed to get user token: $e');
+      debugPrint('❌ Failed to get user token: $e');
       return null;
     }
   }
@@ -231,11 +267,15 @@ class NotificationService {
   }
 
   Future<void> subscribeToTopic(String topic) async {
-    await _fcm.subscribeToTopic(topic);
+    if (!kIsWeb) {
+      await _fcm.subscribeToTopic(topic);
+    }
   }
 
   Future<void> unsubscribeFromTopic(String topic) async {
-    await _fcm.unsubscribeFromTopic(topic);
+    if (!kIsWeb) {
+      await _fcm.unsubscribeFromTopic(topic);
+    }
   }
 
   void dispose() {}
