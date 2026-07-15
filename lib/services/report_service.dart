@@ -41,6 +41,7 @@ class ReportService {
   }
 
   Future<List<MatchDocument>> checkForMatches(Report newFoundReport) async {
+    final currentUserUid = _auth.currentUser?.uid;
     final querySnapshot = await lostReports
         .where('category', isEqualTo: newFoundReport.category.toLowerCase())
         .where('status', isEqualTo: 'open')
@@ -59,6 +60,11 @@ class ReportService {
         itemName: data['itemName'] ?? 'Lost Item',
         userId: data['userId'],
       );
+
+      // Skip if the lost report is from the same user who is submitting the found report
+      if (lostReport.userId == currentUserUid) {
+        continue;
+      }
 
       final result = compareReports(lostReport, newFoundReport);
       matches.add(MatchDocument(report: lostReport, result: result));

@@ -161,6 +161,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   .sendMessage(widget.chatId, text);
               _scrollToBottom();
             },
+            onSendVoice: (voiceUrl, duration) async {
+              await Provider.of<ChatProvider>(context, listen: false)
+                  .sendVoiceMessage(widget.chatId, voiceUrl, duration);
+              _scrollToBottom();
+            },
           ),
         ],
       ),
