@@ -3,7 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
-import 'report_item_screen.dart';
+import 'terms_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -201,39 +201,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Google button (UI only — wire up google_sign_in package to activate)
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Google sign-in not yet connected')),
-                      );
-                    },
-                    icon: const Icon(Icons.g_mobiledata, size: 24, color: primaryColor),
-                    label: const Text('Google', style: TextStyle(fontWeight: FontWeight.w600, color: primaryColor)),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: surfaceLowest,
-                      side: const BorderSide(color: outlineVariant),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                Row(
-                  children: [
-                    const Expanded(child: Divider(color: outlineVariant)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('OR CONTINUE WITH', style: TextStyle(fontSize: 12, color: outlineVariant, letterSpacing: 1)),
-                    ),
-                    const Expanded(child: Divider(color: outlineVariant)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
                 _label('Full Name'),
                 TextFormField(
                   controller: _nameController,
@@ -314,11 +281,25 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             TextSpan(
                               text: 'Terms of Service',
                               style: const TextStyle(color: secondaryColor, fontWeight: FontWeight.bold),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const TermsScreen()),
+                                  );
+                                },
                             ),
                             const TextSpan(text: ' and '),
                             TextSpan(
                               text: 'Privacy Policy',
                               style: const TextStyle(color: secondaryColor, fontWeight: FontWeight.bold),
+                              recognizer: TapGestureRecognizer()
+                                ..onTap = () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => const TermsScreen()),
+                                  );
+                                },
                             ),
                             const TextSpan(text: '.'),
                           ],

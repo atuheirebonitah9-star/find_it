@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_profile.dart';
+import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,13 +12,13 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final AuthService _authService = AuthService();
   UserProfile? _userProfile;
   bool _isLoading = true;
 
-  static const Color primaryColor = Color(0xFF131B2E);
-  static const Color secondaryColor = Color(0xFF006A61);
-  static const Color backgroundColor = Color(0xFFF7F9FB);
-  static const Color surfaceLowest = Color(0xFFFFFFFF);
+  static const Color secondaryColor = Color.fromARGB(255, 40, 5, 145);
+  static const Color backgroundColor = Color.fromARGB(255, 0, 6, 5);
+  static const Color surfaceLowest = Color.fromARGB(255, 32, 1, 1);
   static const Color onSurface = Color(0xFF191C1E);
   static const Color onSurfaceVariant = Color(0xFF45464D);
 
@@ -95,7 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       SizedBox(
                         height: 56,
                         child: ElevatedButton.icon(
-                          onPressed: () => FirebaseAuth.instance.signOut(),
+                          onPressed: () => _authService.signOut(),
                           icon: const Icon(Icons.logout_outlined),
                           label: const Text('Sign Out', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                           style: ElevatedButton.styleFrom(

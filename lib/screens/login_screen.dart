@@ -22,8 +22,8 @@ class _LoginScreenState extends State<LoginScreen> {
   static const Color primaryColor = Color(0xFF131B2E);
   static const Color secondaryColor = Color(0xFF006A61);
   static const Color secondaryContainer = Color(0xFF86F2E4);
-  static const Color backgroundColor = Color(0xFFF7F9FB);
-  static const Color surfaceLowest = Color(0xFFFFFFFF);
+  static const Color backgroundColor = Color.fromARGB(255, 240, 241, 243);
+  static const Color surfaceLowest = Color.fromARGB(255, 253, 251, 251);
   static const Color outlineVariant = Color(0xFFC6C6CD);
   static const Color onSurface = Color(0xFF191C1E);
   static const Color onSurfaceVariant = Color(0xFF45464D);
@@ -88,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: const Color.fromARGB(255, 248, 249, 249),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -99,14 +99,14 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 40),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: const [
-                    Icon(Icons.search, size: 44, color: primaryColor),
+                    Icon(Icons.search, size: 40, color: primaryColor),
                   ],
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'FindIt',
+                  'Find_It',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: primaryColor),
                 ),
@@ -119,39 +119,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Text(
                   'Log in to keep track of your lost and found items, and stay connected with the network.',
                   style: TextStyle(fontSize: 16, color: onSurfaceVariant, height: 1.5),
-                ),
-                const SizedBox(height: 24),
-
-                // Google button (UI only — wire up google_sign_in package to activate)
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Google sign-in not yet connected')),
-                      );
-                    },
-                    icon: const Icon(Icons.g_mobiledata, size: 24, color: primaryColor),
-                    label: const Text('Google', style: TextStyle(fontWeight: FontWeight.w600, color: primaryColor)),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: surfaceLowest,
-                      side: const BorderSide(color: outlineVariant),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                Row(
-                  children: [
-                    const Expanded(child: Divider(color: outlineVariant)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Text('OR CONTINUE WITH', style: TextStyle(fontSize: 12, color: outlineVariant, letterSpacing: 1)),
-                    ),
-                    const Expanded(child: Divider(color: outlineVariant)),
-                  ],
                 ),
                 const SizedBox(height: 24),
 
@@ -269,7 +236,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Container(
                         width: 40,
-                        height: 40,
+                        height: 30,
                         decoration: const BoxDecoration(color: secondaryContainer, shape: BoxShape.circle),
                         child: const Icon(Icons.verified, color: secondaryColor, size: 22),
                       ),

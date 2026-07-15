@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/chat/chat_tile.dart';
 import 'chat_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
