@@ -119,13 +119,16 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
             _clearForm();
           }
         } else {
-          await _reportService.submitFoundReport(report);
-          final matches = await _reportService.checkForMatches(report);
+          final matches = await _reportService.submitFoundReport(report);
 
-          if (matches.isNotEmpty && mounted) {
-            // Get first strong match
+          if (matches.isNotEmpty &&
+              matches.first.result == MatchResult.strong &&
+              mounted) {
             final match = matches.first;
-            final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+            final chatProvider = Provider.of<ChatProvider>(
+              context,
+              listen: false,
+            );
             final chatId = await chatProvider.createChat(
               finderUid: FirebaseAuth.instance.currentUser?.uid ?? '',
               ownerUid: match.report.userId ?? '',
@@ -146,7 +149,9 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
             }
           } else if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Found report submitted. No match yet.')),
+              const SnackBar(
+                content: Text('Found report submitted. No match yet.'),
+              ),
             );
             _clearForm();
           }
@@ -408,7 +413,9 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isListening ? Icons.mic : Icons.mic_none,
-                      color: _isListening ? Colors.red : const Color(0xFF1B2A4A),
+                      color: _isListening
+                          ? Colors.red
+                          : const Color(0xFF1B2A4A),
                     ),
                     onPressed: () {
                       if (_isListening) {
