@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../matching_logic.dart';
 import '../services/report_service.dart';
-import '../providers/chat_provider.dart';
-import 'chat/chat_screen.dart';
 
 class ReportItemScreen extends StatefulWidget {
   const ReportItemScreen({super.key});
@@ -17,12 +12,10 @@ class ReportItemScreen extends StatefulWidget {
 class _ReportItemScreenState extends State<ReportItemScreen> {
   final _formKey = GlobalKey<FormState>();
   final ReportService _reportService = ReportService();
-  final stt.SpeechToText _speech = stt.SpeechToText();
 
   bool isLost = true; // true = Lost, false = Found
   String? selectedCategory;
   DateTime? selectedDate;
-  bool _isListening = false;
 
   final TextEditingController itemNameController = TextEditingController();
   final TextEditingController locationController = TextEditingController();
@@ -49,54 +42,6 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     }
   }
 
-  Future<void> _initSpeech() async {
-    final bool available = await _speech.initialize(
-      onStatus: (val) {
-        if (val == 'done' && mounted) {
-          setState(() => _isListening = false);
-        }
-      },
-      onError: (val) {
-        if (mounted) {
-          setState(() => _isListening = false);
-        }
-      },
-    );
-
-    if (available && mounted) {
-      setState(() {});
-    }
-  }
-
-  Future<void> _startListening() async {
-    if (!_speech.isAvailable) {
-      await _initSpeech();
-    }
-
-    if (_speech.isAvailable && !_isListening && mounted) {
-      setState(() => _isListening = true);
-      await _speech.listen(
-        onResult: (result) {
-          if (result.finalResult && mounted) {
-            setState(() {
-              descriptionController.text += ' ${result.recognizedWords}';
-              descriptionController.selection = TextSelection.fromPosition(
-                TextPosition(offset: descriptionController.text.length),
-              );
-            });
-          }
-        },
-      );
-    }
-  }
-
-  Future<void> _stopListening() async {
-    if (_speech.isListening && mounted) {
-      await _speech.stop();
-      setState(() => _isListening = false);
-    }
-  }
-
   Future<void> _submitReport() async {
     if (_formKey.currentState!.validate() &&
         selectedCategory != null &&
@@ -120,39 +65,24 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
           }
         } else {
           final matches = await _reportService.submitFoundReport(report);
+          final hasStrongMatch = matches.any(
+            (m) => m.result == MatchResult.strong,
+          );
+          final hasWeakMatch = matches.any((m) => m.result == MatchResult.weak);
 
-          if (matches.isNotEmpty &&
-              matches.first.result == MatchResult.strong &&
-              mounted) {
-            final match = matches.first;
-            final chatProvider = Provider.of<ChatProvider>(
+          String message;
+          if (hasStrongMatch) {
+            message = 'Strong match found!';
+          } else if (hasWeakMatch) {
+            message = 'Possible match found — please verify details.';
+          } else {
+            message = 'Found report submitted. No match yet.';
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(
               context,
-              listen: false,
-            );
-            final chatId = await chatProvider.createChat(
-              finderUid: FirebaseAuth.instance.currentUser?.uid ?? '',
-              ownerUid: match.report.userId ?? '',
-              itemName: match.report.itemName,
-            );
-
-            if (mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatScreen(
-                    chatId: chatId,
-                    otherUserUid: match.report.userId ?? '',
-                    itemName: match.report.itemName,
-                  ),
-                ),
-              );
-            }
-          } else if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Found report submitted. No match yet.'),
-              ),
-            );
+            ).showSnackBar(SnackBar(content: Text(message)));
             _clearForm();
           }
         }
@@ -291,7 +221,6 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     required String hint,
     required String label,
     int maxLines = 1,
-    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -315,7 +244,6 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
               horizontal: 16,
               vertical: 14,
             ),
-            suffixIcon: suffixIcon,
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: Colors.grey[300]!),
@@ -344,14 +272,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _initSpeech();
-  }
-
-  @override
   void dispose() {
-    _speech.stop();
     itemNameController.dispose();
     locationController.dispose();
     descriptionController.dispose();
@@ -388,14 +309,14 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                 _buildCategoryDropdown(),
                 const SizedBox(height: 16),
 
-                _buildTextField(
-                  controller: itemNameController,
-                  hint: 'e.g., Black Leather Wallet',
-                  label: 'Item Name',
-                ),
+                _buildDatePicker(),
                 const SizedBox(height: 16),
 
-                _buildDatePicker(),
+                _buildTextField(
+                  controller: itemNameController,
+                  hint: 'e.g., Black wallet, Blue backpack',
+                  label: 'Item Name',
+                ),
                 const SizedBox(height: 16),
 
                 _buildTextField(
@@ -410,21 +331,6 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                   hint: 'Describe the item...',
                   label: 'Description',
                   maxLines: 4,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isListening ? Icons.mic : Icons.mic_none,
-                      color: _isListening
-                          ? Colors.red
-                          : const Color(0xFF1B2A4A),
-                    ),
-                    onPressed: () {
-                      if (_isListening) {
-                        _stopListening();
-                      } else {
-                        _startListening();
-                      }
-                    },
-                  ),
                 ),
                 const SizedBox(height: 32),
 
