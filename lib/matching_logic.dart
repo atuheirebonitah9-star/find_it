@@ -1,3 +1,5 @@
+import 'dart:math';
+
 class Report {
   final String category;
   final String location;
@@ -5,6 +7,7 @@ class Report {
   final String description;
   final String? userId;
   final String itemName;
+  final List<double>? embedding;
 
   Report({
     required this.category,
@@ -13,6 +16,7 @@ class Report {
     required this.description,
     this.userId,
     required this.itemName,
+    this.embedding,
   });
 }
 
@@ -20,28 +24,17 @@ class MatchDocument {
   final Report report;
   final MatchResult result;
 
-  MatchDocument({
-    required this.report,
-    required this.result,
-  });
+  MatchDocument({required this.report, required this.result});
 }
 
-MatchResult compareReports(Report lost, Report found) {
-  bool categoryMatch =
-      lost.category.toLowerCase() == found.category.toLowerCase();
-  bool locationMatch =
-      lost.location.toLowerCase() == found.location.toLowerCase();
-  bool dateMatch = lost.date.difference(found.date).inDays.abs() <= 3;
-
-  int overlapCount = countKeywordOverlap(lost.description, found.description);
-
-  if (categoryMatch && locationMatch && dateMatch && overlapCount >= 2) {
-    return MatchResult.strong;
-  } else if (categoryMatch && locationMatch) {
-    return MatchResult.weak;
-  } else {
-    return MatchResult.none;
+double cosineSimilarity(List<double> a, List<double> b) {
+  double dot = 0, normA = 0, normB = 0;
+  for (int i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
   }
+  return dot / (sqrt(normA) * sqrt(normB));
 }
 
 int countKeywordOverlap(String desc1, String desc2) {
@@ -80,26 +73,39 @@ int countKeywordOverlap(String desc1, String desc2) {
   return words1.intersection(words2).length;
 }
 
-enum MatchResult { strong, weak, none }
+MatchResult compareReports(Report lost, Report found) {
+  bool locationMatch =
+      lost.location.toLowerCase() == found.location.toLowerCase();
+  bool dateMatch = lost.date.difference(found.date).inDays.abs() <= 3;
 
-void main() {
-  final lostReport = Report(
-    category: 'Wallet',
-    location: 'Library',
-    date: DateTime(2026, 7, 1),
-    description: 'black wallet with torn corner and student ID inside',
-    itemName: 'Black Wallet',
-  );
+  if (lost.embedding != null && found.embedding != null) {
+    double semanticScore = cosineSimilarity(lost.embedding!, found.embedding!);
+    double score =
+        semanticScore + (locationMatch ? 0.05 : 0) + (dateMatch ? 0.05 : 0);
 
-  final foundReport = Report(
-    category: 'Wallet',
-    location: 'Library',
-    date: DateTime(2026, 7, 3),
-    description: 'found a black wallet near the library entrance',
-    itemName: 'Black Wallet',
-  );
+    print(
+      'DEBUG: semanticScore=$semanticScore, locationMatch=$locationMatch, dateMatch=$dateMatch, totalScore=$score',
+    );
 
-  final result = compareReports(lostReport, foundReport);
+    if (score >= 0.93) {
+      return MatchResult.strong;
+    } else if (score >= 0.80) {
+      return MatchResult.weak;
+    } else {
+      return MatchResult.none;
+    }
+  }
 
-  print('Match result: $result');
+  // Fallback: keyword-based matching if embeddings are unavailable
+  int overlapCount = countKeywordOverlap(lost.description, found.description);
+
+  if (locationMatch && dateMatch && overlapCount >= 2) {
+    return MatchResult.strong;
+  } else if (locationMatch && overlapCount >= 1) {
+    return MatchResult.weak;
+  } else {
+    return MatchResult.none;
+  }
 }
+
+enum MatchResult { strong, weak, none }

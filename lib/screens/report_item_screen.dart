@@ -97,6 +97,68 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     }
   }
 
+  Future<void> _openChatWithMatch(MatchDocument match) async {
+    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    final chatId = await chatProvider.createChat(
+      finderUid: FirebaseAuth.instance.currentUser?.uid ?? '',
+      ownerUid: match.report.userId ?? '',
+      itemName: match.report.itemName,
+    );
+
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChatScreen(
+            chatId: chatId,
+            otherUserUid: match.report.userId ?? '',
+            itemName: match.report.itemName,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleMatches(List<MatchDocument> matches) async {
+    final strongMatch = matches
+        .where((m) => m.result == MatchResult.strong)
+        .toList();
+    final weakMatch = matches
+        .where((m) => m.result == MatchResult.weak)
+        .toList();
+
+    if (strongMatch.isNotEmpty && mounted) {
+      await _openChatWithMatch(strongMatch.first);
+      _clearForm();
+    } else if (weakMatch.isNotEmpty && mounted) {
+      final match = weakMatch.first;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('A possible match was found!'),
+          action: SnackBarAction(
+            label: 'View',
+            onPressed: () {
+              _openChatWithMatch(match);
+            },
+          ),
+          duration: const Duration(seconds: 8),
+        ),
+      );
+      _clearForm();
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isLost
+                ? 'Lost report submitted. No match yet.'
+                : 'Found report submitted. No match yet.',
+          ),
+        ),
+      );
+      _clearForm();
+    }
+  }
+
   Future<void> _submitReport() async {
     if (_formKey.currentState!.validate() &&
         selectedCategory != null &&
@@ -111,45 +173,11 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
         );
 
         if (isLost) {
-          await _reportService.submitLostReport(report);
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Lost report submitted!')),
-            );
-            _clearForm();
-          }
+          final matches = await _reportService.submitLostReport(report);
+          await _handleMatches(matches);
         } else {
-          await _reportService.submitFoundReport(report);
-          final matches = await _reportService.checkForMatches(report);
-
-          if (matches.isNotEmpty && mounted) {
-            // Get first strong match
-            final match = matches.first;
-            final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-            final chatId = await chatProvider.createChat(
-              finderUid: FirebaseAuth.instance.currentUser?.uid ?? '',
-              ownerUid: match.report.userId ?? '',
-              itemName: match.report.itemName,
-            );
-
-            if (mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ChatScreen(
-                    chatId: chatId,
-                    otherUserUid: match.report.userId ?? '',
-                    itemName: match.report.itemName,
-                  ),
-                ),
-              );
-            }
-          } else if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Found report submitted. No match yet.')),
-            );
-            _clearForm();
-          }
+          final matches = await _reportService.submitFoundReport(report);
+          await _handleMatches(matches);
         }
       } catch (e) {
         if (mounted) {
@@ -383,14 +411,14 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                 _buildCategoryDropdown(),
                 const SizedBox(height: 16),
 
-                _buildTextField(
-                  controller: itemNameController,
-                  hint: 'e.g., Black Leather Wallet',
-                  label: 'Item Name',
-                ),
+                _buildDatePicker(),
                 const SizedBox(height: 16),
 
-                _buildDatePicker(),
+                _buildTextField(
+                  controller: itemNameController,
+                  hint: 'e.g., Black wallet, Blue backpack',
+                  label: 'Item Name',
+                ),
                 const SizedBox(height: 16),
 
                 _buildTextField(
@@ -408,7 +436,9 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isListening ? Icons.mic : Icons.mic_none,
-                      color: _isListening ? Colors.red : const Color(0xFF1B2A4A),
+                      color: _isListening
+                          ? Colors.red
+                          : const Color(0xFF1B2A4A),
                     ),
                     onPressed: () {
                       if (_isListening) {
