@@ -83,9 +83,13 @@ MatchResult compareReports(Report lost, Report found) {
     double score =
         semanticScore + (locationMatch ? 0.05 : 0) + (dateMatch ? 0.05 : 0);
 
-    if (score >= 0.85) {
+    print(
+      'DEBUG: semanticScore=$semanticScore, locationMatch=$locationMatch, dateMatch=$dateMatch, totalScore=$score',
+    );
+
+    if (score >= 0.93) {
       return MatchResult.strong;
-    } else if (score >= 0.65) {
+    } else if (score >= 0.80) {
       return MatchResult.weak;
     } else {
       return MatchResult.none;

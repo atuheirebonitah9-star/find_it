@@ -5,7 +5,7 @@ import 'api_keys.dart';
 class EmbeddingService {
   static const String _apiKey = geminiApiKey;
   static const String _endpoint =
-      'https://generativelanguage.googleapis.com/v1beta/models/text-embedding-004:embedContent';
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent';
 
   Future<List<double>?> getEmbedding(String text) async {
     try {
@@ -13,6 +13,7 @@ class EmbeddingService {
         Uri.parse('$_endpoint?key=$_apiKey'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
+          'model': 'models/gemini-embedding-001',
           'content': {
             'parts': [
               {'text': text},
@@ -26,9 +27,13 @@ class EmbeddingService {
         final embedding = data['embedding']['values'];
         return List<double>.from(embedding);
       } else {
+        print(
+          'EMBEDDING ERROR: status ${response.statusCode}, body: ${response.body}',
+        );
         return null;
       }
     } catch (e) {
+      print('EMBEDDING EXCEPTION: $e');
       return null;
     }
   }
