@@ -44,6 +44,8 @@ dependencies:
   record: ^6.2.1
   audioplayers: ^6.2.0
   path_provider: ^2.1.5
+  firebase_ai: ^2.3.0
+  firebase_app_check: ^0.3.2+10
 
 dev_dependencies:
   flutter_test:
