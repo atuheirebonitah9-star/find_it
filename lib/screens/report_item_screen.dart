@@ -411,7 +411,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
               decoration: BoxDecoration(
                 color: Colors.green[100],
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green!),
+                border: Border.all(color: Colors.green),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
