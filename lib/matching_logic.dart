@@ -8,6 +8,7 @@ class Report {
   final String? userId;
   final String itemName;
   final List<double>? embedding;
+  final String? imageUrl;
 
   Report({
     required this.category,
@@ -17,6 +18,7 @@ class Report {
     this.userId,
     required this.itemName,
     this.embedding,
+    this.imageUrl,
   });
 }
 

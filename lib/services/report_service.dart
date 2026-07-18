@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../matching_logic.dart';
 import 'notification_event_service.dart';
@@ -16,17 +18,40 @@ class ReportService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final NotificationEventService _eventService = NotificationEventService();
   final EmbeddingService _embeddingService = EmbeddingService();
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   Future<List<double>?> _getEmbedding(Report report) async {
     final text = '${report.itemName} ${report.category} ${report.description}';
     return await _embeddingService.getEmbedding(text);
   }
 
+  Future<String?> uploadImage(String imagePath, String reportId) async {
+    try {
+      final file = File(imagePath);
+      final fileName = '$reportId.jpg';
+      final ref = _storage.ref().child('item_images').child(fileName);
+      await ref.putFile(file);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      print('IMAGE UPLOAD ERROR: $e');
+      return null;
+    }
+  }
+
   Future<List<MatchDocument>> submitLostReport(Report report) async {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
+    
+    String? imageUrl;
+    if (report.imageUrl != null) {
+      final docRef = await lostReports.add({});
+      imageUrl = await uploadImage(report.imageUrl!, docRef.id);
+      if (imageUrl != null) {
+        await docRef.update({'imageUrl': imageUrl});
+      }
+    }
 
-    await lostReports.add({
+    final docRef = await lostReports.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
@@ -36,6 +61,7 @@ class ReportService {
       'status': 'open',
       'createdAt': FieldValue.serverTimestamp(),
       'embedding': embedding,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     });
 
     final reportWithEmbedding = Report(
@@ -93,8 +119,17 @@ class ReportService {
   Future<List<MatchDocument>> submitFoundReport(Report report) async {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
+    
+    String? imageUrl;
+    if (report.imageUrl != null) {
+      final docRef = await foundReports.add({});
+      imageUrl = await uploadImage(report.imageUrl!, docRef.id);
+      if (imageUrl != null) {
+        await docRef.update({'imageUrl': imageUrl});
+      }
+    }
 
-    await foundReports.add({
+    final docRef = await foundReports.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
@@ -104,6 +139,7 @@ class ReportService {
       'status': 'open',
       'createdAt': FieldValue.serverTimestamp(),
       'embedding': embedding,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     });
 
     final reportWithEmbedding = Report(

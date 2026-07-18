@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:image_picker/image_picker.dart';
 import '../matching_logic.dart';
 import '../services/report_service.dart';
+import '../services/image_classification_service.dart';
 import '../providers/chat_provider.dart';
 import 'chat/chat_screen.dart';
 
@@ -18,11 +21,18 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
   final _formKey = GlobalKey<FormState>();
   final ReportService _reportService = ReportService();
   final stt.SpeechToText _speech = stt.SpeechToText();
+  final ImagePicker _imagePicker = ImagePicker();
+  final ImageClassificationService _classificationService = ImageClassificationService();
 
   bool isLost = true; // true = Lost, false = Found
   String? selectedCategory;
   DateTime? selectedDate;
   bool _isListening = false;
+  bool _isUploadingImage = false;
+  bool _isClassifying = false;
+
+  File? _selectedImage;
+  String? _autoCategory;
 
   final TextEditingController itemNameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
@@ -122,6 +132,57 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+
+    if (pickedFile == null) return;
+
+    setState(() {
+      _selectedImage = File(pickedFile.path);
+      _isUploadingImage = true;
+      _isClassifying = true;
+    });
+
+    try {
+      // Classify the image to auto-select category
+      final category = await _classificationService.classifyImage(pickedFile.path);
+      if (mounted && category != null) {
+        setState(() {
+          _autoCategory = category;
+          selectedCategory = category;
+          _isClassifying = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('AI detected: $category')),
+        );
+      } else if (mounted) {
+        setState(() => _isClassifying = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isClassifying = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Classification failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingImage = false);
+      }
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+      _autoCategory = null;
+      selectedCategory = null;
+    });
+  }
+
   Future<void> _openChatWithMatch(MatchDocument match) async {
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
     final chatId = await chatProvider.createChat(
@@ -199,6 +260,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
           date: selectedDate!,
           description: descriptionController.text.trim(),
           itemName: itemNameController.text.trim(),
+          imageUrl: _selectedImage?.path,
         );
 
         if (isLost) {
@@ -226,6 +288,8 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
       itemNameController.clear();
       customLocationController.clear();
       descriptionController.clear();
+      _selectedImage = null;
+      _autoCategory = null;
     });
   }
 
@@ -280,6 +344,140 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildImageUploadSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Item Photo (Optional - AI will auto-categorize)',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1B2A4A),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (_selectedImage != null) ...[
+          Container(
+            height: 200,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    _selectedImage!,
+                    width: double.infinity,
+                    height: 200,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                if (_isClassifying)
+                  Container(
+                    color: Colors.black.withOpacity(0.5),
+                    child: const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(color: Colors.white),
+                          SizedBox(height: 8),
+                          Text(
+                            'AI Analyzing...',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withOpacity(0.5),
+                    ),
+                    onPressed: _removeImage,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_autoCategory != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.green[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.green!),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                  const SizedBox(width: 8),
+                  Text(
+                    'AI detected: $_autoCategory',
+                    style: const TextStyle(
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ] else ...[
+          GestureDetector(
+            onTap: _isUploadingImage ? null : _pickImage,
+            child: Container(
+              height: 150,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.grey[300]!,
+                  style: BorderStyle.solid,
+                ),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_photo_alternate_outlined,
+                    size: 48,
+                    color: Color(0xFF1B2A4A),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Tap to add photo',
+                    style: TextStyle(
+                      color: Color(0xFF1B2A4A),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'AI will auto-categorize your item',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -512,6 +710,10 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                 const SizedBox(height: 8),
                 _buildLostFoundToggle(),
                 const SizedBox(height: 24),
+
+                // Image Upload Section
+                _buildImageUploadSection(),
+                const SizedBox(height: 16),
 
                 _buildCategoryDropdown(),
                 const SizedBox(height: 16),

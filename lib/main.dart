@@ -7,10 +7,6 @@ import 'auth_gate.dart';
 import 'providers/chat_provider.dart';
 import 'services/notification_event_listener_example.dart';
 import 'services/notification_service.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_ai/firebase_ai.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-import 'firebase_options.dart';
 
 // Background message handler (top-level function)
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
