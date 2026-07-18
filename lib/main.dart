@@ -44,16 +44,17 @@ class FindItApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => ChatProvider(),
-      child: NotificationEventListener(
-        child: MaterialApp(
-          title: 'Find It',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.purple),
-            useMaterial3: true,
-          ),
-          home: const AuthGate(),
+      child: MaterialApp(
+        title: 'Find It',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.purple),
+          useMaterial3: true,
         ),
+        builder: (context, child) {
+          return NotificationEventListener(child: child!);
+        },
+        home: const AuthGate(),
       ),
     );
   }
