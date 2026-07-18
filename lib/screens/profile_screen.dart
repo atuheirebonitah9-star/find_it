@@ -22,7 +22,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isUploading = false;
 
   static const Color secondaryColor = Color(0xFF006A61);
-  static const Color backgroundColor = Color(0xFFF7F9FB);
   static const Color surfaceLowest = Color(0xFFFFFFFF);
   static const Color onSurface = Color(0xFF191C1E);
   static const Color onSurfaceVariant = Color(0xFF45464D);
