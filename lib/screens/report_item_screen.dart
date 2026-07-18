@@ -38,28 +38,29 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     'Other',
   ];
 
-  final List<String> locations = [
+  final Map<String, String> locations = {
     // Level 1
-    'LLT 1A', 'LLT 1B', 'Big Lab 1', 'Corridor - Level 1', 'Toilets - Level 1',
+    'LLT 1A': 'level 1', 'LLT 1B': 'level 1', 'Big Lab 1': 'level 1',
+    'Corridor - Level 1': 'level 1', 'Toilets - Level 1': 'level 1',
     // Level 2
-    'LLT 2A',
-    'LLT 2B',
-    'LLT 2C',
-    'Big Lab 2',
-    'Leaders Office',
-    'Corridor - Level 2',
-    'Toilets - Level 2',
+    'LLT 2A': 'level 2', 'LLT 2B': 'level 2', 'LLT 2C': 'level 2',
+    'Big Lab 2': 'level 2', 'Leaders Office': 'level 2',
+    'Corridor - Level 2': 'level 2', 'Toilets - Level 2': 'level 2',
     // Level 3
-    'LLT 3A', 'LLT 3B', 'Corridor - Level 3', 'Toilets - Level 3',
+    'LLT 3A': 'level 3', 'LLT 3B': 'level 3',
+    'Corridor - Level 3': 'level 3', 'Toilets - Level 3': 'level 3',
     // Level 4
-    'LLT 4A', 'LLT 4B', 'Lab 4', 'Corridor - Level 4', 'Toilets - Level 4',
+    'LLT 4A': 'level 4', 'LLT 4B': 'level 4', 'Lab 4': 'level 4',
+    'Corridor - Level 4': 'level 4', 'Toilets - Level 4': 'level 4',
     // Level 5
-    'LLT 5A', 'LLT 5B', 'Corridor - Level 5', 'Toilets - Level 5',
+    'LLT 5A': 'level 5', 'LLT 5B': 'level 5',
+    'Corridor - Level 5': 'level 5', 'Toilets - Level 5': 'level 5',
     // Level 6
-    'LLT 6A', 'LLT 6B', 'Lab 6', 'Corridor - Level 6', 'Toilets - Level 6',
+    'LLT 6A': 'level 6', 'LLT 6B': 'level 6', 'Lab 6': 'level 6',
+    'Corridor - Level 6': 'level 6', 'Toilets - Level 6': 'level 6',
     // General
-    'Canteen',
-  ];
+    'Canteen': 'general',
+  };
 
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
@@ -348,12 +349,13 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
         Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             if (textEditingValue.text.isEmpty) {
-              return locations;
+              return locations.keys;
             }
-            return locations.where((String option) {
-              return option.toLowerCase().contains(
-                textEditingValue.text.toLowerCase(),
-              );
+            final query = textEditingValue.text.toLowerCase();
+            return locations.keys.where((String option) {
+              final level = locations[option]!.toLowerCase();
+              return option.toLowerCase().contains(query) ||
+                  level.contains(query);
             });
           },
           onSelected: (String selection) {
