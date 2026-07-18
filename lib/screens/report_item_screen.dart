@@ -25,7 +25,6 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
   bool _isListening = false;
 
   final TextEditingController itemNameController = TextEditingController();
-  final TextEditingController locationController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   final List<String> categories = [
@@ -36,6 +35,32 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     'Bag',
     'Other',
   ];
+
+  final List<String> locations = [
+    // Level 1
+    'LLT 1A', 'LLT 1B', 'Big Lab 1', 'Corridor - Level 1', 'Toilets - Level 1',
+    // Level 2
+    'LLT 2A',
+    'LLT 2B',
+    'LLT 2C',
+    'Big Lab 2',
+    'Leaders Office',
+    'Corridor - Level 2',
+    'Toilets - Level 2',
+    // Level 3
+    'LLT 3A', 'LLT 3B', 'Corridor - Level 3', 'Toilets - Level 3',
+    // Level 4
+    'LLT 4A', 'LLT 4B', 'Lab 4', 'Corridor - Level 4', 'Toilets - Level 4',
+    // Level 5
+    'LLT 5A', 'LLT 5B', 'Corridor - Level 5', 'Toilets - Level 5',
+    // Level 6
+    'LLT 6A', 'LLT 6B', 'Lab 6', 'Corridor - Level 6', 'Toilets - Level 6',
+    'Other (type below)',
+  ];
+
+  String? selectedLocation;
+  final TextEditingController customLocationController =
+      TextEditingController();
 
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
@@ -164,9 +189,13 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
         selectedCategory != null &&
         selectedDate != null) {
       try {
+        final location = selectedLocation == 'Other (type below)'
+            ? customLocationController.text.trim()
+            : selectedLocation ?? '';
+
         final report = Report(
           category: selectedCategory!,
-          location: locationController.text.trim(),
+          location: location,
           date: selectedDate!,
           description: descriptionController.text.trim(),
           itemName: itemNameController.text.trim(),
@@ -193,8 +222,9 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     setState(() {
       selectedCategory = null;
       selectedDate = null;
+      selectedLocation = null;
       itemNameController.clear();
-      locationController.clear();
+      customLocationController.clear();
       descriptionController.clear();
     });
   }
@@ -309,6 +339,81 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     );
   }
 
+  Widget _buildLocationDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Location',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1B2A4A),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!),
+          ),
+          child: DropdownButtonFormField<String>(
+            initialValue: selectedLocation,
+            decoration: const InputDecoration(
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              border: InputBorder.none,
+            ),
+            hint: const Text('Select Location'),
+            items: locations.map((String loc) {
+              return DropdownMenuItem<String>(value: loc, child: Text(loc));
+            }).toList(),
+            onChanged: (String? value) {
+              setState(() => selectedLocation = value);
+            },
+            validator: (value) =>
+                value == null ? 'Please select a location' : null,
+          ),
+        ),
+        if (selectedLocation == 'Other (type below)') ...[
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: customLocationController,
+            decoration: InputDecoration(
+              hintText: 'Type the specific location',
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[300]!),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFF1B2A4A),
+                  width: 1.5,
+                ),
+              ),
+            ),
+            validator: (value) {
+              if (selectedLocation == 'Other (type below)' &&
+                  (value == null || value.isEmpty)) {
+                return 'Please specify the location';
+              }
+              return null;
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
@@ -376,8 +481,8 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
   void dispose() {
     _speech.stop();
     itemNameController.dispose();
-    locationController.dispose();
     descriptionController.dispose();
+    customLocationController.dispose();
     super.dispose();
   }
 
@@ -421,11 +526,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                _buildTextField(
-                  controller: locationController,
-                  hint: 'e.g., Library, Building A',
-                  label: 'Location',
-                ),
+                _buildLocationDropdown(),
                 const SizedBox(height: 16),
 
                 _buildTextField(
