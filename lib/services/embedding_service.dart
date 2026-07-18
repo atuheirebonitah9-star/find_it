@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'api_keys.dart';
 
 class EmbeddingService {
-  static const String _apiKey = geminiApiKey;
+  static String _apiKey = geminiApiKey;
   static const String _endpoint =
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent';
 
