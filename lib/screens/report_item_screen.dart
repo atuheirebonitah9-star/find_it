@@ -347,7 +347,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Item Photo (Optional - AI will auto-categorize)',
+          'Item Photo ',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: Color(0xFF1B2A4A),
