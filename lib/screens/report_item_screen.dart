@@ -57,6 +57,8 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     'LLT 5A', 'LLT 5B', 'Corridor - Level 5', 'Toilets - Level 5',
     // Level 6
     'LLT 6A', 'LLT 6B', 'Lab 6', 'Corridor - Level 6', 'Toilets - Level 6',
+    // General
+    'Canteen',
   ];
 
   Future<void> _selectDate() async {
