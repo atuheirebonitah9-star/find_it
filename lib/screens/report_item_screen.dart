@@ -9,6 +9,7 @@ import '../services/report_service.dart';
 import '../services/image_classification_service.dart';
 import '../providers/chat_provider.dart';
 import 'chat/chat_screen.dart';
+import 'possible_matches_screen.dart';
 
 class ReportItemScreen extends StatefulWidget {
   const ReportItemScreen({super.key});
@@ -209,28 +210,21 @@ class _ReportItemScreenState extends State<ReportItemScreen> {
     final strongMatch = matches
         .where((m) => m.result == MatchResult.strong)
         .toList();
-    final weakMatch = matches
+    final weakMatches = matches
         .where((m) => m.result == MatchResult.weak)
         .toList();
 
     if (strongMatch.isNotEmpty && mounted) {
       await _openChatWithMatch(strongMatch.first);
       _clearForm();
-    } else if (weakMatch.isNotEmpty && mounted) {
-      final match = weakMatch.first;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('A possible match was found!'),
-          action: SnackBarAction(
-            label: 'View',
-            onPressed: () {
-              _openChatWithMatch(match);
-            },
-          ),
-          duration: const Duration(seconds: 8),
+    } else if (weakMatches.isNotEmpty && mounted) {
+      _clearForm();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PossibleMatchesScreen(matches: weakMatches),
         ),
       );
-      _clearForm();
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
