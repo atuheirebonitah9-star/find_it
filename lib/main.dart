@@ -64,9 +64,9 @@ class FindItApp extends StatelessWidget {
       ),
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
-        secondary: AppColors.primary,
+        secondary: AppColors.secondary,
         surface: AppColors.surface,
-        error: AppColors.accent,
+        error: AppColors.lostColor,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.text,
@@ -138,14 +138,14 @@ class FindItApp extends StatelessWidget {
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(
-            color: AppColors.accent,
+            color: AppColors.lostColor,
             width: 1.5,
           ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(
-            color: AppColors.accent,
+            color: AppColors.lostColor,
             width: 2,
           ),
         ),
@@ -262,10 +262,10 @@ class FindItApp extends StatelessWidget {
         baseTheme.textTheme,
       ),
       colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.primary,
-        surface: Color(0xFF1E1E1E),
-        error: AppColors.accent,
+        primary: AppColors.primaryLight,
+        secondary: AppColors.secondaryLight,
+        surface: Color(0xFF1E293B),
+        error: AppColors.lostColor,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: Colors.white,
@@ -303,9 +303,18 @@ class FindItApp extends StatelessWidget {
           ),
         ),
       ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primaryLight,
+          textStyle: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF2A2A2A),
+        fillColor: const Color(0xFF1E293B),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -321,38 +330,38 @@ class FindItApp extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(
-            color: AppColors.primary,
+            color: AppColors.primaryLight,
             width: 2,
           ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(
-            color: AppColors.accent,
+            color: AppColors.lostColor,
             width: 1.5,
           ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(
-            color: AppColors.accent,
+            color: AppColors.lostColor,
             width: 2,
           ),
         ),
         hintStyle: const TextStyle(
-          color: Color(0xFF9CA3AF),
+          color: Color(0xFF94A3B8),
           fontSize: 14,
         ),
         labelStyle: const TextStyle(
-          color: Color(0xFF9CA3AF),
+          color: Color(0xFF94A3B8),
           fontSize: 14,
           fontWeight: FontWeight.w500,
         ),
-        prefixIconColor: const Color(0xFF9CA3AF),
-        suffixIconColor: const Color(0xFF9CA3AF),
+        prefixIconColor: const Color(0xFF94A3B8),
+        suffixIconColor: const Color(0xFF94A3B8),
       ),
       cardTheme: const CardThemeData(
-        color: Color(0xFF1E1E1E),
+        color: Color(0xFF1E293B),
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(16)),
@@ -361,7 +370,7 @@ class FindItApp extends StatelessWidget {
         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: const Color(0xFF2A2A2A),
+        backgroundColor: const Color(0xFF1E293B),
         selectedColor: AppColors.primary.withOpacity(0.2),
         labelStyle: const TextStyle(
           fontSize: 14,
@@ -377,18 +386,25 @@ class FindItApp extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
-        side: const BorderSide(color: Color(0xFF333333)),
+        side: const BorderSide(color: Color(0xFF334155)),
       ),
       bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: Color(0xFF1E1E1E),
+        backgroundColor: Color(0xFF1E293B),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         clipBehavior: Clip.antiAlias,
         elevation: 8,
       ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(20)),
+        ),
+        elevation: 8,
+      ),
       snackBarTheme: SnackBarThemeData(
-        backgroundColor: const Color(0xFF2A2A2A),
+        backgroundColor: const Color(0xFF1E293B),
         contentTextStyle: const TextStyle(
           color: Colors.white,
           fontSize: 14,
@@ -408,9 +424,30 @@ class FindItApp extends StatelessWidget {
         ),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: AppColors.primary,
-        linearTrackColor: Color(0xFF333333),
-        circularTrackColor: Color(0xFF333333),
+        color: AppColors.primaryLight,
+        linearTrackColor: Color(0xFF334155),
+        circularTrackColor: Color(0xFF334155),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFF334155),
+        thickness: 1,
+        space: 0,
+      ),
+      scrollbarTheme: ScrollbarThemeData(
+        thumbColor: MaterialStateProperty.all(const Color(0xFF94A3B8).withOpacity(0.3)),
+        radius: const Radius.circular(10),
+        thickness: MaterialStateProperty.all(4),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 8,
+      ),
+      textSelectionTheme: const TextSelectionThemeData(
+        cursorColor: AppColors.primaryLight,
+        selectionHandleColor: AppColors.primaryLight,
       ),
     );
   }
