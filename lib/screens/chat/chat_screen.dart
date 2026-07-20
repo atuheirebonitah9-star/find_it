@@ -129,13 +129,19 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
 
   // ============ APP BAR ============
   PreferredSizeWidget _buildAppBar() {
+    // Get the first letter of the user's name for avatar
+    String initial = 'U';
+    if (!_isLoadingProfile && _otherUserProfile?.fullName?.isNotEmpty == true) {
+      initial = _otherUserProfile!.fullName[0].toUpperCase();
+    }
+
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
       title: Row(
         children: [
           Container(
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: AppColors.primaryGradient,
               shape: BoxShape.circle,
             ),
@@ -143,11 +149,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               radius: 20,
               backgroundColor: Colors.transparent,
               child: Text(
-                _isLoadingProfile 
-                    ? '?' 
-                    : (_otherUserProfile?.fullName?.isNotEmpty == true 
-                        ? _otherUserProfile!.fullName[0].toUpperCase() 
-                        : 'U'),
+                initial,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
@@ -204,7 +206,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
       ),
       actions: [
         IconButton(
-          icon: Icon(
+          icon: const Icon(
             Icons.more_vert,
             color: AppColors.text,
           ),
@@ -218,7 +220,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
 
   // ============ EMPTY STATE ============
   Widget _buildEmptyState() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -235,8 +237,8 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               color: AppColors.primary.withOpacity(0.4),
             ),
           ),
-          SizedBox(height: 16),
-          Text(
+          const SizedBox(height: 16),
+          const Text(
             'No messages yet',
             style: TextStyle(
               fontSize: 18,
@@ -244,8 +246,8 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               color: AppColors.text,
             ),
           ),
-          SizedBox(height: 8),
-          Text(
+          const SizedBox(height: 8),
+          const Text(
             'Send a message to start the conversation',
             style: TextStyle(
               fontSize: 14,
@@ -294,7 +296,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                     color: AppColors.accent.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.report_problem_outlined,
                     color: AppColors.accent,
                     size: 22,
@@ -316,7 +318,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                     color: AppColors.primary.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.archive_outlined,
                     color: AppColors.primary,
                     size: 22,
@@ -338,7 +340,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                     color: AppColors.lostColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.delete_outline,
                     color: AppColors.lostColor,
                     size: 22,
@@ -360,7 +362,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                     color: AppColors.lostColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.block_outlined,
                     color: AppColors.lostColor,
                     size: 22,
@@ -404,7 +406,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                     color: AppColors.lostColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.delete_outline,
                     color: AppColors.lostColor,
                     size: 32,
@@ -490,13 +492,10 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Chat deleted successfully'),
+        const SnackBar(
+          content: Text('Chat deleted successfully'),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
         ),
       );
     }
@@ -524,7 +523,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                     color: AppColors.accent.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.report_problem_outlined,
                     color: AppColors.accent,
                     size: 32,
@@ -585,13 +584,10 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                         onPressed: () {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('User reported successfully'),
+                            const SnackBar(
+                              content: Text('User reported successfully'),
                               backgroundColor: AppColors.primary,
                               behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
                             ),
                           );
                         },
@@ -635,7 +631,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                     color: AppColors.lostColor.withOpacity(0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.block_outlined,
                     color: AppColors.lostColor,
                     size: 32,
@@ -696,13 +692,10 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                         onPressed: () {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('User blocked successfully'),
+                            const SnackBar(
+                              content: Text('User blocked successfully'),
                               backgroundColor: AppColors.primary,
                               behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
                             ),
                           );
                         },
@@ -729,13 +722,10 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
         .archiveChat(widget.chatId);
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Chat archived'),
+      const SnackBar(
+        content: Text('Chat archived'),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
       ),
     );
   }
