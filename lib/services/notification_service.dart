@@ -1,6 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:io';
 import 'notification_event_service.dart';
@@ -12,8 +11,6 @@ class NotificationService {
   NotificationService._internal();
 
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
-  final FlutterLocalNotificationsPlugin _localNotifications =
-      FlutterLocalNotificationsPlugin();
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -24,16 +21,13 @@ class NotificationService {
   // Android notification channel constants
   static const String channelId = 'find_it_channel';
   static const String channelName = 'Find It Notifications';
-  static const String channelDescription = 'Notifications for matches and messages';
+  static const String channelDescription =
+      'Notifications for matches and messages';
 
   Future<void> initialize() async {
     if (_isInitialized) return;
     try {
       await _requestPermissions();
-      if (!kIsWeb) {
-        await _initializeLocalNotifications();
-        await _createAndroidNotificationChannel();
-      }
       await _getFCMToken();
       _setupMessageHandlers();
       _isInitialized = true;
@@ -56,40 +50,6 @@ class NotificationService {
         provisional: false,
       );
     }
-  }
-
-  Future<void> _createAndroidNotificationChannel() async {
-    if (!Platform.isAndroid) return;
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      channelId,
-      channelName,
-      description: channelDescription,
-      importance: Importance.high,
-    );
-    await _localNotifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-  }
-
-  Future<void> _initializeLocalNotifications() async {
-    if (kIsWeb) return;
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const DarwinInitializationSettings iosSettings =
-        DarwinInitializationSettings(
-          requestAlertPermission: true,
-          requestBadgePermission: true,
-          requestSoundPermission: true,
-        );
-    const InitializationSettings settings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-    await _localNotifications.initialize(
-      settings: settings,
-      onDidReceiveNotificationResponse: _onNotificationTap,
-    );
   }
 
   Future<void> _getFCMToken() async {
@@ -132,86 +92,54 @@ class NotificationService {
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('📱 Foreground message received: ${message.notification?.title}');
+    debugPrint(
+      '📱 Foreground message received: ${message.notification?.title}',
+    );
     if (!kIsWeb) {
       _showLocalNotification(message);
     }
 
-    NotificationEventService().emit(NotificationEvent(
-      type: NotificationEventType.foregroundMessage,
-      data: {
-        'title': message.notification?.title,
-        'body': message.notification?.body,
-        'messageId': message.messageId,
-        'data': message.data,
-        'isBackground': false,
-      },
-    ));
+    NotificationEventService().emit(
+      NotificationEvent(
+        type: NotificationEventType.foregroundMessage,
+        data: {
+          'title': message.notification?.title,
+          'body': message.notification?.body,
+          'messageId': message.messageId,
+          'data': message.data,
+          'isBackground': false,
+        },
+      ),
+    );
   }
 
   void _handleBackgroundMessage(RemoteMessage message) {
     debugPrint('📨 Background message opened: ${message.data}');
-    NotificationEventService().emit(NotificationEvent(
-      type: NotificationEventType.notificationTapped,
-      data: {
-        'title': message.notification?.title,
-        'body': message.notification?.body,
-        'messageId': message.messageId,
-        'data': message.data,
-        'source': 'onMessageOpenedApp',
-      },
-    ));
+    NotificationEventService().emit(
+      NotificationEvent(
+        type: NotificationEventType.notificationTapped,
+        data: {
+          'title': message.notification?.title,
+          'body': message.notification?.body,
+          'messageId': message.messageId,
+          'data': message.data,
+          'source': 'onMessageOpenedApp',
+        },
+      ),
+    );
     _navigateToRelevantScreen(message.data);
   }
 
-  void _onNotificationTap(NotificationResponse response) {
-    debugPrint('🔔 Notification tapped: ${response.payload}');
-    NotificationEventService().emit(NotificationEvent(
-      type: NotificationEventType.notificationTapped,
-      data: {
-        'payload': response.payload,
-        'notificationId': response.id,
-        'actionId': response.actionId,
-      },
-    ));
-    if (response.payload != null) {
-      _navigateToRelevantScreen({'payload': response.payload});
-    }
-  }
-
   Future<void> _showLocalNotification(RemoteMessage message) async {
-    if (kIsWeb) return;
+    if (kIsWeb || Platform.isWindows) {
+      debugPrint('Local notifications are not available on this platform.');
+      return;
+    }
+
     try {
-      const AndroidNotificationDetails androidDetails =
-          AndroidNotificationDetails(
-            channelId,
-            channelName,
-            channelDescription: channelDescription,
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
-            enableVibration: true,
-            enableLights: true,
-          );
-      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-      const NotificationDetails details = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
       final title = message.notification?.title ?? 'Find It App';
       final body = message.notification?.body ?? 'You have a new notification';
-      final payload = message.data['type'] ?? 'general';
-      await _localNotifications.show(
-        id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-        title: title,
-        body: body,
-        notificationDetails: details,
-        payload: payload,
-      );
+      debugPrint('Local notification preview: $title — $body');
     } catch (e) {
       debugPrint('❌ Failed to show local notification: $e');
     }
