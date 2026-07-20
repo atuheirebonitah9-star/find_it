@@ -1,42 +1,20 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import 'report_item_screen.dart';
-import 'item_details_screen.dart';
 import 'profile_screen.dart';
 import 'chat/chat_list_screen.dart';
 import 'my_lost_items_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  String _searchQuery = '';
-  String _statusFilter = 'All';
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
-    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
-        .collection('items')
-        .orderBy('createdAt', descending: true);
-
-    if (_statusFilter != 'All') {
-      query = query.where('status', isEqualTo: _statusFilter.toLowerCase());
-    }
-
-    return query.snapshots();
-  }
+  static const Color primaryColor = Color(0xFF1B3358);
+  static const Color secondaryColor = Color(0xFF2E5077);
+  static const Color warningColor = Color(0xFFE5484D);
+  static const Color warningContainer = Color(0xFFFBE5E6);
+  static const Color onSurface = Color(0xFF1F2937);
+  static const Color onSurfaceVariant = Color(0xFF6B7280);
 
   @override
   Widget build(BuildContext context) {
@@ -78,111 +56,92 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search for an item...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Welcome to Find It',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: primaryColor,
                 ),
               ),
-              onChanged: (value) {
-                setState(() => _searchQuery = value.trim().toLowerCase());
-              },
-            ),
-          ),
-          SizedBox(
-            height: 40,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              children: ['All', 'Lost', 'Found'].map((status) {
-                final selected = _statusFilter == status;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(status),
-                    selected: selected,
-                    onSelected: (_) => setState(() => _statusFilter = status),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _itemsStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+              const SizedBox(height: 8),
+              const Text(
+                'Report a lost or found item using the button below.',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: onSurfaceVariant,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
 
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                final docs = snapshot.data?.docs ?? [];
-
-                final filteredDocs = docs.where((doc) {
-                  if (_searchQuery.isEmpty) return true;
-                  final name = (doc.data()['itemName'] ?? '').toString().toLowerCase();
-                  return name.contains(_searchQuery);
-                }).toList();
-
-                if (filteredDocs.isEmpty) {
-                  return const Center(child: Text('No items found.'));
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  itemCount: filteredDocs.length,
-                  itemBuilder: (context, index) {
-                    final data = filteredDocs[index].data();
-                    final itemId = filteredDocs[index].id;
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: data['imageUrl'] != null
-                              ? NetworkImage(data['imageUrl'])
-                              : null,
-                          child: data['imageUrl'] == null
-                              ? const Icon(Icons.image_not_supported)
-                              : null,
-                        ),
-                        title: Text(data['itemName'] ?? 'Unnamed item'),
-                        subtitle: Text(
-                          '${data['status'] ?? ''} • ${data['location'] ?? ''}',
-                        ),
-                        trailing: Text(
-                          data['status'] == 'lost' ? '❗' : '✅',
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ItemDetailsScreen(itemId: itemId, data: data),
-                            ),
-                          );
-                        },
+              // Community conduct warning banner
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: warningContainer,
+                  border: Border.all(color: warningColor.withOpacity(0.4)),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: warningColor,
+                        shape: BoxShape.circle,
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Community Conduct',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Do not impersonate another student or falsely claim an item that is not yours. '
+                            'Reports are matched to real people — misuse may be reported to campus administration.',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: onSurfaceVariant,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
+        backgroundColor: secondaryColor,
+        foregroundColor: Colors.white,
         onPressed: () {
           Navigator.push(
             context,
