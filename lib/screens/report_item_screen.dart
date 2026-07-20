@@ -223,7 +223,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Classification failed: $e'),
-            backgroundColor: AppColors.accent,
+            backgroundColor: AppColors.lostColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -332,7 +332,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to submit report: $e'),
-              backgroundColor: AppColors.accent,
+              backgroundColor: AppColors.lostColor,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -376,11 +376,11 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                 curve: Curves.easeInOut,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: isLost ? AppColors.accent : Colors.transparent,
+                  color: isLost ? AppColors.lostColor : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isLost ? [
                     BoxShadow(
-                      color: AppColors.accent.withOpacity(0.3),
+                      color: AppColors.lostColor.withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -852,14 +852,14 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(
-                    color: AppColors.accent,
+                    color: AppColors.lostColor,
                     width: 1.5,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(
-                    color: AppColors.accent,
+                    color: AppColors.lostColor,
                     width: 2,
                   ),
                 ),
@@ -921,14 +921,14 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
-                color: AppColors.accent,
+                color: AppColors.lostColor,
                 width: 1.5,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
-                color: AppColors.accent,
+                color: AppColors.lostColor,
                 width: 2,
               ),
             ),
@@ -948,7 +948,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
         child: ElevatedButton(
           onPressed: _submitReport,
           style: ElevatedButton.styleFrom(
-            backgroundColor: isLost ? AppColors.accent : AppColors.secondary,
+            backgroundColor: isLost ? AppColors.lostColor : AppColors.secondary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
@@ -1018,7 +1018,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                         ),
                         child: Icon(
                           isLost ? Icons.search : Icons.check_circle,
-                          color: isLost ? AppColors.accent : AppColors.secondary,
+                          color: isLost ? AppColors.lostColor : AppColors.secondary,
                           size: 24,
                         ),
                       ),
@@ -1099,7 +1099,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                     icon: Icon(
                       _isListening ? Icons.mic : Icons.mic_none,
                       color: _isListening
-                          ? AppColors.accent
+                          ? AppColors.lostColor
                           : AppColors.primary,
                     ),
                     onPressed: () {
@@ -1117,8 +1117,6 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                 _buildSubmitButton(),
 
                 const SizedBox(height: 12),
-
-                // Progress indicator while submitting could go here
               ],
             ),
           ),

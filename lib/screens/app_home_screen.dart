@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
 import '../theme/app_colors.dart';
+import '../theme/app_theme.dart';
 import 'report_item_screen.dart';
 import 'item_details_screen.dart';
 import 'profile_screen.dart';
@@ -97,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  // ============ NEW APP BAR ============
+  // ============ APP BAR ============
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       title: Row(
@@ -646,12 +646,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 ? 'Reported lost item: ${data['itemName']}'
                                 : 'Claimed found item: ${data['itemName']}',
                             ),
-                            backgroundColor: isLost ? AppColors.accent : AppColors.secondary,
+                            backgroundColor: isLost ? AppColors.lostColor : AppColors.secondary,
                           ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isLost ? AppColors.accent : AppColors.secondary,
+                        backgroundColor: isLost ? AppColors.lostColor : AppColors.secondary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -740,7 +740,7 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: isLost
-                            ? [AppColors.accent.withOpacity(0.1), AppColors.accent.withOpacity(0.05)]
+                            ? [AppColors.lostColor.withOpacity(0.1), AppColors.lostColor.withOpacity(0.05)]
                             : [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -830,7 +830,7 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                         ),
                         decoration: BoxDecoration(
                           color: isLost
-                              ? AppColors.accent.withOpacity(0.1)
+                              ? AppColors.lostColor.withOpacity(0.1)
                               : AppColors.secondary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
@@ -839,7 +839,7 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: isLost ? AppColors.accent : AppColors.secondary,
+                            color: isLost ? AppColors.lostColor : AppColors.secondary,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -891,7 +891,7 @@ class _ModernItemCardState extends State<_ModernItemCard> {
     
     return Icon(
       icon,
-      color: isLost ? AppColors.accent : AppColors.secondary,
+      color: isLost ? AppColors.lostColor : AppColors.secondary,
       size: 30,
     );
   }
