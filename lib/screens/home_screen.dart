@@ -6,7 +6,6 @@ import '../theme/app_theme.dart';
 import 'report_item_screen.dart';
 import 'profile_screen.dart';
 import 'chat/chat_list_screen.dart';
-import 'my_lost_items_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -129,17 +128,6 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       actions: [
-        _buildActionButton(
-          context,
-          icon: Icons.image_search_outlined,
-          tooltip: 'My Lost Items',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MyLostItemsScreen()),
-            );
-          },
-        ),
         _buildActionButton(
           context,
           icon: Icons.chat_bubble_outline,
