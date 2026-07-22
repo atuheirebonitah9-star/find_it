@@ -15,7 +15,8 @@ class SignUpScreen extends StatefulWidget {
   State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderStateMixin {
+class _SignUpScreenState extends State<SignUpScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _studentNumberController = TextEditingController();
@@ -40,15 +41,19 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
-    );
-    
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutCubic,
+          ),
+        );
+
     _animationController.forward();
   }
 
@@ -67,7 +72,10 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
   Future<void> _handleSignUp() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_agreedToTerms) {
-      setState(() => _errorMessage = 'Please agree to the Terms of Service and Privacy Policy');
+      setState(
+        () => _errorMessage =
+            'Please agree to the Terms of Service and Privacy Policy',
+      );
       return;
     }
 
@@ -77,10 +85,11 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
     });
 
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      final credential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
 
       await credential.user?.updateDisplayName(_nameController.text.trim());
 
@@ -99,13 +108,12 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
           .doc(credential.user!.uid)
           .set(userProfile.toMap());
 
-      NotificationEventService().emit(NotificationEvent(
-        type: NotificationEventType.signUpSuccess,
-        data: {
-          'fullName': userProfile.fullName,
-          'email': userProfile.email,
-        },
-      ));
+      NotificationEventService().emit(
+        NotificationEvent(
+          type: NotificationEventType.signUpSuccess,
+          data: {'fullName': userProfile.fullName, 'email': userProfile.email},
+        ),
+      );
 
       if (mounted) _showSuccessDialog();
     } on FirebaseAuthException catch (e) {
@@ -168,7 +176,9 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.of(context).pop(); // close dialog
-                    Navigator.of(context).pop(); // back out of signup, AuthGate takes over
+                    Navigator.of(
+                      context,
+                    ).pop(); // back out of signup, AuthGate takes over
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
@@ -255,35 +265,35 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
                   children: [
                     // Header Section
                     _buildHeaderSection(),
-                    
+
                     const SizedBox(height: 28),
-                    
+
                     // Form Fields
                     _buildFormFields(),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Terms Checkbox
                     _buildTermsCheckbox(),
-                    
+
                     // Error Message
                     if (_errorMessage != null) ...[
                       const SizedBox(height: 12),
                       _buildErrorMessage(),
                     ],
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Sign Up Button
                     _buildSignUpButton(),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Login Link
                     _buildLoginLink(),
-                    
+
                     const SizedBox(height: 28),
-                    
+
                     // Security Card
                     _buildSecurityCard(),
                   ],
@@ -312,10 +322,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
       ),
       actions: [
         IconButton(
-          icon: const Icon(
-            Icons.close,
-            color: AppColors.text,
-          ),
+          icon: const Icon(Icons.close, color: AppColors.text),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ],
@@ -363,11 +370,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
         const SizedBox(height: 12),
         Text(
           'Join a global community dedicated to reuniting lost items with their owners. Dependable, precise, and built for peace of mind.',
-          style: TextStyle(
-            fontSize: 15,
-            color: AppColors.muted,
-            height: 1.6,
-          ),
+          style: TextStyle(fontSize: 15, color: AppColors.muted, height: 1.6),
         ),
       ],
     );
@@ -448,20 +451,22 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
           controller: _passwordController,
           obscureText: _obscurePassword,
           style: const TextStyle(color: AppColors.text),
-          decoration: _fieldDecoration(
-            hint: 'Min. 8 characters',
-            icon: Icons.lock_outline,
-          ).copyWith(
-            suffixIcon: IconButton(
-              icon: Icon(
-                _obscurePassword
-                    ? Icons.visibility_outlined
-                    : Icons.visibility_off_outlined,
-                color: AppColors.muted,
+          decoration:
+              _fieldDecoration(
+                hint: 'Min. 8 characters',
+                icon: Icons.lock_outline,
+              ).copyWith(
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _obscurePassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                    color: AppColors.muted,
+                  ),
+                  onPressed: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                ),
               ),
-              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-            ),
-          ),
           validator: (v) {
             if (v == null || v.isEmpty) return 'Required';
             if (v.length < 8) return 'Minimum 8 characters';
@@ -554,19 +559,12 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.error_outline,
-            color: AppColors.lostColor,
-            size: 18,
-          ),
+          Icon(Icons.error_outline, color: AppColors.lostColor, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               _errorMessage!,
-              style: TextStyle(
-                color: AppColors.lostColor,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: AppColors.lostColor, fontSize: 13),
             ),
           ),
         ],
@@ -588,10 +586,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
             borderRadius: BorderRadius.circular(14),
           ),
           elevation: 0,
-          textStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
         child: _isLoading
             ? const SizedBox(
@@ -612,10 +607,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
     return Center(
       child: RichText(
         text: TextSpan(
-          style: TextStyle(
-            fontSize: 15,
-            color: AppColors.muted,
-          ),
+          style: TextStyle(fontSize: 15, color: AppColors.muted),
           children: [
             const TextSpan(text: 'Already have an account? '),
             TextSpan(
@@ -652,11 +644,7 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
               color: AppColors.primary,
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.verified,
-              color: Colors.white,
-              size: 22,
-            ),
+            child: const Icon(Icons.verified, color: Colors.white, size: 22),
           ),
           const SizedBox(width: 14),
           const Expanded(
@@ -687,4 +675,4 @@ class _SignUpScreenState extends State<SignUpScreen> with SingleTickerProviderSt
       ),
     );
   }
-} 
+}

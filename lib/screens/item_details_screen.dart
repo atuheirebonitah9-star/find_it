@@ -26,7 +26,10 @@ class ItemDetailsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text(data['itemName'] ?? 'Item Details', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          data['itemName'] ?? 'Item Details',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: backgroundColor.withOpacity(0.8),
         elevation: 0,
       ),
@@ -49,7 +52,11 @@ class ItemDetailsScreen extends StatelessWidget {
                 Container(
                   height: 200,
                   color: Colors.grey[200],
-                  child: const Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: Colors.grey,
+                  ),
                 ),
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -59,16 +66,23 @@ class ItemDetailsScreen extends StatelessWidget {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: data['status'] == 'lost' ? Colors.red[100] : Colors.green[100],
+                            color: data['status'] == 'lost'
+                                ? Colors.red[100]
+                                : Colors.green[100],
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             data['status']?.toUpperCase() ?? 'UNKNOWN',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: data['status'] == 'lost' ? Colors.red[800] : Colors.green[800],
+                              color: data['status'] == 'lost'
+                                  ? Colors.red[800]
+                                  : Colors.green[800],
                             ),
                           ),
                         ),
@@ -77,23 +91,37 @@ class ItemDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       data['itemName'] ?? 'Unnamed Item',
-                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: primaryColor),
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: primaryColor,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.location_on_outlined, color: onSurfaceVariant),
+                        Icon(
+                          Icons.location_on_outlined,
+                          color: onSurfaceVariant,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           data['location'] ?? 'Unknown location',
-                          style: TextStyle(fontSize: 16, color: onSurfaceVariant),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 24),
                     const Text(
                       'Description',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: primaryColor),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: primaryColor,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -111,7 +139,11 @@ class ItemDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     const Text(
                       'Contact Information',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: primaryColor),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: primaryColor,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Container(
@@ -123,12 +155,18 @@ class ItemDetailsScreen extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.contact_mail_outlined, color: secondaryColor),
+                          Icon(
+                            Icons.contact_mail_outlined,
+                            color: secondaryColor,
+                          ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               data['contact'] ?? 'No contact info',
-                              style: const TextStyle(fontSize: 16, color: onSurface),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: onSurface,
+                              ),
                             ),
                           ),
                         ],
@@ -159,7 +197,10 @@ class ItemDetailsScreen extends StatelessWidget {
                             }
 
                             try {
-                              final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+                              final chatProvider = Provider.of<ChatProvider>(
+                                context,
+                                listen: false,
+                              );
                               final chatId = await chatProvider.createChat(
                                 finderUid: finderUid,
                                 ownerUid: ownerUid,
@@ -181,24 +222,36 @@ class ItemDetailsScreen extends StatelessWidget {
                             } catch (e) {
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Failed to open chat: $e')),
+                                  SnackBar(
+                                    content: Text('Failed to open chat: $e'),
+                                  ),
                                 );
                               }
                             }
                           } else {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Could not contact reporter')),
+                                const SnackBar(
+                                  content: Text('Could not contact reporter'),
+                                ),
                               );
                             }
                           }
                         },
                         icon: const Icon(Icons.message_outlined),
-                        label: const Text('Contact Reporter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        label: const Text(
+                          'Contact Reporter',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: secondaryColor,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),

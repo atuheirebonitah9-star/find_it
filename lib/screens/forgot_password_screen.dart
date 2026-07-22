@@ -107,7 +107,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               if (value == null || value.trim().isEmpty) {
                 return 'Please enter your email';
               }
-              if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim())) {
+              if (!RegExp(
+                r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+              ).hasMatch(value.trim())) {
                 return 'Please enter a valid email';
               }
               return null;
@@ -128,9 +130,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               child: _isLoading
                   ? const CircularProgressIndicator(color: Colors.white)
                   : const Text(
-                'Send reset link',
-                style: TextStyle(fontSize: 16, color: Colors.white),
-              ),
+                      'Send reset link',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
             ),
           ),
         ],
@@ -146,7 +148,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         const SizedBox(height: 20),
         const Text(
           'Check your email',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: deepBlue),
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: deepBlue,
+          ),
         ),
         const SizedBox(height: 10),
         Text(

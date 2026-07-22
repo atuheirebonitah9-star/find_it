@@ -15,7 +15,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
   String _searchQuery = '';
   String _statusFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
@@ -51,7 +52,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   // Get counts for filter tabs
   Future<Map<String, int>> _getFilterCounts() async {
-    final allSnapshot = await FirebaseFirestore.instance.collection('items').get();
+    final allSnapshot = await FirebaseFirestore.instance
+        .collection('items')
+        .get();
     final lostSnapshot = await FirebaseFirestore.instance
         .collection('items')
         .where('status', isEqualTo: 'lost')
@@ -60,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         .collection('items')
         .where('status', isEqualTo: 'found')
         .get();
-    
+
     return {
       'All': allSnapshot.docs.length,
       'Lost': lostSnapshot.docs.length,
@@ -86,9 +89,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               return _buildFilterTabs(counts);
             },
           ),
-          Expanded(
-            child: _buildItemList(),
-          ),
+          Expanded(child: _buildItemList()),
         ],
       ),
       floatingActionButton: _buildFloatingActionButton(),
@@ -107,11 +108,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(
-              Icons.search,
-              color: AppColors.primary,
-              size: 20,
-            ),
+            child: Icon(Icons.search, color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 10),
           const Text(
@@ -173,11 +170,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               color: AppColors.primary.withOpacity(0.08),
               borderRadius: BorderRadius.circular(30),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.text,
-              size: 22,
-            ),
+            child: Icon(icon, color: AppColors.text, size: 22),
           ),
         ),
       ),
@@ -208,26 +201,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               decoration: InputDecoration(
                 hintText: 'Search for an item...',
                 hintStyle: const TextStyle(color: AppColors.muted),
-                prefixIcon: const Icon(
-                  Icons.search,
-                  color: AppColors.primary,
-                ),
+                prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       onPressed: () {},
-                      icon: const Icon(
-                        Icons.mic,
-                        color: AppColors.primary,
-                      ),
+                      icon: const Icon(Icons.mic, color: AppColors.primary),
                       splashRadius: 20,
                     ),
-                    Container(
-                      width: 1,
-                      height: 24,
-                      color: AppColors.border,
-                    ),
+                    Container(width: 1, height: 24, color: AppColors.border),
                     IconButton(
                       onPressed: () {},
                       icon: const Icon(
@@ -241,7 +224,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 border: InputBorder.none,
                 filled: true,
                 fillColor: Colors.white,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+                contentPadding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 4,
+                ),
               ),
               onChanged: (value) {
                 setState(() => _searchQuery = value.trim().toLowerCase());
@@ -256,7 +242,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               _buildQuickFilterChip(Icons.tune_outlined, 'Filter'),
               const Spacer(),
               StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('items').snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('items')
+                    .snapshots(),
                 builder: (context, snapshot) {
                   final count = snapshot.data?.docs.length ?? 0;
                   return Text(
@@ -312,19 +300,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.location_on,
-            color: AppColors.primary,
-            size: 16,
-          ),
+          Icon(Icons.location_on, color: AppColors.primary, size: 16),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               '📍 Near You · Showing items within 5km radius',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.muted,
-              ),
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
           ),
           GestureDetector(
@@ -337,11 +318,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.refresh,
-                size: 14,
-                color: AppColors.primary,
-              ),
+              child: Icon(Icons.refresh, size: 14, color: AppColors.primary),
             ),
           ),
         ],
@@ -352,7 +329,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   // ============ FILTER TABS ============
   Widget _buildFilterTabs(Map<String, int> counts) {
     final tabs = ['All', 'Lost', 'Found'];
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(4),
@@ -366,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           final tab = tabs[index];
           final isSelected = _statusFilter == tab;
           final count = counts[tab] ?? 0;
-          
+
           return Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _statusFilter = tab),
@@ -377,13 +354,15 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 decoration: BoxDecoration(
                   color: isSelected ? Colors.white : Colors.transparent,
                   borderRadius: BorderRadius.circular(26),
-                  boxShadow: isSelected ? [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ] : null,
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -392,7 +371,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       tab,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
                         color: isSelected ? AppColors.text : AppColors.muted,
                       ),
                     ),
@@ -404,7 +385,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected 
+                          color: isSelected
                               ? AppColors.primary.withOpacity(0.1)
                               : AppColors.border,
                           borderRadius: BorderRadius.circular(12),
@@ -414,7 +395,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: isSelected ? AppColors.primary : AppColors.muted,
+                            color: isSelected
+                                ? AppColors.primary
+                                : AppColors.muted,
                           ),
                         ),
                       ),
@@ -436,24 +419,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: CircularProgressIndicator(
-              color: AppColors.primary,
-            ),
+            child: CircularProgressIndicator(color: AppColors.primary),
           );
         }
 
         if (snapshot.hasError) {
-          return Center(
-            child: Text('Error: ${snapshot.error}'),
-          );
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
 
         final docs = snapshot.data?.docs ?? [];
         final filteredDocs = docs.where((doc) {
           if (_searchQuery.isEmpty) return true;
-          final name = (doc.data()['itemName'] ?? '')
-              .toString()
-              .toLowerCase();
+          final name = (doc.data()['itemName'] ?? '').toString().toLowerCase();
           return name.contains(_searchQuery);
         }).toList();
 
@@ -479,9 +456,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 SizedBox(height: 8),
                 Text(
                   'Try adjusting your filters',
-                  style: TextStyle(
-                    color: AppColors.muted,
-                  ),
+                  style: TextStyle(color: AppColors.muted),
                 ),
               ],
             ),
@@ -494,9 +469,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           itemBuilder: (context, index) {
             final data = filteredDocs[index].data();
             final itemId = filteredDocs[index].id;
-            final status = (data['status'] ?? 'found')
-                .toString()
-                .toLowerCase();
+            final status = (data['status'] ?? 'found').toString().toLowerCase();
             final isLost = status == 'lost';
 
             // Staggered animation
@@ -520,10 +493,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ItemDetailsScreen(
-                        itemId: itemId,
-                        data: data,
-                      ),
+                      builder: (_) =>
+                          ItemDetailsScreen(itemId: itemId, data: data),
                     ),
                   );
                 },
@@ -553,23 +524,22 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         icon: const Icon(Icons.add, size: 20),
         label: const Text(
           'Report Lost Item',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
         ),
       ),
     );
   }
 
   // ============ HELPER METHODS ============
-  void _showActionDialog(BuildContext context, Map<String, dynamic> data, bool isLost) {
+  void _showActionDialog(
+    BuildContext context,
+    Map<String, dynamic> data,
+    bool isLost,
+  ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -601,10 +571,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               const SizedBox(height: 8),
               Text(
                 data['itemName'] ?? 'Unnamed item',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: AppColors.muted,
-                ),
+                style: const TextStyle(fontSize: 14, color: AppColors.muted),
               ),
               const SizedBox(height: 20),
               Row(
@@ -631,16 +598,20 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              isLost 
-                                ? 'Reported lost item: ${data['itemName']}'
-                                : 'Claimed found item: ${data['itemName']}',
+                              isLost
+                                  ? 'Reported lost item: ${data['itemName']}'
+                                  : 'Claimed found item: ${data['itemName']}',
                             ),
-                            backgroundColor: isLost ? AppColors.lostColor : AppColors.secondary,
+                            backgroundColor: isLost
+                                ? AppColors.lostColor
+                                : AppColors.secondary,
                           ),
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isLost ? AppColors.lostColor : AppColors.secondary,
+                        backgroundColor: isLost
+                            ? AppColors.lostColor
+                            : AppColors.secondary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -685,8 +656,9 @@ class _ModernItemCardState extends State<_ModernItemCard> {
   Widget build(BuildContext context) {
     final data = widget.data;
     final isLost = widget.isLost;
-    final hasImage = data['imageUrl'] != null && data['imageUrl'].toString().isNotEmpty;
-    final timeAgo = data['createdAt'] != null 
+    final hasImage =
+        data['imageUrl'] != null && data['imageUrl'].toString().isNotEmpty;
+    final timeAgo = data['createdAt'] != null
         ? _getTimeAgo((data['createdAt'] as Timestamp).toDate())
         : 'Recently';
 
@@ -701,8 +673,8 @@ class _ModernItemCardState extends State<_ModernItemCard> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _hovered 
-                ? AppColors.primary.withOpacity(0.3) 
+            color: _hovered
+                ? AppColors.primary.withOpacity(0.3)
                 : AppColors.border.withOpacity(0.5),
           ),
           boxShadow: [
@@ -729,8 +701,14 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: isLost
-                            ? [AppColors.lostColor.withOpacity(0.1), AppColors.lostColor.withOpacity(0.05)]
-                            : [AppColors.secondary.withOpacity(0.1), AppColors.secondary.withOpacity(0.05)],
+                            ? [
+                                AppColors.lostColor.withOpacity(0.1),
+                                AppColors.lostColor.withOpacity(0.05),
+                              ]
+                            : [
+                                AppColors.secondary.withOpacity(0.1),
+                                AppColors.secondary.withOpacity(0.05),
+                              ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -828,7 +806,9 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                           style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: isLost ? AppColors.lostColor : AppColors.secondary,
+                            color: isLost
+                                ? AppColors.lostColor
+                                : AppColors.secondary,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -869,15 +849,22 @@ class _ModernItemCardState extends State<_ModernItemCard> {
   Widget _buildItemIcon(bool isLost) {
     final itemName = widget.data['itemName']?.toLowerCase() ?? '';
     IconData icon;
-    
-    if (itemName.contains('wallet')) icon = Icons.wallet;
-    else if (itemName.contains('backpack') || itemName.contains('bag')) icon = Icons.backpack;
-    else if (itemName.contains('phone')) icon = Icons.phone_android;
-    else if (itemName.contains('key')) icon = Icons.vpn_key;
-    else if (itemName.contains('laptop') || itemName.contains('computer')) icon = Icons.laptop;
-    else if (itemName.contains('glasses')) icon = Icons.visibility;
-    else icon = isLost ? Icons.search : Icons.check_circle_outline;
-    
+
+    if (itemName.contains('wallet'))
+      icon = Icons.wallet;
+    else if (itemName.contains('backpack') || itemName.contains('bag'))
+      icon = Icons.backpack;
+    else if (itemName.contains('phone'))
+      icon = Icons.phone_android;
+    else if (itemName.contains('key'))
+      icon = Icons.vpn_key;
+    else if (itemName.contains('laptop') || itemName.contains('computer'))
+      icon = Icons.laptop;
+    else if (itemName.contains('glasses'))
+      icon = Icons.visibility;
+    else
+      icon = isLost ? Icons.search : Icons.check_circle_outline;
+
     return Icon(
       icon,
       color: isLost ? AppColors.lostColor : AppColors.secondary,
@@ -887,16 +874,25 @@ class _ModernItemCardState extends State<_ModernItemCard> {
 
   String _getDistance() {
     // Mock distance - replace with actual location logic
-    final distances = ['200m away', '500m away', '1.2km away', '2km away', '3.5km away'];
+    final distances = [
+      '200m away',
+      '500m away',
+      '1.2km away',
+      '2km away',
+      '3.5km away',
+    ];
     return distances[DateTime.now().millisecondsSinceEpoch % distances.length];
   }
 
   String _getTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
-    
-    if (difference.inDays > 365) return '${(difference.inDays / 365).floor()} years ago';
-    if (difference.inDays > 30) return '${(difference.inDays / 30).floor()} months ago';
-    if (difference.inDays > 7) return '${(difference.inDays / 7).floor()} weeks ago';
+
+    if (difference.inDays > 365)
+      return '${(difference.inDays / 365).floor()} years ago';
+    if (difference.inDays > 30)
+      return '${(difference.inDays / 30).floor()} months ago';
+    if (difference.inDays > 7)
+      return '${(difference.inDays / 7).floor()} weeks ago';
     if (difference.inDays > 0) return '${difference.inDays} days ago';
     if (difference.inHours > 0) return '${difference.inHours} hours ago';
     if (difference.inMinutes > 0) return '${difference.inMinutes} minutes ago';
