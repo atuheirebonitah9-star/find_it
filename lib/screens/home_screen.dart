@@ -446,7 +446,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: _buildActionCard(
                 icon: Image.asset('assets/crying.png', width: 32, height: 32),
-                title: 'Report Lost',
+                title: 'I Lost Something',
                 subtitle: 'Item you lost',
                 color: AppColors.lostColor,
                 onTap: () => Navigator.push(
@@ -683,7 +683,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _buildActivityItem(
                   icon: isLost
-                      ? Image.asset('crying.png', width: 24, height: 24)
+                      ? Image.asset('assets/crying.png', width: 24, height: 24)
                       : const Icon(Icons.check_circle_outline, size: 24),
                   title: isLost ? 'Reported Lost Item' : 'Reported Found Item',
                   subtitle: '${data['itemName'] ?? 'Item'} · $timeAgo',
