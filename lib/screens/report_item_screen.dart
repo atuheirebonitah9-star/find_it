@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';   // ✅ this one
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:image_picker/image_picker.dart';
@@ -33,6 +34,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
   bool _isListening = false;
   bool _isUploadingImage = false;
   bool _isClassifying = false;
+  String? _uploadedImageUrl;
 
   File? _selectedImage;
   String? _autoCategory;
@@ -175,10 +177,44 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
       setState(() => _isListening = false);
     }
   }
+Future<void> _showImageSourceSheet() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: AppColors.primary),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-  Future<void> _pickImage() async {
+
+  Future<void> _pickImage(ImageSource source) async {
     final XFile? pickedFile = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 80,
     );
 
@@ -596,7 +632,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
           ),
         ] else ...[
           GestureDetector(
-            onTap: _isUploadingImage ? null : _pickImage,
+            onTap: _isUploadingImage ? null : _showImageSourceSheet,
             child: Container(
               height: 150,
               width: double.infinity,

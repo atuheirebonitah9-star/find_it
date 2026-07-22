@@ -74,8 +74,11 @@ class MyLostItemsScreen extends StatelessWidget {
           }
 
           // Separate items with images from those without
-          final withImages =
-              docs.where((d) => d.data()['imageUrl'] != null).toList();
+          final withImages = docs.where((d) {
+            final imageUrl = d.data()['imageUrl'];
+            return imageUrl != null &&
+                imageUrl.toString().trim().isNotEmpty;
+}).toList();
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -154,7 +157,13 @@ class _ImageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showFullImage(context, data['imageUrl'] as String),
+     onTap: () {
+  final imageUrl = (data['imageUrl'] ?? '').toString().trim();
+
+  if (imageUrl.isNotEmpty) {
+    _showFullImage(context, imageUrl);
+  }
+},
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -259,7 +268,8 @@ class _ReportListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = data['imageUrl'] != null;
+   final hasImage = data['imageUrl'] != null &&
+    data['imageUrl'].toString().trim().isNotEmpty; 
 
     return Container(
       decoration: BoxDecoration(
