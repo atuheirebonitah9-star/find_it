@@ -230,11 +230,12 @@ class ReportService {
         embedding: data['embedding'] != null
             ? List<double>.from(data['embedding'])
             : null,
+        imageUrl: data['imageUrl'],
       );
 
       if (lostReport.userId == currentUserUid) continue;
 
-      final result = compareReports(lostReport, newFoundReport);
+      final result = await compareReports(lostReport, newFoundReport);
       matches.add(MatchDocument(report: lostReport, result: result));
     }
 
@@ -264,11 +265,12 @@ class ReportService {
         embedding: data['embedding'] != null
             ? List<double>.from(data['embedding'])
             : null,
+        imageUrl: data['imageUrl'],
       );
 
       if (foundReport.userId == currentUserUid) continue;
 
-      final result = compareReports(newLostReport, foundReport);
+      final result = await compareReports(newLostReport, foundReport);
       matches.add(MatchDocument(report: foundReport, result: result));
     }
 
