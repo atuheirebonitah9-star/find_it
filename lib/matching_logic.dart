@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'services/image_comparison_service.dart';
 
 class Report {
   final String category;
@@ -75,18 +76,46 @@ int countKeywordOverlap(String desc1, String desc2) {
   return words1.intersection(words2).length;
 }
 
-MatchResult compareReports(Report lost, Report found) {
+Future<MatchResult> compareReports(Report lost, Report found) async {
   bool locationMatch =
       lost.location.toLowerCase() == found.location.toLowerCase();
   bool dateMatch = lost.date.difference(found.date).inDays.abs() <= 3;
 
+  double imageSimilarityScore = 0.0;
+  bool hasImageComparison = false;
+
+  // If both reports have images, use image comparison
+  if (lost.imageUrl != null && found.imageUrl != null && lost.imageUrl!.isNotEmpty && found.imageUrl!.isNotEmpty) {
+    final imageComparisonService = ImageComparisonService();
+    final imageResult = await imageComparisonService.compareImages(lost.imageUrl!, found.imageUrl!);
+    
+    if (imageResult != null) {
+      hasImageComparison = true;
+      imageSimilarityScore = imageResult.similarityScore;
+      print('IMAGE COMPARISON: isSameItem=${imageResult.isSameItem}, similarity=$imageSimilarityScore, differences=${imageResult.differences}, confidence=${imageResult.confidence}');
+      
+      // If AI says they're different with high confidence, return none immediately
+      if (!imageResult.isSameItem && imageResult.confidence == 'high') {
+        print('IMAGE COMPARISON: High confidence that items are different - returning no match');
+        return MatchResult.none;
+      }
+    }
+  }
+
   if (lost.embedding != null && found.embedding != null) {
     double semanticScore = cosineSimilarity(lost.embedding!, found.embedding!);
-    double score =
-        semanticScore + (locationMatch ? 0.05 : 0) + (dateMatch ? 0.05 : 0);
+    
+    // Incorporate image similarity into the score if available
+    double score = semanticScore;
+    if (hasImageComparison) {
+      // Give image comparison significant weight (40% of total score)
+      score = (semanticScore * 0.6) + (imageSimilarityScore * 0.4);
+    }
+    
+    score += (locationMatch ? 0.05 : 0) + (dateMatch ? 0.05 : 0);
 
     print(
-      'DEBUG: semanticScore=$semanticScore, locationMatch=$locationMatch, dateMatch=$dateMatch, totalScore=$score',
+      'DEBUG: semanticScore=$semanticScore, imageSimilarity=$imageSimilarityScore (hasImage=$hasImageComparison), locationMatch=$locationMatch, dateMatch=$dateMatch, totalScore=$score',
     );
 
     if (score >= 0.93) {

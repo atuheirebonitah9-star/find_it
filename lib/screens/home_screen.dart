@@ -164,6 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // ============ NOTIFICATION ICON ADDED ============
         _buildActionButton(
           context,
+
           icon: Icons.notifications_outlined,
           tooltip: 'Notifications',
           onTap: () {
