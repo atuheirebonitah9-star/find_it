@@ -10,7 +10,7 @@ import '../services/report_service.dart';
 import '../services/image_classification_service.dart';
 import '../providers/chat_provider.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
+
 import 'chat/chat_screen.dart';
 import 'possible_matches_screen.dart';
 
@@ -21,12 +21,14 @@ class ReportItemScreen extends StatefulWidget {
   State<ReportItemScreen> createState() => _ReportItemScreenState();
 }
 
-class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerProviderStateMixin {
+class _ReportItemScreenState extends State<ReportItemScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final ReportService _reportService = ReportService();
   final stt.SpeechToText _speech = stt.SpeechToText();
   final ImagePicker _imagePicker = ImagePicker();
-  final ImageClassificationService _classificationService = ImageClassificationService();
+  final ImageClassificationService _classificationService =
+      ImageClassificationService();
 
   bool isLost = true;
   String? selectedCategory;
@@ -90,9 +92,10 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
       duration: const Duration(milliseconds: 600),
       vsync: this,
     )..forward();
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _fabController, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _fabController, curve: Curves.easeOut));
   }
 
   @override
@@ -227,7 +230,9 @@ Future<void> _showImageSourceSheet() async {
     });
 
     try {
-      final category = await _classificationService.classifyImage(pickedFile.path);
+      final category = await _classificationService.classifyImage(
+        pickedFile.path,
+      );
       if (mounted && category != null) {
         setState(() {
           _autoCategory = category;
@@ -393,7 +398,7 @@ Future<void> _showImageSourceSheet() async {
   }
 
   // ============ MODERNIZED UI WIDGETS ============
-  
+
   Widget _buildLostFoundToggle() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -414,13 +419,15 @@ Future<void> _showImageSourceSheet() async {
                 decoration: BoxDecoration(
                   color: isLost ? AppColors.lostColor : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: isLost ? [
-                    BoxShadow(
-                      color: AppColors.lostColor.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ] : null,
+                  boxShadow: isLost
+                      ? [
+                          BoxShadow(
+                            color: AppColors.lostColor.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -454,13 +461,15 @@ Future<void> _showImageSourceSheet() async {
                 decoration: BoxDecoration(
                   color: !isLost ? AppColors.secondary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: !isLost ? [
-                    BoxShadow(
-                      color: AppColors.secondary.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ] : null,
+                  boxShadow: !isLost
+                      ? [
+                          BoxShadow(
+                            color: AppColors.secondary.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -507,7 +516,7 @@ Future<void> _showImageSourceSheet() async {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -536,13 +545,10 @@ Future<void> _showImageSourceSheet() async {
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.file(
-                    _selectedImage!,
-                    fit: BoxFit.cover,
-                  ),
+                  Image.file(_selectedImage!, fit: BoxFit.cover),
                   if (_isClassifying)
                     Container(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       child: const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -572,11 +578,15 @@ Future<void> _showImageSourceSheet() async {
                     right: 8,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         onPressed: _removeImage,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(
@@ -600,7 +610,7 @@ Future<void> _showImageSourceSheet() async {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 8,
                             ),
                           ],
@@ -652,7 +662,7 @@ Future<void> _showImageSourceSheet() async {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -673,10 +683,7 @@ Future<void> _showImageSourceSheet() async {
                   const SizedBox(height: 4),
                   Text(
                     'AI will auto-categorize your item',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: AppColors.muted, fontSize: 12),
                   ),
                 ],
               ),
@@ -708,10 +715,13 @@ Future<void> _showImageSourceSheet() async {
             boxShadow: AppColors.softShadow,
           ),
           child: DropdownButtonFormField<String>(
-            value: selectedCategory,
+            initialValue: selectedCategory,
             isExpanded: true,
             decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
               border: InputBorder.none,
             ),
             hint: Row(
@@ -743,7 +753,8 @@ Future<void> _showImageSourceSheet() async {
             onChanged: (String? value) {
               setState(() => selectedCategory = value);
             },
-            validator: (value) => value == null ? 'Please select a category' : null,
+            validator: (value) =>
+                value == null ? 'Please select a category' : null,
           ),
         ),
       ],
@@ -752,14 +763,22 @@ Future<void> _showImageSourceSheet() async {
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
-      case 'Wallet': return Icons.wallet;
-      case 'Phone': return Icons.phone_android;
-      case 'ID Card': return Icons.credit_card;
-      case 'Keys': return Icons.vpn_key;
-      case 'Bag': return Icons.backpack;
-      case 'Laptop': return Icons.laptop;
-      case 'Glasses': return Icons.visibility;
-      default: return Icons.inventory_2;
+      case 'Wallet':
+        return Icons.wallet;
+      case 'Phone':
+        return Icons.phone_android;
+      case 'ID Card':
+        return Icons.credit_card;
+      case 'Keys':
+        return Icons.vpn_key;
+      case 'Bag':
+        return Icons.backpack;
+      case 'Laptop':
+        return Icons.laptop;
+      case 'Glasses':
+        return Icons.visibility;
+      default:
+        return Icons.inventory_2;
     }
   }
 
@@ -793,7 +812,9 @@ Future<void> _showImageSourceSheet() async {
                   children: [
                     Icon(
                       Icons.calendar_today,
-                      color: selectedDate == null ? AppColors.muted : AppColors.primary,
+                      color: selectedDate == null
+                          ? AppColors.muted
+                          : AppColors.primary,
                       size: 18,
                     ),
                     const SizedBox(width: 12),
@@ -802,8 +823,12 @@ Future<void> _showImageSourceSheet() async {
                           ? 'Select Date'
                           : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
                       style: TextStyle(
-                        color: selectedDate == null ? AppColors.muted : AppColors.text,
-                        fontWeight: selectedDate == null ? FontWeight.w400 : FontWeight.w500,
+                        color: selectedDate == null
+                            ? AppColors.muted
+                            : AppColors.text,
+                        fontWeight: selectedDate == null
+                            ? FontWeight.w400
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -811,13 +836,10 @@ Future<void> _showImageSourceSheet() async {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    Icons.arrow_drop_down,
-                    color: AppColors.primary,
-                  ),
+                  child: Icon(Icons.arrow_drop_down, color: AppColors.primary),
                 ),
               ],
             ),
@@ -949,10 +971,7 @@ Future<void> _showImageSourceSheet() async {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 2,
-              ),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -998,14 +1017,9 @@ Future<void> _showImageSourceSheet() async {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                isLost ? Icons.search : Icons.check_circle,
-                size: 20,
-              ),
+              Icon(isLost ? Icons.search : Icons.check_circle, size: 20),
               const SizedBox(width: 10),
-              Text(
-                'Submit ${isLost ? 'Lost' : 'Found'} Report',
-              ),
+              Text('Submit ${isLost ? 'Lost' : 'Found'} Report'),
             ],
           ),
         ),
@@ -1049,12 +1063,14 @@ Future<void> _showImageSourceSheet() async {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
                           isLost ? Icons.search : Icons.check_circle,
-                          color: isLost ? AppColors.lostColor : AppColors.secondary,
+                          color: isLost
+                              ? AppColors.lostColor
+                              : AppColors.secondary,
                           size: 24,
                         ),
                       ),

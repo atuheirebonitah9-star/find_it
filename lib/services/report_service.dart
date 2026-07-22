@@ -1,3 +1,5 @@
+// ignore_for_file: use_null_aware_elements
+
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -5,24 +7,49 @@ import '../matching_logic.dart';
 import 'notification_event_service.dart';
 import 'embedding_service.dart';
 import 'cloudinary_service.dart';
+import 'gemini_judgment_service.dart';
+import 'image_analysis_service.dart';
 
 class ReportService {
-  final CollectionReference lostReports =
-      FirebaseFirestore.instance.collection('lost_reports');
+  final CollectionReference lostReports = FirebaseFirestore.instance.collection(
+    'lost_reports',
+  );
 
-  final CollectionReference foundReports =
-      FirebaseFirestore.instance.collection('found_reports');
+  final CollectionReference foundReports = FirebaseFirestore.instance
+      .collection('found_reports');
 
-  final CollectionReference items =
-      FirebaseFirestore.instance.collection('items');
+  final CollectionReference items = FirebaseFirestore.instance.collection(
+    'items',
+  );
+
+  final CollectionReference userMatches = FirebaseFirestore.instance.collection(
+    'user_matches',
+  );
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final NotificationEventService _eventService = NotificationEventService();
   final EmbeddingService _embeddingService = EmbeddingService();
+  final GeminiJudgmentService _geminiService = GeminiJudgmentService();
+  final ImageAnalysisService _imageAnalysisService = ImageAnalysisService();
 
   Future<List<double>?> _getEmbedding(Report report) async {
     final text = '${report.itemName} ${report.category} ${report.description}';
     return await _embeddingService.getEmbedding(text);
+  }
+
+  /// If the embedding-based result already looks promising (weak or strong),
+  /// ask Gemini to double-check — this catches brand/model conflicts and
+  /// judges item identity independent of location. Falls back to the
+  /// embedding result if Gemini fails or the result was already "none".
+  Future<MatchResult> _refineWithGemini(
+    MatchResult embeddingResult,
+    Report a,
+    Report b,
+  ) async {
+    if (embeddingResult == MatchResult.none) return embeddingResult;
+
+    final geminiResult = await _geminiService.judgeMatch(a, b);
+    return geminiResult ?? embeddingResult;
   }
 
   /// Uploads an image file to Cloudinary and returns the secure URL.
@@ -36,8 +63,14 @@ class ReportService {
 
     // Upload image to Cloudinary first (if provided)
     String? imageUrl;
+    ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
+    
     if (report.imageUrl != null) {
       imageUrl = await uploadImage(report.imageUrl!);
+      
+      // Extract identifiers from the uploaded image if not already extracted
+      extractedIdentifiers ??=
+          await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
     }
 
     // Write to lost_reports collection
@@ -52,6 +85,8 @@ class ReportService {
       'createdAt': FieldValue.serverTimestamp(),
       'embedding': embedding,
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (extractedIdentifiers != null)
+        'extractedIdentifiers': extractedIdentifiers.toMap(),
     });
 
     // Also write to the shared items collection so the home feed shows it
@@ -65,6 +100,8 @@ class ReportService {
       'status': 'lost',
       'createdAt': FieldValue.serverTimestamp(),
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (extractedIdentifiers != null)
+        'extractedIdentifiers': extractedIdentifiers.toMap(),
     });
 
     final reportWithEmbedding = Report(
@@ -76,6 +113,8 @@ class ReportService {
       userId: currentUser?.uid,
       imageUrl:report.imageUrl,
       embedding: embedding,
+      imageUrl: imageUrl,
+      extractedIdentifiers: extractedIdentifiers,
     );
 
     _eventService.emit(
@@ -91,6 +130,16 @@ class ReportService {
     );
 
     final matches = await checkForFoundMatches(reportWithEmbedding);
+    
+    // Save matches for user
+    if (currentUser?.uid != null) {
+      await _saveMatchesForUser(
+        currentUser!.uid, 
+        matches, 
+        report.itemName,
+      );
+    }
+    
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -126,8 +175,14 @@ class ReportService {
 
     // Upload image to Cloudinary first (if provided)
     String? imageUrl;
+    ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
+    
     if (report.imageUrl != null) {
       imageUrl = await uploadImage(report.imageUrl!);
+      
+      // Extract identifiers from the uploaded image if not already extracted
+      extractedIdentifiers ??=
+          await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
     }
 
     // Write to found_reports collection
@@ -142,6 +197,8 @@ class ReportService {
       'createdAt': FieldValue.serverTimestamp(),
       'embedding': embedding,
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (extractedIdentifiers != null)
+        'extractedIdentifiers': extractedIdentifiers.toMap(),
     });
 
     // Also write to the shared items collection so the home feed shows it
@@ -155,6 +212,8 @@ class ReportService {
       'status': 'found',
       'createdAt': FieldValue.serverTimestamp(),
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (extractedIdentifiers != null)
+        'extractedIdentifiers': extractedIdentifiers.toMap(),
     });
 
     final reportWithEmbedding = Report(
@@ -167,6 +226,8 @@ class ReportService {
       imageUrl:report.imageUrl,
       embedding: embedding,
       
+      imageUrl: imageUrl,
+      extractedIdentifiers: extractedIdentifiers,
     );
 
     _eventService.emit(
@@ -182,6 +243,16 @@ class ReportService {
     );
 
     final matches = await checkForMatches(reportWithEmbedding);
+    
+    // Save matches for user
+    if (currentUser?.uid != null) {
+      await _saveMatchesForUser(
+        currentUser!.uid, 
+        matches, 
+        report.itemName,
+      );
+    }
+    
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -234,19 +305,29 @@ class ReportService {
         embedding: data['embedding'] != null
             ? List<double>.from(data['embedding'])
             : null,
+        imageUrl: data['imageUrl'],
+        extractedIdentifiers: data['extractedIdentifiers'] != null
+            ? ExtractedIdentifiers.fromMap(
+                Map<String, dynamic>.from(data['extractedIdentifiers']),
+              )
+            : null,
       );
 
       if (lostReport.userId == currentUserUid) continue;
 
-      final result = compareReports(lostReport, newFoundReport);
-      matches.add(MatchDocument(report: lostReport, result: result));
+      final embeddingResult = await compareReports(lostReport, newFoundReport);
+      final finalResult = await _refineWithGemini(
+        embeddingResult,
+        lostReport,
+        newFoundReport,
+      );
+      matches.add(MatchDocument(report: lostReport, result: finalResult));
     }
 
     return matches;
   }
 
-  Future<List<MatchDocument>> checkForFoundMatches(
-      Report newLostReport) async {
+  Future<List<MatchDocument>> checkForFoundMatches(Report newLostReport) async {
     final currentUserUid = _auth.currentUser?.uid;
     final querySnapshot = await foundReports
         .where('category', isEqualTo: newLostReport.category.toLowerCase())
@@ -269,14 +350,69 @@ class ReportService {
         embedding: data['embedding'] != null
             ? List<double>.from(data['embedding'])
             : null,
+        imageUrl: data['imageUrl'],
+        extractedIdentifiers: data['extractedIdentifiers'] != null
+            ? ExtractedIdentifiers.fromMap(
+                Map<String, dynamic>.from(data['extractedIdentifiers']),
+              )
+            : null,
       );
 
       if (foundReport.userId == currentUserUid) continue;
 
-      final result = compareReports(newLostReport, foundReport);
-      matches.add(MatchDocument(report: foundReport, result: result));
+      final embeddingResult = await compareReports(newLostReport, foundReport);
+      final finalResult = await _refineWithGemini(
+        embeddingResult,
+        newLostReport,
+        foundReport,
+      );
+      matches.add(MatchDocument(report: foundReport, result: finalResult));
     }
 
     return matches;
+  }
+
+  Future<void> _saveMatchesForUser(String userId, List<MatchDocument> matches, String reportItemName) async {
+    final batch = FirebaseFirestore.instance.batch();
+    
+    for (var match in matches) {
+      if (match.result == MatchResult.none) continue;
+      
+      final matchDoc = userMatches.doc();
+      batch.set(matchDoc, {
+        'userId': userId,
+        'matchedReportData': {
+          'itemName': match.report.itemName,
+          'category': match.report.category,
+          'location': match.report.location,
+          'date': match.report.date,
+          'description': match.report.description,
+          'userId': match.report.userId,
+          'imageUrl': match.report.imageUrl,
+          'extractedIdentifiers': match.report.extractedIdentifiers?.toMap(),
+        },
+        'result': match.result.toString().split('.').last,
+        'reportItemName': reportItemName,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    
+    await batch.commit();
+  }
+
+  Stream<QuerySnapshot> getUserMatchesStream() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      return const Stream.empty();
+    }
+    return userMatches.where('userId', isEqualTo: userId).orderBy('createdAt', descending: true).snapshots();
+  }
+
+  Stream<QuerySnapshot> getUserItemsStream() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      return const Stream.empty();
+    }
+    return items.where('userId', isEqualTo: userId).orderBy('createdAt', descending: true).snapshots();
   }
 }

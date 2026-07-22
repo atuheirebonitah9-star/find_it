@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum MessageType { text, voice }
@@ -34,7 +36,8 @@ class MessageModel {
         id: id,
         text: data['text'] as String? ?? '',
         senderUid: data['senderUid'] as String? ?? '',
-        timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        timestamp:
+            (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
         isRead: data['isRead'] as bool? ?? false,
         type: type,
         voiceUrl: data['voiceUrl'] as String?,

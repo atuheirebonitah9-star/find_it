@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatModel {
@@ -27,7 +29,8 @@ class ChatModel {
         finderUid: data['finderUid'] as String? ?? '',
         ownerUid: data['ownerUid'] as String? ?? '',
         lastMessage: data['lastMessage'] as String? ?? 'No messages yet',
-        lastMessageTime: (data['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+        lastMessageTime:
+            (data['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
         isActive: data['isActive'] as bool? ?? true,
       );
     } catch (e) {

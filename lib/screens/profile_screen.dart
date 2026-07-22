@@ -36,7 +36,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId != null) {
       try {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .get();
         if (doc.exists) {
           setState(() {
             _userProfile = UserProfile.fromMap(userId, doc.data()!);
@@ -77,10 +80,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final downloadUrl = await storageRef.getDownloadURL();
 
       // Update Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .update({'photoUrl': downloadUrl});
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'photoUrl': downloadUrl,
+      });
 
       // Reload profile
       await _loadUserProfile();
@@ -106,7 +108,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Profile',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
       ),
@@ -127,18 +132,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 ? NetworkImage(_userProfile!.photoUrl!)
                                 : null,
                             child: _userProfile?.photoUrl == null
-                                ? const Icon(Icons.person_outline, size: 50, color: Colors.grey)
+                                ? const Icon(
+                                    Icons.person_outline,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  )
                                 : null,
                           ),
                           if (_isUploading)
                             Positioned.fill(
                               child: Container(
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.5),
+                                  color: Colors.black.withValues(alpha: 0.5),
                                   shape: BoxShape.circle,
                                 ),
                                 child: const Center(
-                                  child: CircularProgressIndicator(color: Colors.white),
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
@@ -166,28 +177,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 20),
                     if (_userProfile != null) ...[
-                      _buildInfoCard('Full Name', _userProfile!.fullName, Icons.person_outline),
+                      _buildInfoCard(
+                        'Full Name',
+                        _userProfile!.fullName,
+                        Icons.person_outline,
+                      ),
                       const SizedBox(height: 16),
-                      _buildInfoCard('Email', _userProfile!.email, Icons.email_outlined),
+                      _buildInfoCard(
+                        'Email',
+                        _userProfile!.email,
+                        Icons.email_outlined,
+                      ),
                       const SizedBox(height: 16),
-                      _buildInfoCard('Student ID', _userProfile!.studentId, Icons.badge_outlined),
+                      _buildInfoCard(
+                        'Student ID',
+                        _userProfile!.studentId,
+                        Icons.badge_outlined,
+                      ),
                       if (_userProfile!.regNumber != null) ...[
                         const SizedBox(height: 16),
-                        _buildInfoCard('Registration Number', _userProfile!.regNumber!, Icons.description_outlined),
+                        _buildInfoCard(
+                          'Registration Number',
+                          _userProfile!.regNumber!,
+                          Icons.description_outlined,
+                        ),
                       ],
                       const SizedBox(height: 16),
-                      _buildInfoCard('Course', _userProfile!.course, Icons.school_outlined),
+                      _buildInfoCard(
+                        'Course',
+                        _userProfile!.course,
+                        Icons.school_outlined,
+                      ),
                       const SizedBox(height: 32),
                       SizedBox(
                         height: 56,
                         child: ElevatedButton.icon(
                           onPressed: () => _authService.signOut(),
                           icon: const Icon(Icons.logout_outlined),
-                          label: const Text('Sign Out', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                          label: const Text(
+                            'Sign Out',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.red[600],
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
                       ),
@@ -195,7 +234,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const Center(
                         child: Text(
                           'No profile data found.',
-                          style: TextStyle(fontSize: 16, color: onSurfaceVariant),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ],
@@ -219,7 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: secondaryColor.withOpacity(0.1),
+              color: secondaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: secondaryColor),
@@ -231,12 +273,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   label,
-                  style: TextStyle(fontSize: 12, color: onSurfaceVariant, fontWeight: FontWeight.w500),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: onSurfaceVariant,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(fontSize: 16, color: onSurface, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
