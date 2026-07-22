@@ -2,6 +2,7 @@
 
 import 'dart:math';
 import 'services/image_comparison_service.dart';
+import 'services/image_analysis_service.dart';
 
 class Report {
   final String category;
@@ -12,6 +13,7 @@ class Report {
   final String itemName;
   final List<double>? embedding;
   final String? imageUrl;
+  final ExtractedIdentifiers? extractedIdentifiers;
 
   Report({
     required this.category,
@@ -22,6 +24,7 @@ class Report {
     required this.itemName,
     this.embedding,
     this.imageUrl,
+    this.extractedIdentifiers,
   });
 }
 
@@ -79,6 +82,22 @@ int countKeywordOverlap(String desc1, String desc2) {
 }
 
 Future<MatchResult> compareReports(Report lost, Report found) async {
+  final imageAnalysisService = ImageAnalysisService();
+  
+  // FIRST: Check extracted identifiers (strongest possible signal)
+  if (lost.extractedIdentifiers != null &&
+      found.extractedIdentifiers != null) {
+    if (imageAnalysisService.identifiersMatch(
+      lost.extractedIdentifiers!,
+      found.extractedIdentifiers!,
+    )) {
+      print(
+        'IDENTIFIERS MATCH: Strong match based on extracted student ID/name/etc',
+      );
+      return MatchResult.strong;
+    }
+  }
+  
   bool locationMatch =
       lost.location.toLowerCase() == found.location.toLowerCase();
   bool dateMatch = lost.date.difference(found.date).inDays.abs() <= 3;

@@ -11,6 +11,28 @@ class GeminiJudgmentService {
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
 
   Future<MatchResult?> judgeMatch(Report lost, Report found) async {
+    String extractedIdentifiersText = '';
+    
+    if (lost.extractedIdentifiers != null) {
+      extractedIdentifiersText += '''
+- Report A extracted identifiers:
+  - Student number: ${lost.extractedIdentifiers?.studentNumber ?? 'None'}
+  - Full name: ${lost.extractedIdentifiers?.fullName ?? 'None'}
+  - Course: ${lost.extractedIdentifiers?.course ?? 'None'}
+  - Additional text: ${lost.extractedIdentifiers?.additionalText ?? 'None'}
+''';
+    }
+    
+    if (found.extractedIdentifiers != null) {
+      extractedIdentifiersText += '''
+- Report B extracted identifiers:
+  - Student number: ${found.extractedIdentifiers?.studentNumber ?? 'None'}
+  - Full name: ${found.extractedIdentifiers?.fullName ?? 'None'}
+  - Course: ${found.extractedIdentifiers?.course ?? 'None'}
+  - Additional text: ${found.extractedIdentifiers?.additionalText ?? 'None'}
+''';
+    }
+    
     final prompt =
         '''
 You are helping a campus lost-and-found app decide if two reports describe the same physical item.
@@ -27,9 +49,12 @@ Report B (found item):
 - Location: ${found.location}
 - Description: ${found.description}
 
+$extractedIdentifiersText
+
 Rules:
 - Location does NOT need to match. A genuine match can happen even if the locations are different.
 - Pay close attention to brand, model, and distinguishing details (e.g. "Dell" vs "HP" are different brands and should NOT be considered a match even if everything else is similar).
+- If both reports have extracted identifiers (like student number or name) that match, give a very high score!
 - Judge primarily on whether these two reports likely describe the same physical item.
 
 Respond ONLY with valid JSON in this exact format, no other text:
