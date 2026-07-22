@@ -294,7 +294,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 10),
                           const Text(
-                            'Log in to keep track of your lost and found  with the network.',
+                            'Log in to keep track of your lost and found items, and stay connected with the network.',
                             style: TextStyle(
                               fontSize: 16,
                               color: onSurfaceVariant,

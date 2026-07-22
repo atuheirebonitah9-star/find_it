@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 import 'report_item_screen.dart';
 import 'profile_screen.dart';
 import 'chat/chat_list_screen.dart';
@@ -15,47 +14,41 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _searchQuery = '';
-  String _statusFilter = 'All';
-  final TextEditingController _searchController = TextEditingController();
+  // Extracted asset path to avoid typos and magic strings
+  static const String _cryingIconPath = 'assets/crying.png';
+
+  // Cache the future to prevent infinite rebuilds in FutureBuilder
+  late final Future<Map<String, int>> _filterCountsFuture;
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _filterCountsFuture = _getFilterCounts();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
-    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
-        .collection('items')
-        .orderBy('createdAt', descending: true);
-
-    if (_statusFilter != 'All') {
-      query = query.where('status', isEqualTo: _statusFilter.toLowerCase());
-    }
-
-    return query.snapshots();
-  }
-
-  // Get counts for filter tabs
+  // Optimized to a single read instead of 3 separate queries
   Future<Map<String, int>> _getFilterCounts() async {
-    final allSnapshot = await FirebaseFirestore.instance
-        .collection('items')
-        .get();
-    final lostSnapshot = await FirebaseFirestore.instance
-        .collection('items')
-        .where('status', isEqualTo: 'lost')
-        .get();
-    final foundSnapshot = await FirebaseFirestore.instance
-        .collection('items')
-        .where('status', isEqualTo: 'found')
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('items')
+          .get();
+      int lost = 0;
+      int found = 0;
 
-    return {
-      'All': allSnapshot.docs.length,
-      'Lost': lostSnapshot.docs.length,
-      'Found': foundSnapshot.docs.length,
-    };
+      for (final doc in snapshot.docs) {
+        final status = (doc.data()['status'] ?? '').toString().toLowerCase();
+        if (status == 'lost') {
+          lost++;
+        } else if (status == 'found') {
+          found++;
+        }
+      }
+
+      return {'All': snapshot.docs.length, 'Lost': lost, 'Found': found};
+    } catch (e) {
+      // Return safe defaults on error to prevent UI crashes
+      return {'All': 0, 'Lost': 0, 'Found': 0};
+    }
   }
 
   @override
@@ -64,7 +57,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final userName = user?.displayName ?? 'User';
 
     return Scaffold(
-      // Transparent background to allow the GIF to show through
       backgroundColor: Colors.transparent,
       appBar: _buildAppBar(context),
       body: Stack(
@@ -72,9 +64,9 @@ class _HomeScreenState extends State<HomeScreen> {
           // ============ BACKGROUND GIF (40% OPACITY) ============
           Positioned.fill(
             child: Opacity(
-              opacity: 0.4, // Reduced to 40% opacity as requested
+              opacity: 0.4,
               child: Image.asset(
-                'assets/lost_found_animation.gif', // TODO: Replace with your actual GIF asset path
+                'assets/lost_found_animation.gif',
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,
@@ -83,16 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
 
           // ============ SUBTLE OVERLAY FOR READABILITY ============
-          Positioned.fill(
-            child: Container(
+          // DecoratedBox is more performant than Container for just decorations
+          const Positioned.fill(
+            child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.1),
-                    Colors.black.withOpacity(0.25),
-                  ],
+                  colors: [Colors.black12, Colors.black26],
                 ),
               ),
             ),
@@ -105,23 +95,14 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ============ WELCOME SECTION ============
                   _buildWelcomeSection(userName),
                   const SizedBox(height: 24),
-
-                  // ============ QUICK STATS ============
                   _buildQuickStats(),
                   const SizedBox(height: 24),
-
-                  // ============ QUICK ACTIONS GRID ============
                   _buildQuickActions(context),
                   const SizedBox(height: 24),
-
-                  // ============ COMMUNITY CONDUCT ============
                   _buildCommunityConduct(),
                   const SizedBox(height: 24),
-
-                  // ============ RECENT ACTIVITY ============
                   _buildRecentActivity(),
                 ],
               ),
@@ -142,17 +123,21 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: const Color.fromARGB(255, 103, 128, 163).withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.search, color: AppColors.primary, size: 20),
+            child: const Icon(
+              Icons.search,
+              color: Color.fromARGB(255, 108, 125, 148),
+              size: 20,
+            ),
           ),
           const SizedBox(width: 10),
           const Text(
             'FindIt',
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: AppColors.text,
+              color: Color.fromARGB(255, 108, 121, 153),
               fontSize: 20,
             ),
           ),
@@ -161,10 +146,8 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       actions: [
-        // ============ NOTIFICATION ICON ADDED ============
         _buildActionButton(
           context,
-
           icon: Icons.notifications_outlined,
           tooltip: 'Notifications',
           onTap: () {
@@ -175,23 +158,19 @@ class _HomeScreenState extends State<HomeScreen> {
           context,
           icon: Icons.chat_bubble_outline,
           tooltip: 'Messages',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ChatListScreen()),
-            );
-          },
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ChatListScreen()),
+          ),
         ),
         _buildActionButton(
           context,
           icon: Icons.person_outline,
           tooltip: 'Profile',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-            );
-          },
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+          ),
         ),
         _buildActionButton(
           context,
@@ -209,20 +188,23 @@ class _HomeScreenState extends State<HomeScreen> {
     required String tooltip,
     required VoidCallback onTap,
   }) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(30),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(30),
+    return Tooltip(
+      message: tooltip,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 4),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(30),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Icon(icon, color: AppColors.text, size: 22),
             ),
-            child: Icon(icon, color: AppColors.text, size: 22),
           ),
         ),
       ),
@@ -238,8 +220,8 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 20,
+            color: const Color.fromARGB(255, 131, 148, 170).withOpacity(0.3),
+            blurRadius: 10,
             offset: const Offset(0, 8),
           ),
         ],
@@ -297,18 +279,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white24),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    Container(
+                    SizedBox(
                       width: 8,
                       height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.secondary,
-                        shape: BoxShape.circle,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: AppColors.secondary,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    const Text(
+                    SizedBox(width: 6),
+                    Text(
                       'Active',
                       style: TextStyle(
                         fontSize: 12,
@@ -328,16 +312,16 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Colors.white.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(Icons.help_outline, color: Colors.white, size: 18),
-                const SizedBox(width: 8),
+                Icon(Icons.help_outline, color: Colors.white, size: 18),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Report a lost or found item using the button below. Help reunite items with their owners!',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white,
                       height: 1.4,
                     ),
                   ),
@@ -353,7 +337,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============ QUICK STATS ============
   Widget _buildQuickStats() {
     return FutureBuilder<Map<String, int>>(
-      future: _getFilterCounts(),
+      future: _filterCountsFuture,
       builder: (context, snapshot) {
         final counts = snapshot.data ?? {'All': 0, 'Lost': 0, 'Found': 0};
         return Row(
@@ -363,7 +347,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.search,
                 value: counts['Lost']?.toString() ?? '0',
                 label: 'Lost Items',
-                color: AppColors.lostColor,
+                color: const Color.fromARGB(255, 184, 62, 62),
               ),
             ),
             const SizedBox(width: 12),
@@ -400,9 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(
-          0.95,
-        ), // Slightly transparent to blend with GIF
+        color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -463,31 +445,27 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: _buildActionCard(
-                icon: Icons.report_problem_outlined,
+                icon: Image.asset('assets/crying.png', width: 32, height: 32),
                 title: 'Report Lost',
                 subtitle: 'Item you lost',
                 color: AppColors.lostColor,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ReportItemScreen()),
-                  );
-                },
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ReportItemScreen()),
+                ),
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _buildActionCard(
-                icon: Icons.check_circle_outline,
+                icon: const Icon(Icons.check_circle_outline, size: 32),
                 title: 'Report Found',
                 subtitle: 'Item you found',
                 color: AppColors.secondary,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ReportItemScreen()),
-                  );
-                },
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ReportItemScreen()),
+                ),
               ),
             ),
           ],
@@ -497,7 +475,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActionCard({
-    required IconData icon,
+    required Widget icon,
     required String title,
     required String subtitle,
     required Color color,
@@ -508,9 +486,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(
-            0.95,
-          ), // Slightly transparent to blend with GIF
+          color: Colors.white.withOpacity(0.95),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -530,7 +506,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: SizedBox(width: 32, height: 32, child: icon),
             ),
             const SizedBox(height: 10),
             Text(
@@ -541,6 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 color: AppColors.text,
               ),
             ),
+            const SizedBox(height: 4),
             Text(
               subtitle,
               style: TextStyle(fontSize: 11, color: AppColors.muted),
@@ -557,9 +534,7 @@ class _HomeScreenState extends State<HomeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(
-          0.85,
-        ), // Increased opacity slightly for readability over GIF
+        color: AppColors.primary.withOpacity(0.85),
         border: Border.all(color: AppColors.primary.withOpacity(0.15)),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -569,7 +544,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.primary,
               shape: BoxShape.circle,
             ),
@@ -642,10 +617,10 @@ class _HomeScreenState extends State<HomeScreen> {
         final docs = snapshot.data?.docs ?? [];
 
         if (docs.isEmpty) {
-          return Column(
+          return const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Recent Activity',
                 style: TextStyle(
                   fontSize: 16,
@@ -653,25 +628,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: AppColors.text,
                 ),
               ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border.withOpacity(0.5)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: AppColors.muted, size: 20),
-                    const SizedBox(width: 12),
-                    Text(
-                      'No recent activity',
-                      style: TextStyle(fontSize: 13, color: AppColors.muted),
-                    ),
-                  ],
-                ),
-              ),
+              SizedBox(height: 12),
+              // Empty state UI can be added here if needed
             ],
           );
         }
@@ -692,7 +650,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Navigate to all items
+                    // TODO: Navigate to all items
                   },
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
@@ -725,8 +683,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _buildActivityItem(
                   icon: isLost
-                      ? Icons.report_problem_outlined
-                      : Icons.check_circle_outline,
+                      ? Image.asset('crying.png', width: 24, height: 24)
+                      : const Icon(Icons.check_circle_outline, size: 24),
                   title: isLost ? 'Reported Lost Item' : 'Reported Found Item',
                   subtitle: '${data['itemName'] ?? 'Item'} · $timeAgo',
                   color: isLost ? AppColors.lostColor : AppColors.secondary,
@@ -740,7 +698,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActivityItem({
-    required IconData icon,
+    required Widget icon,
     required String title,
     required String subtitle,
     required Color color,
@@ -748,9 +706,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(
-          0.95,
-        ), // Slightly transparent to blend with GIF
+        color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border.withOpacity(0.5)),
       ),
@@ -762,7 +718,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: color.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 16),
+            child: SizedBox(width: 24, height: 24, child: icon),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -811,12 +767,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // ============ FLOATING ACTION BUTTON ============
   Widget _buildFloatingActionButton(BuildContext context) {
     return FloatingActionButton.extended(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ReportItemScreen()),
-        );
-      },
+      onPressed: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ReportItemScreen()),
+      ),
       backgroundColor: AppColors.primary,
       foregroundColor: Colors.white,
       elevation: 4,
