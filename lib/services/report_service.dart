@@ -8,6 +8,7 @@ import 'notification_event_service.dart';
 import 'embedding_service.dart';
 import 'cloudinary_service.dart';
 import 'gemini_judgment_service.dart';
+import 'image_analysis_service.dart';
 
 class ReportService {
   final CollectionReference lostReports = FirebaseFirestore.instance.collection(
@@ -21,10 +22,15 @@ class ReportService {
     'items',
   );
 
+  final CollectionReference userMatches = FirebaseFirestore.instance.collection(
+    'user_matches',
+  );
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final NotificationEventService _eventService = NotificationEventService();
   final EmbeddingService _embeddingService = EmbeddingService();
   final GeminiJudgmentService _geminiService = GeminiJudgmentService();
+  final ImageAnalysisService _imageAnalysisService = ImageAnalysisService();
 
   Future<List<double>?> _getEmbedding(Report report) async {
     final text = '${report.itemName} ${report.category} ${report.description}';
@@ -57,8 +63,14 @@ class ReportService {
 
     // Upload image to Cloudinary first (if provided)
     String? imageUrl;
+    ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
+    
     if (report.imageUrl != null) {
       imageUrl = await uploadImage(report.imageUrl!);
+      
+      // Extract identifiers from the uploaded image if not already extracted
+      extractedIdentifiers ??=
+          await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
     }
 
     // Write to lost_reports collection
@@ -73,6 +85,8 @@ class ReportService {
       'createdAt': FieldValue.serverTimestamp(),
       'embedding': embedding,
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (extractedIdentifiers != null)
+        'extractedIdentifiers': extractedIdentifiers.toMap(),
     });
 
     // Also write to the shared items collection so the home feed shows it
@@ -86,6 +100,8 @@ class ReportService {
       'status': 'lost',
       'createdAt': FieldValue.serverTimestamp(),
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (extractedIdentifiers != null)
+        'extractedIdentifiers': extractedIdentifiers.toMap(),
     });
 
     final reportWithEmbedding = Report(
@@ -96,6 +112,8 @@ class ReportService {
       itemName: report.itemName,
       userId: currentUser?.uid,
       embedding: embedding,
+      imageUrl: imageUrl,
+      extractedIdentifiers: extractedIdentifiers,
     );
 
     _eventService.emit(
@@ -111,6 +129,16 @@ class ReportService {
     );
 
     final matches = await checkForFoundMatches(reportWithEmbedding);
+    
+    // Save matches for user
+    if (currentUser?.uid != null) {
+      await _saveMatchesForUser(
+        currentUser!.uid, 
+        matches, 
+        report.itemName,
+      );
+    }
+    
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -146,8 +174,14 @@ class ReportService {
 
     // Upload image to Cloudinary first (if provided)
     String? imageUrl;
+    ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
+    
     if (report.imageUrl != null) {
       imageUrl = await uploadImage(report.imageUrl!);
+      
+      // Extract identifiers from the uploaded image if not already extracted
+      extractedIdentifiers ??=
+          await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
     }
 
     // Write to found_reports collection
@@ -162,6 +196,8 @@ class ReportService {
       'createdAt': FieldValue.serverTimestamp(),
       'embedding': embedding,
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (extractedIdentifiers != null)
+        'extractedIdentifiers': extractedIdentifiers.toMap(),
     });
 
     // Also write to the shared items collection so the home feed shows it
@@ -175,6 +211,8 @@ class ReportService {
       'status': 'found',
       'createdAt': FieldValue.serverTimestamp(),
       if (imageUrl != null) 'imageUrl': imageUrl,
+      if (extractedIdentifiers != null)
+        'extractedIdentifiers': extractedIdentifiers.toMap(),
     });
 
     final reportWithEmbedding = Report(
@@ -185,6 +223,8 @@ class ReportService {
       itemName: report.itemName,
       userId: currentUser?.uid,
       embedding: embedding,
+      imageUrl: imageUrl,
+      extractedIdentifiers: extractedIdentifiers,
     );
 
     _eventService.emit(
@@ -200,6 +240,16 @@ class ReportService {
     );
 
     final matches = await checkForMatches(reportWithEmbedding);
+    
+    // Save matches for user
+    if (currentUser?.uid != null) {
+      await _saveMatchesForUser(
+        currentUser!.uid, 
+        matches, 
+        report.itemName,
+      );
+    }
+    
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -252,6 +302,11 @@ class ReportService {
             ? List<double>.from(data['embedding'])
             : null,
         imageUrl: data['imageUrl'],
+        extractedIdentifiers: data['extractedIdentifiers'] != null
+            ? ExtractedIdentifiers.fromMap(
+                Map<String, dynamic>.from(data['extractedIdentifiers']),
+              )
+            : null,
       );
 
       if (lostReport.userId == currentUserUid) continue;
@@ -291,6 +346,11 @@ class ReportService {
             ? List<double>.from(data['embedding'])
             : null,
         imageUrl: data['imageUrl'],
+        extractedIdentifiers: data['extractedIdentifiers'] != null
+            ? ExtractedIdentifiers.fromMap(
+                Map<String, dynamic>.from(data['extractedIdentifiers']),
+              )
+            : null,
       );
 
       if (foundReport.userId == currentUserUid) continue;
@@ -305,5 +365,49 @@ class ReportService {
     }
 
     return matches;
+  }
+
+  Future<void> _saveMatchesForUser(String userId, List<MatchDocument> matches, String reportItemName) async {
+    final batch = FirebaseFirestore.instance.batch();
+    
+    for (var match in matches) {
+      if (match.result == MatchResult.none) continue;
+      
+      final matchDoc = userMatches.doc();
+      batch.set(matchDoc, {
+        'userId': userId,
+        'matchedReportData': {
+          'itemName': match.report.itemName,
+          'category': match.report.category,
+          'location': match.report.location,
+          'date': match.report.date,
+          'description': match.report.description,
+          'userId': match.report.userId,
+          'imageUrl': match.report.imageUrl,
+          'extractedIdentifiers': match.report.extractedIdentifiers?.toMap(),
+        },
+        'result': match.result.toString().split('.').last,
+        'reportItemName': reportItemName,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+    
+    await batch.commit();
+  }
+
+  Stream<QuerySnapshot> getUserMatchesStream() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      return const Stream.empty();
+    }
+    return userMatches.where('userId', isEqualTo: userId).orderBy('createdAt', descending: true).snapshots();
+  }
+
+  Stream<QuerySnapshot> getUserItemsStream() {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      return const Stream.empty();
+    }
+    return items.where('userId', isEqualTo: userId).orderBy('createdAt', descending: true).snapshots();
   }
 }

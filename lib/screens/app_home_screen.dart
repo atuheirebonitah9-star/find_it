@@ -6,6 +6,8 @@ import 'report_item_screen.dart';
 import 'item_details_screen.dart';
 import 'profile_screen.dart';
 import 'chat/chat_list_screen.dart';
+import '../services/report_service.dart';
+import '../matching_logic.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen>
   String _statusFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
   late AnimationController _fabController;
+  final ReportService _reportService = ReportService();
 
   @override
   void initState() {
@@ -35,18 +38,6 @@ class _HomeScreenState extends State<HomeScreen>
     _searchController.dispose();
     _fabController.dispose();
     super.dispose();
-  }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
-    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
-        .collection('items')
-        .orderBy('createdAt', descending: true);
-
-    if (_statusFilter != 'All') {
-      query = query.where('status', isEqualTo: _statusFilter.toLowerCase());
-    }
-
-    return query.snapshots();
   }
 
   // Get counts for filter tabs
