@@ -20,12 +20,14 @@ class ReportItemScreen extends StatefulWidget {
   State<ReportItemScreen> createState() => _ReportItemScreenState();
 }
 
-class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerProviderStateMixin {
+class _ReportItemScreenState extends State<ReportItemScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final ReportService _reportService = ReportService();
   final stt.SpeechToText _speech = stt.SpeechToText();
   final ImagePicker _imagePicker = ImagePicker();
-  final ImageClassificationService _classificationService = ImageClassificationService();
+  final ImageClassificationService _classificationService =
+      ImageClassificationService();
 
   bool isLost = true;
   String? selectedCategory;
@@ -88,9 +90,10 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
       duration: const Duration(milliseconds: 600),
       vsync: this,
     )..forward();
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _fabController, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _fabController, curve: Curves.easeOut));
   }
 
   @override
@@ -191,7 +194,9 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
     });
 
     try {
-      final category = await _classificationService.classifyImage(pickedFile.path);
+      final category = await _classificationService.classifyImage(
+        pickedFile.path,
+      );
       if (mounted && category != null) {
         setState(() {
           _autoCategory = category;
@@ -357,7 +362,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
   }
 
   // ============ MODERNIZED UI WIDGETS ============
-  
+
   Widget _buildLostFoundToggle() {
     return Container(
       padding: const EdgeInsets.all(4),
@@ -378,13 +383,15 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                 decoration: BoxDecoration(
                   color: isLost ? AppColors.lostColor : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: isLost ? [
-                    BoxShadow(
-                      color: AppColors.lostColor.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ] : null,
+                  boxShadow: isLost
+                      ? [
+                          BoxShadow(
+                            color: AppColors.lostColor.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -418,13 +425,15 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                 decoration: BoxDecoration(
                   color: !isLost ? AppColors.secondary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
-                  boxShadow: !isLost ? [
-                    BoxShadow(
-                      color: AppColors.secondary.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ] : null,
+                  boxShadow: !isLost
+                      ? [
+                          BoxShadow(
+                            color: AppColors.secondary.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -500,10 +509,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Image.file(
-                    _selectedImage!,
-                    fit: BoxFit.cover,
-                  ),
+                  Image.file(_selectedImage!, fit: BoxFit.cover),
                   if (_isClassifying)
                     Container(
                       color: Colors.black.withOpacity(0.6),
@@ -540,7 +546,11 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                        icon: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                         onPressed: _removeImage,
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(
@@ -637,10 +647,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                   const SizedBox(height: 4),
                   Text(
                     'AI will auto-categorize your item',
-                    style: TextStyle(
-                      color: AppColors.muted,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: AppColors.muted, fontSize: 12),
                   ),
                 ],
               ),
@@ -675,7 +682,10 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
             value: selectedCategory,
             isExpanded: true,
             decoration: const InputDecoration(
-              contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
               border: InputBorder.none,
             ),
             hint: Row(
@@ -707,7 +717,8 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
             onChanged: (String? value) {
               setState(() => selectedCategory = value);
             },
-            validator: (value) => value == null ? 'Please select a category' : null,
+            validator: (value) =>
+                value == null ? 'Please select a category' : null,
           ),
         ),
       ],
@@ -716,14 +727,22 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
 
   IconData _getCategoryIcon(String category) {
     switch (category) {
-      case 'Wallet': return Icons.wallet;
-      case 'Phone': return Icons.phone_android;
-      case 'ID Card': return Icons.credit_card;
-      case 'Keys': return Icons.vpn_key;
-      case 'Bag': return Icons.backpack;
-      case 'Laptop': return Icons.laptop;
-      case 'Glasses': return Icons.visibility;
-      default: return Icons.inventory_2;
+      case 'Wallet':
+        return Icons.wallet;
+      case 'Phone':
+        return Icons.phone_android;
+      case 'ID Card':
+        return Icons.credit_card;
+      case 'Keys':
+        return Icons.vpn_key;
+      case 'Bag':
+        return Icons.backpack;
+      case 'Laptop':
+        return Icons.laptop;
+      case 'Glasses':
+        return Icons.visibility;
+      default:
+        return Icons.inventory_2;
     }
   }
 
@@ -757,7 +776,9 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                   children: [
                     Icon(
                       Icons.calendar_today,
-                      color: selectedDate == null ? AppColors.muted : AppColors.primary,
+                      color: selectedDate == null
+                          ? AppColors.muted
+                          : AppColors.primary,
                       size: 18,
                     ),
                     const SizedBox(width: 12),
@@ -766,8 +787,12 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                           ? 'Select Date'
                           : '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}',
                       style: TextStyle(
-                        color: selectedDate == null ? AppColors.muted : AppColors.text,
-                        fontWeight: selectedDate == null ? FontWeight.w400 : FontWeight.w500,
+                        color: selectedDate == null
+                            ? AppColors.muted
+                            : AppColors.text,
+                        fontWeight: selectedDate == null
+                            ? FontWeight.w400
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -778,10 +803,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                     color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    Icons.arrow_drop_down,
-                    color: AppColors.primary,
-                  ),
+                  child: Icon(Icons.arrow_drop_down, color: AppColors.primary),
                 ),
               ],
             ),
@@ -913,10 +935,7 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: AppColors.primary,
-                width: 2,
-              ),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -962,14 +981,9 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                isLost ? Icons.search : Icons.check_circle,
-                size: 20,
-              ),
+              Icon(isLost ? Icons.search : Icons.check_circle, size: 20),
               const SizedBox(width: 10),
-              Text(
-                'Submit ${isLost ? 'Lost' : 'Found'} Report',
-              ),
+              Text('Submit ${isLost ? 'Lost' : 'Found'} Report'),
             ],
           ),
         ),
@@ -1018,7 +1032,9 @@ class _ReportItemScreenState extends State<ReportItemScreen> with SingleTickerPr
                         ),
                         child: Icon(
                           isLost ? Icons.search : Icons.check_circle,
-                          color: isLost ? AppColors.lostColor : AppColors.secondary,
+                          color: isLost
+                              ? AppColors.lostColor
+                              : AppColors.secondary,
                           size: 24,
                         ),
                       ),
