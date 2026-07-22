@@ -98,12 +98,20 @@ MatchResult compareReports(Report lost, Report found) {
     }
   }
 
-  // Fallback: keyword-based matching if embeddings are unavailable
+  // Fallback: keyword-based matching if embeddings are unavailable.
+  // Location and date are bonus signals here too, not requirements —
+  // a genuine match can happen even if the reports were filed in
+  // different locations.
   int overlapCount = countKeywordOverlap(lost.description, found.description);
+  int score = overlapCount + (locationMatch ? 1 : 0) + (dateMatch ? 1 : 0);
 
-  if (locationMatch && dateMatch && overlapCount >= 2) {
+  print(
+    'DEBUG (fallback): overlapCount=$overlapCount, locationMatch=$locationMatch, dateMatch=$dateMatch, score=$score',
+  );
+
+  if (overlapCount >= 3 || score >= 4) {
     return MatchResult.strong;
-  } else if (locationMatch && overlapCount >= 1) {
+  } else if (overlapCount >= 1) {
     return MatchResult.weak;
   } else {
     return MatchResult.none;

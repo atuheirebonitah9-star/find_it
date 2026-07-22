@@ -5,24 +5,43 @@ import '../matching_logic.dart';
 import 'notification_event_service.dart';
 import 'embedding_service.dart';
 import 'cloudinary_service.dart';
+import 'gemini_judgment_service.dart';
 
 class ReportService {
-  final CollectionReference lostReports =
-      FirebaseFirestore.instance.collection('lost_reports');
+  final CollectionReference lostReports = FirebaseFirestore.instance.collection(
+    'lost_reports',
+  );
 
-  final CollectionReference foundReports =
-      FirebaseFirestore.instance.collection('found_reports');
+  final CollectionReference foundReports = FirebaseFirestore.instance
+      .collection('found_reports');
 
-  final CollectionReference items =
-      FirebaseFirestore.instance.collection('items');
+  final CollectionReference items = FirebaseFirestore.instance.collection(
+    'items',
+  );
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final NotificationEventService _eventService = NotificationEventService();
   final EmbeddingService _embeddingService = EmbeddingService();
+  final GeminiJudgmentService _geminiService = GeminiJudgmentService();
 
   Future<List<double>?> _getEmbedding(Report report) async {
     final text = '${report.itemName} ${report.category} ${report.description}';
     return await _embeddingService.getEmbedding(text);
+  }
+
+  /// If the embedding-based result already looks promising (weak or strong),
+  /// ask Gemini to double-check — this catches brand/model conflicts and
+  /// judges item identity independent of location. Falls back to the
+  /// embedding result if Gemini fails or the result was already "none".
+  Future<MatchResult> _refineWithGemini(
+    MatchResult embeddingResult,
+    Report a,
+    Report b,
+  ) async {
+    if (embeddingResult == MatchResult.none) return embeddingResult;
+
+    final geminiResult = await _geminiService.judgeMatch(a, b);
+    return geminiResult ?? embeddingResult;
   }
 
   /// Uploads an image file to Cloudinary and returns the secure URL.
@@ -234,15 +253,19 @@ class ReportService {
 
       if (lostReport.userId == currentUserUid) continue;
 
-      final result = compareReports(lostReport, newFoundReport);
-      matches.add(MatchDocument(report: lostReport, result: result));
+      final embeddingResult = compareReports(lostReport, newFoundReport);
+      final finalResult = await _refineWithGemini(
+        embeddingResult,
+        lostReport,
+        newFoundReport,
+      );
+      matches.add(MatchDocument(report: lostReport, result: finalResult));
     }
 
     return matches;
   }
 
-  Future<List<MatchDocument>> checkForFoundMatches(
-      Report newLostReport) async {
+  Future<List<MatchDocument>> checkForFoundMatches(Report newLostReport) async {
     final currentUserUid = _auth.currentUser?.uid;
     final querySnapshot = await foundReports
         .where('category', isEqualTo: newLostReport.category.toLowerCase())
@@ -268,8 +291,13 @@ class ReportService {
 
       if (foundReport.userId == currentUserUid) continue;
 
-      final result = compareReports(newLostReport, foundReport);
-      matches.add(MatchDocument(report: foundReport, result: result));
+      final embeddingResult = compareReports(newLostReport, foundReport);
+      final finalResult = await _refineWithGemini(
+        embeddingResult,
+        newLostReport,
+        foundReport,
+      );
+      matches.add(MatchDocument(report: foundReport, result: finalResult));
     }
 
     return matches;
