@@ -74,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Opacity(
               opacity: 0.4, // Reduced to 40% opacity as requested
               child: Image.asset(
-                'assets/background.gif', // TODO: Replace with your actual GIF asset path
+                'assets/lost_found_animation.gif', // TODO: Replace with your actual GIF asset path
                 fit: BoxFit.cover,
                 width: double.infinity,
                 height: double.infinity,
