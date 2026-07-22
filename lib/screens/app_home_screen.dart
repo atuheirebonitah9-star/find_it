@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 import 'report_item_screen.dart';
 import 'item_details_screen.dart';
 import 'profile_screen.dart';
@@ -73,8 +72,6 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: _buildAppBar(),
@@ -105,7 +102,7 @@ class _HomeScreenState extends State<HomeScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(Icons.search, color: AppColors.primary, size: 20),
@@ -167,7 +164,7 @@ class _HomeScreenState extends State<HomeScreen>
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(30),
             ),
             child: Icon(icon, color: AppColors.text, size: 22),
@@ -189,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen>
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -294,9 +291,9 @@ class _HomeScreenState extends State<HomeScreen>
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.05),
+        color: AppColors.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.1)),
       ),
       child: Row(
         children: [
@@ -315,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen>
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.refresh, size: 14, color: AppColors.primary),
@@ -357,7 +354,7 @@ class _HomeScreenState extends State<HomeScreen>
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withValues(alpha: 0.06),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -386,7 +383,7 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                         decoration: BoxDecoration(
                           color: isSelected
-                              ? AppColors.primary.withOpacity(0.1)
+                              ? AppColors.primary.withValues(alpha: 0.1)
                               : AppColors.border,
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -668,18 +665,24 @@ class _ModernItemCardState extends State<_ModernItemCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        transform: Matrix4.identity()..scale(_hovered ? 1.01 : 1.0),
+        transform: Matrix4.identity()
+          ..scaleByDouble(
+            _hovered ? 1.01 : 1.0,
+            _hovered ? 1.01 : 1.0,
+            1.0,
+            1.0,
+          ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: _hovered
-                ? AppColors.primary.withOpacity(0.3)
-                : AppColors.border.withOpacity(0.5),
+                ? AppColors.primary.withValues(alpha: 0.3)
+                : AppColors.border.withValues(alpha: 0.5),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(_hovered ? 0.08 : 0.04),
+              color: Colors.black.withValues(alpha: _hovered ? 0.08 : 0.04),
               blurRadius: _hovered ? 16 : 10,
               offset: const Offset(0, 4),
             ),
@@ -702,12 +705,12 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                       gradient: LinearGradient(
                         colors: isLost
                             ? [
-                                AppColors.lostColor.withOpacity(0.1),
-                                AppColors.lostColor.withOpacity(0.05),
+                                AppColors.lostColor.withValues(alpha: 0.1),
+                                AppColors.lostColor.withValues(alpha: 0.05),
                               ]
                             : [
-                                AppColors.secondary.withOpacity(0.1),
-                                AppColors.secondary.withOpacity(0.05),
+                                AppColors.secondary.withValues(alpha: 0.1),
+                                AppColors.secondary.withValues(alpha: 0.05),
                               ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -797,8 +800,8 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                         ),
                         decoration: BoxDecoration(
                           color: isLost
-                              ? AppColors.lostColor.withOpacity(0.1)
-                              : AppColors.secondary.withOpacity(0.1),
+                              ? AppColors.lostColor.withValues(alpha: 0.1)
+                              : AppColors.secondary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -822,7 +825,7 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -850,20 +853,21 @@ class _ModernItemCardState extends State<_ModernItemCard> {
     final itemName = widget.data['itemName']?.toLowerCase() ?? '';
     IconData icon;
 
-    if (itemName.contains('wallet'))
+    if (itemName.contains('wallet')) {
       icon = Icons.wallet;
-    else if (itemName.contains('backpack') || itemName.contains('bag'))
+    } else if (itemName.contains('backpack') || itemName.contains('bag')) {
       icon = Icons.backpack;
-    else if (itemName.contains('phone'))
+    } else if (itemName.contains('phone')) {
       icon = Icons.phone_android;
-    else if (itemName.contains('key'))
+    } else if (itemName.contains('key')) {
       icon = Icons.vpn_key;
-    else if (itemName.contains('laptop') || itemName.contains('computer'))
+    } else if (itemName.contains('laptop') || itemName.contains('computer')) {
       icon = Icons.laptop;
-    else if (itemName.contains('glasses'))
+    } else if (itemName.contains('glasses')) {
       icon = Icons.visibility;
-    else
+    } else {
       icon = isLost ? Icons.search : Icons.check_circle_outline;
+    }
 
     return Icon(
       icon,
@@ -887,12 +891,15 @@ class _ModernItemCardState extends State<_ModernItemCard> {
   String _getTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
 
-    if (difference.inDays > 365)
+    if (difference.inDays > 365) {
       return '${(difference.inDays / 365).floor()} years ago';
-    if (difference.inDays > 30)
+    }
+    if (difference.inDays > 30) {
       return '${(difference.inDays / 30).floor()} months ago';
-    if (difference.inDays > 7)
+    }
+    if (difference.inDays > 7) {
       return '${(difference.inDays / 7).floor()} weeks ago';
+    }
     if (difference.inDays > 0) return '${difference.inDays} days ago';
     if (difference.inHours > 0) return '${difference.inHours} hours ago';
     if (difference.inMinutes > 0) return '${difference.inMinutes} minutes ago';

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'dart:math';
 import 'services/image_comparison_service.dart';
 
@@ -85,18 +87,28 @@ Future<MatchResult> compareReports(Report lost, Report found) async {
   bool hasImageComparison = false;
 
   // If both reports have images, use image comparison
-  if (lost.imageUrl != null && found.imageUrl != null && lost.imageUrl!.isNotEmpty && found.imageUrl!.isNotEmpty) {
+  if (lost.imageUrl != null &&
+      found.imageUrl != null &&
+      lost.imageUrl!.isNotEmpty &&
+      found.imageUrl!.isNotEmpty) {
     final imageComparisonService = ImageComparisonService();
-    final imageResult = await imageComparisonService.compareImages(lost.imageUrl!, found.imageUrl!);
-    
+    final imageResult = await imageComparisonService.compareImages(
+      lost.imageUrl!,
+      found.imageUrl!,
+    );
+
     if (imageResult != null) {
       hasImageComparison = true;
       imageSimilarityScore = imageResult.similarityScore;
-      print('IMAGE COMPARISON: isSameItem=${imageResult.isSameItem}, similarity=$imageSimilarityScore, differences=${imageResult.differences}, confidence=${imageResult.confidence}');
-      
+      print(
+        'IMAGE COMPARISON: isSameItem=${imageResult.isSameItem}, similarity=$imageSimilarityScore, differences=${imageResult.differences}, confidence=${imageResult.confidence}',
+      );
+
       // If AI says they're different with high confidence, return none immediately
       if (!imageResult.isSameItem && imageResult.confidence == 'high') {
-        print('IMAGE COMPARISON: High confidence that items are different - returning no match');
+        print(
+          'IMAGE COMPARISON: High confidence that items are different - returning no match',
+        );
         return MatchResult.none;
       }
     }
@@ -104,14 +116,14 @@ Future<MatchResult> compareReports(Report lost, Report found) async {
 
   if (lost.embedding != null && found.embedding != null) {
     double semanticScore = cosineSimilarity(lost.embedding!, found.embedding!);
-    
+
     // Incorporate image similarity into the score if available
     double score = semanticScore;
     if (hasImageComparison) {
       // Give image comparison significant weight (40% of total score)
       score = (semanticScore * 0.6) + (imageSimilarityScore * 0.4);
     }
-    
+
     score += (locationMatch ? 0.05 : 0) + (dateMatch ? 0.05 : 0);
 
     print(

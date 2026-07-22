@@ -30,7 +30,7 @@ class ItemDetailsScreen extends StatelessWidget {
           data['itemName'] ?? 'Item Details',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: backgroundColor.withOpacity(0.8),
+        backgroundColor: backgroundColor.withValues(alpha: 0.8),
         elevation: 0,
       ),
       body: SafeArea(

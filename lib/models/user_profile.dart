@@ -17,9 +17,9 @@ class UserProfile {
     required this.course,
     this.photoUrl,
     required this.createdAt,
-});
+  });
 
-Map<String, dynamic> toMap() =>{
+  Map<String, dynamic> toMap() => {
     'fullName': fullName,
     'email': email,
     'studentId': studentId,
@@ -27,18 +27,18 @@ Map<String, dynamic> toMap() =>{
     'course': course,
     'photoUrl': photoUrl,
     'createdAt': createdAt.toIso8601String(),
-};
+  };
 
-factory UserProfile.fromMap(String uid, Map<String, dynamic> map) {
-  return UserProfile(
-    uid: uid,
-    fullName: map['fullName'] ?? '',
-    email: map['email'] ?? '',
-    studentId: map['studentId'] ?? '',
-    regNumber: map['regNumber'] ?? '',
-    course: map['course'] ?? '',
-    photoUrl: map['photoUrl'] ?? '',
-    createdAt: DateTime.parse(map['createdAt']),
-  );
-}
+  factory UserProfile.fromMap(String uid, Map<String, dynamic> map) {
+    return UserProfile(
+      uid: uid,
+      fullName: map['fullName'] ?? '',
+      email: map['email'] ?? '',
+      studentId: map['studentId'] ?? '',
+      regNumber: map['regNumber'] ?? '',
+      course: map['course'] ?? '',
+      photoUrl: map['photoUrl'] ?? '',
+      createdAt: DateTime.parse(map['createdAt']),
+    );
+  }
 }

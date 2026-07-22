@@ -15,7 +15,9 @@ class TermsScreen extends StatelessWidget {
       body: FutureBuilder<String>(
         future: _loadTerms(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Text(snapshot.data!),

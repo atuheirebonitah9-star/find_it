@@ -153,7 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ListView.separated(
                       shrinkWrap: true,
                       itemCount: events.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final event = events[index];
                         final body =
@@ -214,7 +215,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: ClipRect(
                 child: BackdropFilter(
                   filter: ImageFilter.blur(sigmaX: 1.0, sigmaY: 1.0),
-                  child: Container(color: Colors.white.withOpacity(0.06)),
+                  child: Container(color: Colors.white.withValues(alpha: 0.06)),
                 ),
               ),
             ),
@@ -222,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
               top: 16,
               right: 16,
               child: Material(
-                color: Colors.white.withOpacity(0.92),
+                color: Colors.white.withValues(alpha: 0.92),
                 shape: const CircleBorder(),
                 elevation: 6,
                 child: IconButton(
@@ -250,9 +251,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.30),
+                      color: Colors.white.withValues(alpha: 0.30),
                       borderRadius: BorderRadius.circular(28),
-                      border: Border.all(color: Colors.white.withOpacity(0.38)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.38),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: const Color.fromARGB(
@@ -260,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             231,
                             10,
                             10,
-                          ).withOpacity(0.03),
+                          ).withValues(alpha: 0.03),
                           blurRadius: 20,
                           offset: const Offset(0, 12),
                         ),

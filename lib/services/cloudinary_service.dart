@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'dart:io';
 
@@ -11,7 +13,10 @@ class CloudinaryService {
   static Future<String?> uploadItemImage(File imageFile) async {
     try {
       CloudinaryResponse response = await _cloudinary.uploadFile(
-        CloudinaryFile.fromFile(imageFile.path, resourceType: CloudinaryResourceType.Image),
+        CloudinaryFile.fromFile(
+          imageFile.path,
+          resourceType: CloudinaryResourceType.Image,
+        ),
       );
       return response.secureUrl;
     } catch (e) {
