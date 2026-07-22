@@ -139,7 +139,13 @@ class _HoverableMatchCardState extends State<_HoverableMatchCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         margin: const EdgeInsets.only(bottom: 12),
-        transform: Matrix4.identity()..scale(_hovered ? 1.01 : 1.0),
+        transform: Matrix4.identity()
+          ..scaleByDouble(
+            _hovered ? 1.01 : 1.0,
+            _hovered ? 1.01 : 1.0,
+            1.0,
+            1.0,
+          ),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,

@@ -8,11 +8,7 @@ class ChatTile extends StatefulWidget {
   final ChatModel chat;
   final VoidCallback onTap;
 
-  const ChatTile({
-    super.key,
-    required this.chat,
-    required this.onTap,
-  });
+  const ChatTile({super.key, required this.chat, required this.onTap});
 
   @override
   State<ChatTile> createState() => _ChatTileState();
@@ -31,7 +27,10 @@ class _ChatTileState extends State<ChatTile> {
   }
 
   Future<void> _loadData() async {
-    final otherUserUid = _chatService.getOtherUserUid(widget.chat.finderUid, widget.chat.ownerUid);
+    final otherUserUid = _chatService.getOtherUserUid(
+      widget.chat.finderUid,
+      widget.chat.ownerUid,
+    );
     final profile = await _chatService.getUserProfile(otherUserUid);
     final unreadCount = await _chatService.getUnreadCount(widget.chat.chatId);
     if (mounted) {
@@ -51,7 +50,9 @@ class _ChatTileState extends State<ChatTile> {
         child: const Icon(Icons.person, color: Colors.blue),
       ),
       title: Text(
-        _isLoading ? 'Loading...' : _otherUserProfile?.fullName ?? widget.chat.itemName,
+        _isLoading
+            ? 'Loading...'
+            : _otherUserProfile?.fullName ?? widget.chat.itemName,
         style: const TextStyle(fontWeight: FontWeight.bold),
       ),
       subtitle: Text(

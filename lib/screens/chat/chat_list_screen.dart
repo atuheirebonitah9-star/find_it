@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/chat/chat_tile.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/app_theme.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -13,7 +12,8 @@ class ChatListScreen extends StatefulWidget {
   State<ChatListScreen> createState() => _ChatListScreenState();
 }
 
-class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProviderStateMixin {
+class _ChatListScreenState extends State<ChatListScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -24,7 +24,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
       duration: const Duration(milliseconds: 600),
       vsync: this,
     )..forward();
-    
+
     _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
@@ -58,7 +58,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withOpacity(0.1),
+                    color: AppColors.lostColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -121,26 +121,26 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                         ),
                         onPressed: () async {
                           Navigator.pop(context);
-                          await Provider.of<ChatProvider>(context, listen: false)
-                              .deleteChat(chatId);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Chat deleted successfully'),
-                                backgroundColor: AppColors.primary,
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                          final messenger = ScaffoldMessenger.of(this.context);
+                          await Provider.of<ChatProvider>(
+                            context,
+                            listen: false,
+                          ).deleteChat(chatId);
+                          if (!mounted) return;
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: const Text('Chat deleted successfully'),
+                              backgroundColor: AppColors.primary,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
                               ),
-                            );
-                          }
+                            ),
+                          );
                         },
                         child: const Text(
                           'Delete',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -165,9 +165,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
           builder: (context, chatProvider, child) {
             if (chatProvider.isLoading) {
               return const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.primary,
-                ),
+                child: CircularProgressIndicator(color: AppColors.primary),
               );
             }
 
@@ -184,7 +182,10 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                   key: Key(chat.chatId),
                   direction: DismissDirection.endToStart,
                   background: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.lostColor,
                       borderRadius: BorderRadius.circular(16),
@@ -209,7 +210,8 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
                         MaterialPageRoute(
                           builder: (context) => ChatScreen(
                             chatId: chat.chatId,
-                            otherUserUid: chat.finderUid == chatProvider.currentUserUid
+                            otherUserUid:
+                                chat.finderUid == chatProvider.currentUserUid
                                 ? chat.ownerUid
                                 : chat.finderUid,
                             itemName: chat.itemName,
@@ -235,7 +237,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -259,10 +261,7 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
       elevation: 0,
       actions: [
         IconButton(
-          icon: Icon(
-            Icons.search_outlined,
-            color: AppColors.text,
-          ),
+          icon: Icon(Icons.search_outlined, color: AppColors.text),
           onPressed: () {
             // Implement search functionality
           },
@@ -281,13 +280,13 @@ class _ChatListScreenState extends State<ChatListScreen> with SingleTickerProvid
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.06),
+              color: AppColors.primary.withValues(alpha: 0.06),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.chat_bubble_outline,
               size: 56,
-              color: AppColors.primary.withOpacity(0.4),
+              color: AppColors.primary.withValues(alpha: 0.4),
             ),
           ),
           const SizedBox(height: 24),

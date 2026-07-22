@@ -3,7 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:find_it/theme/app_colors.dart';
-import 'package:find_it/theme/app_theme.dart';
+
 import '../models/user_profile.dart';
 import 'terms_screen.dart';
 import '../services/notification_event_service.dart';
@@ -141,7 +141,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.15),
+                  color: AppColors.secondary.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -343,7 +343,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
+                    color: AppColors.primary.withValues(alpha: 0.3),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -553,9 +553,9 @@ class _SignUpScreenState extends State<SignUpScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.lostColor.withOpacity(0.08),
+        color: AppColors.lostColor.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.lostColor.withOpacity(0.2)),
+        border: Border.all(color: AppColors.lostColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
@@ -630,9 +630,9 @@ class _SignUpScreenState extends State<SignUpScreen>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.06),
+        color: AppColors.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.12)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

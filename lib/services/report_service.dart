@@ -1,3 +1,5 @@
+// ignore_for_file: use_null_aware_elements
+
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -254,18 +256,13 @@ class ReportService {
 
       if (lostReport.userId == currentUserUid) continue;
 
-<<<<<<< HEAD
-      final result = await compareReports(lostReport, newFoundReport);
-      matches.add(MatchDocument(report: lostReport, result: result));
-=======
-      final embeddingResult = compareReports(lostReport, newFoundReport);
+      final embeddingResult = await compareReports(lostReport, newFoundReport);
       final finalResult = await _refineWithGemini(
         embeddingResult,
         lostReport,
         newFoundReport,
       );
       matches.add(MatchDocument(report: lostReport, result: finalResult));
->>>>>>> Jill
     }
 
     return matches;
@@ -298,18 +295,13 @@ class ReportService {
 
       if (foundReport.userId == currentUserUid) continue;
 
-<<<<<<< HEAD
-      final result = await compareReports(newLostReport, foundReport);
-      matches.add(MatchDocument(report: foundReport, result: result));
-=======
-      final embeddingResult = compareReports(newLostReport, foundReport);
+      final embeddingResult = await compareReports(newLostReport, foundReport);
       final finalResult = await _refineWithGemini(
         embeddingResult,
         newLostReport,
         foundReport,
       );
       matches.add(MatchDocument(report: foundReport, result: finalResult));
->>>>>>> Jill
     }
 
     return matches;

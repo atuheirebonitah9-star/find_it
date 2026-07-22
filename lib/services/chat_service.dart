@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/message_model.dart';
@@ -24,9 +26,12 @@ class ChatService {
     required String itemName,
   }) async {
     String chatId = generateChatId(finderUid, ownerUid);
-    
+
     // Check if chat already exists
-    DocumentSnapshot doc = await _firestore.collection('chats').doc(chatId).get();
+    DocumentSnapshot doc = await _firestore
+        .collection('chats')
+        .doc(chatId)
+        .get();
     if (doc.exists) {
       return chatId; // Chat exists, return ID
     }
@@ -58,12 +63,12 @@ class ChatService {
         .doc(chatId)
         .collection('messages')
         .add({
-      'text': text,
-      'senderUid': currentUserUid,
-      'timestamp': FieldValue.serverTimestamp(),
-      'isRead': false,
-      'type': 'text',
-    });
+          'text': text,
+          'senderUid': currentUserUid,
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'type': 'text',
+        });
 
     // Update last message in chat document
     await _firestore.collection('chats').doc(chatId).update({
@@ -86,14 +91,14 @@ class ChatService {
         .doc(chatId)
         .collection('messages')
         .add({
-      'text': '',
-      'senderUid': currentUserUid,
-      'timestamp': FieldValue.serverTimestamp(),
-      'isRead': false,
-      'type': 'voice',
-      'voiceUrl': voiceUrl,
-      'voiceDuration': voiceDuration,
-    });
+          'text': '',
+          'senderUid': currentUserUid,
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'type': 'voice',
+          'voiceUrl': voiceUrl,
+          'voiceDuration': voiceDuration,
+        });
 
     // Update last message in chat document
     await _firestore.collection('chats').doc(chatId).update({
@@ -111,10 +116,10 @@ class ChatService {
         .orderBy('timestamp', descending: false)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return MessageModel.fromFirestore(doc.data(), doc.id);
-      }).toList();
-    });
+          return snapshot.docs.map((doc) {
+            return MessageModel.fromFirestore(doc.data(), doc.id);
+          }).toList();
+        });
   }
 
   // Get user's chats
@@ -126,21 +131,23 @@ class ChatService {
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) {
-      final chats = snapshot.docs
-          .where((doc) {
-            // Only show chats where user is either finder or owner
-            String finderUid = doc.data()['finderUid'] ?? '';
-            String ownerUid = doc.data()['ownerUid'] ?? '';
-            return finderUid == currentUserUid || ownerUid == currentUserUid;
-          })
-          .map((doc) {
-            return ChatModel.fromFirestore(doc.data(), doc.id);
-          }).toList();
-      
-      // Sort chats by lastMessageTime on client to avoid needing composite index
-      chats.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
-      return chats;
-    });
+          final chats = snapshot.docs
+              .where((doc) {
+                // Only show chats where user is either finder or owner
+                String finderUid = doc.data()['finderUid'] ?? '';
+                String ownerUid = doc.data()['ownerUid'] ?? '';
+                return finderUid == currentUserUid ||
+                    ownerUid == currentUserUid;
+              })
+              .map((doc) {
+                return ChatModel.fromFirestore(doc.data(), doc.id);
+              })
+              .toList();
+
+          // Sort chats by lastMessageTime on client to avoid needing composite index
+          chats.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
+          return chats;
+        });
   }
 
   // Mark messages as read
@@ -168,7 +175,10 @@ class ChatService {
   // Get UserProfile for a user UID
   Future<UserProfile?> getUserProfile(String uid) async {
     try {
-      DocumentSnapshot doc = await _firestore.collection('users').doc(uid).get();
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(uid)
+          .get();
       if (!doc.exists) return null;
       return UserProfile.fromMap(uid, doc.data() as Map<String, dynamic>);
     } catch (e) {
@@ -210,7 +220,7 @@ class ChatService {
         .doc(chatId)
         .collection('messages')
         .get();
-    
+
     for (var doc in messagesSnapshot.docs) {
       await doc.reference.delete();
     }

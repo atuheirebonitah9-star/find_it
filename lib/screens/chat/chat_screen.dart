@@ -6,7 +6,6 @@ import '../../widgets/chat/message_input_field.dart';
 import '../../services/chat_service.dart';
 import '../../models/user_profile.dart';
 import '../../theme/app_colors.dart';
-import '../../theme/app_theme.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -24,7 +23,8 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateMixin {
+class _ChatScreenState extends State<ChatScreen>
+    with SingleTickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final ChatService _chatService = ChatService();
   UserProfile? _otherUserProfile;
@@ -81,9 +81,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               builder: (context, chatProvider, child) {
                 if (chatProvider.isLoading) {
                   return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary,
-                    ),
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   );
                 }
 
@@ -91,20 +89,20 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                   return _buildEmptyState();
                 }
 
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-                
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => _scrollToBottom(),
+                );
+
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
                   itemCount: chatProvider.messages.length,
                   itemBuilder: (context, index) {
                     final message = chatProvider.messages[index];
-                    final isMe = message.senderUid == chatProvider.currentUserUid;
-                    
-                    return MessageBubble(
-                      message: message,
-                      isMe: isMe,
-                    );
+                    final isMe =
+                        message.senderUid == chatProvider.currentUserUid;
+
+                    return MessageBubble(message: message, isMe: isMe);
                   },
                 );
               },
@@ -112,13 +110,17 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
           ),
           MessageInputField(
             onSend: (text) async {
-              await Provider.of<ChatProvider>(context, listen: false)
-                  .sendMessage(widget.chatId, text);
+              await Provider.of<ChatProvider>(
+                context,
+                listen: false,
+              ).sendMessage(widget.chatId, text);
               _scrollToBottom();
             },
             onSendVoice: (voiceUrl, duration) async {
-              await Provider.of<ChatProvider>(context, listen: false)
-                  .sendVoiceMessage(widget.chatId, voiceUrl, duration);
+              await Provider.of<ChatProvider>(
+                context,
+                listen: false,
+              ).sendVoiceMessage(widget.chatId, voiceUrl, duration);
               _scrollToBottom();
             },
           ),
@@ -131,7 +133,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   PreferredSizeWidget _buildAppBar() {
     // Get the first letter of the user's name for avatar
     String initial = 'U';
-    if (!_isLoadingProfile && _otherUserProfile?.fullName?.isNotEmpty == true) {
+    if (!_isLoadingProfile && _otherUserProfile?.fullName.isNotEmpty == true) {
       initial = _otherUserProfile!.fullName[0].toUpperCase();
     }
 
@@ -164,7 +166,9 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isLoadingProfile ? 'Loading...' : _otherUserProfile?.fullName ?? 'User',
+                  _isLoadingProfile
+                      ? 'Loading...'
+                      : _otherUserProfile?.fullName ?? 'User',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -206,10 +210,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
       ),
       actions: [
         IconButton(
-          icon: const Icon(
-            Icons.more_vert,
-            color: AppColors.text,
-          ),
+          icon: const Icon(Icons.more_vert, color: AppColors.text),
           onPressed: () {
             _showChatOptions(context);
           },
@@ -228,13 +229,13 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.06),
+              color: AppColors.primary.withValues(alpha: 0.06),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.chat_outlined,
               size: 40,
-              color: AppColors.primary.withOpacity(0.4),
+              color: AppColors.primary.withValues(alpha: 0.4),
             ),
           ),
           const SizedBox(height: 16),
@@ -249,10 +250,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
           const SizedBox(height: 8),
           const Text(
             'Send a message to start the conversation',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.muted,
-            ),
+            style: TextStyle(fontSize: 14, color: AppColors.muted),
           ),
         ],
       ),
@@ -274,9 +272,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: AppColors.divider),
-                  ),
+                  border: Border(bottom: BorderSide(color: AppColors.divider)),
                 ),
                 child: Center(
                   child: Container(
@@ -293,7 +289,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
+                    color: AppColors.accent.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -315,7 +311,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -337,7 +333,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withOpacity(0.1),
+                    color: AppColors.lostColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -359,7 +355,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withOpacity(0.1),
+                    color: AppColors.lostColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -403,7 +399,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withOpacity(0.1),
+                    color: AppColors.lostColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -470,9 +466,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                         },
                         child: const Text(
                           'Delete',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -487,8 +481,10 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   }
 
   void _deleteChat() async {
-    await Provider.of<ChatProvider>(context, listen: false)
-        .deleteChat(widget.chatId);
+    await Provider.of<ChatProvider>(
+      context,
+      listen: false,
+    ).deleteChat(widget.chatId);
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -520,7 +516,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
+                    color: AppColors.accent.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -593,9 +589,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                         },
                         child: const Text(
                           'Report',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -628,7 +622,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withOpacity(0.1),
+                    color: AppColors.lostColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -701,9 +695,7 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
                         },
                         child: const Text(
                           'Block',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ),
@@ -718,8 +710,11 @@ class _ChatScreenState extends State<ChatScreen> with SingleTickerProviderStateM
   }
 
   void _archiveChat() async {
-    await Provider.of<ChatProvider>(context, listen: false)
-        .archiveChat(widget.chatId);
+    await Provider.of<ChatProvider>(
+      context,
+      listen: false,
+    ).archiveChat(widget.chatId);
+    if (!mounted) return;
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

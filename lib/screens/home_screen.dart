@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
 import 'report_item_screen.dart';
 import 'profile_screen.dart';
 import 'chat/chat_list_screen.dart';
@@ -15,26 +14,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _searchQuery = '';
-  String _statusFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
-    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
-        .collection('items')
-        .orderBy('createdAt', descending: true);
-
-    if (_statusFilter != 'All') {
-      query = query.where('status', isEqualTo: _statusFilter.toLowerCase());
-    }
-
-    return query.snapshots();
   }
 
   // Get counts for filter tabs
@@ -90,8 +75,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.1),
-                    Colors.black.withOpacity(0.25),
+                    Colors.black.withValues(alpha: 0.1),
+                    Colors.black.withValues(alpha: 0.25),
                   ],
                 ),
               ),
@@ -142,7 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.search, color: AppColors.primary, size: 20),
@@ -219,7 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
+              color: AppColors.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(30),
             ),
             child: Icon(icon, color: AppColors.text, size: 22),
@@ -238,7 +223,7 @@ class _HomeScreenState extends State<HomeScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
+            color: AppColors.primary.withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -270,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Welcome back,',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -293,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withOpacity(0.3),
+                  color: AppColors.secondary.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white24),
                 ),
@@ -325,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -337,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Report a lost or found item using the button below. Help reunite items with their owners!',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white.withOpacity(0.9),
+                      color: Colors.white.withValues(alpha: 0.9),
                       height: 1.4,
                     ),
                   ),
@@ -400,25 +385,25 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(
-          0.95,
+        color: Colors.white.withValues(
+          alpha: 0.95,
         ), // Slightly transparent to blend with GIF
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withValues(alpha: 0.08),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 16),
@@ -508,18 +493,18 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(
-            0.95,
+          color: Colors.white.withValues(
+            alpha: 0.95,
           ), // Slightly transparent to blend with GIF
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
-          border: Border.all(color: AppColors.border.withOpacity(0.5)),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -527,7 +512,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -557,10 +542,10 @@ class _HomeScreenState extends State<HomeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(
-          0.85,
+        color: AppColors.primary.withValues(
+          alpha: 0.85,
         ), // Increased opacity slightly for readability over GIF
-        border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -657,9 +642,11 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95),
+                  color: Colors.white.withValues(alpha: 0.95),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border.withOpacity(0.5)),
+                  border: Border.all(
+                    color: AppColors.border.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -732,7 +719,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: isLost ? AppColors.lostColor : AppColors.secondary,
                 ),
               );
-            }).toList(),
+            }),
           ],
         );
       },
@@ -748,18 +735,18 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(
-          0.95,
+        color: Colors.white.withValues(
+          alpha: 0.95,
         ), // Slightly transparent to blend with GIF
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border.withOpacity(0.5)),
+        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 16),
@@ -797,10 +784,12 @@ class _HomeScreenState extends State<HomeScreen> {
   String _getTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
 
-    if (difference.inDays > 365)
+    if (difference.inDays > 365) {
       return '${(difference.inDays / 365).floor()}y ago';
-    if (difference.inDays > 30)
+    }
+    if (difference.inDays > 30) {
       return '${(difference.inDays / 30).floor()}mo ago';
+    }
     if (difference.inDays > 7) return '${(difference.inDays / 7).floor()}w ago';
     if (difference.inDays > 0) return '${difference.inDays}d ago';
     if (difference.inHours > 0) return '${difference.inHours}h ago';
