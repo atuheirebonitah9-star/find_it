@@ -7,6 +7,7 @@ import 'item_details_screen.dart';
 import 'profile_screen.dart';
 import 'chat/chat_list_screen.dart';
 import '../services/report_service.dart';
+import '../services/notification_event_service.dart';
 import '../matching_logic.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -118,18 +119,22 @@ class _HomeScreenState extends State<HomeScreen>
             child: Icon(Icons.search, color: AppColors.primary, size: 20),
           ),
           const SizedBox(width: 10),
-          const Text(
-            'FindIt',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppColors.text,
-            ),
-          ),
+          Image.asset(
+                  'assets/ChatGPT Image Jul 23, 2026, 09_38_30 AM.png',
+                  width: 150,
+                  height: 40,
+                  fit: BoxFit.contain,
+                ),
         ],
       ),
       backgroundColor: Colors.transparent,
       elevation: 0,
       actions: [
+        _buildActionButton(
+          icon: Icons.notifications_outlined,
+          tooltip: 'Notifications',
+          onTap: _showNotifications,
+        ),
         _buildActionButton(
           icon: Icons.chat_bubble_outline,
           tooltip: 'Chats',
@@ -146,7 +151,7 @@ class _HomeScreenState extends State<HomeScreen>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+              MaterialPageRoute(builder: (_) => const ProfileScreen(),
             );
           },
         ),
@@ -164,23 +169,157 @@ class _HomeScreenState extends State<HomeScreen>
     required String tooltip,
     required VoidCallback onTap,
   }) {
+    bool _hovered = false;
     return Padding(
       padding: const EdgeInsets.only(right: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(30),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(30),
+      child: StatefulBuilder(
+        builder: (context, setState) {
+          return MouseRegion(
+            onEnter: (_) => setState(() => _hovered = true),
+            onExit: (_) => setState(() => _hovered = false),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.all(8),
+              transform: Matrix4.identity()
+                ..scaleByDouble(
+                  _hovered ? 1.1 : 1.0,
+                  _hovered ? 1.1 : 1.0,
+                  1.0,
+                  1.0,
+                ),
+              decoration: BoxDecoration(
+                color: _hovered
+                    ? AppColors.primary.withValues(alpha: 0.2)
+                    : AppColors.primary.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: _hovered
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: onTap,
+                  borderRadius: BorderRadius.circular(30),
+                  child: Icon(
+                    icon, 
+                    color: _hovered ? AppColors.primary : AppColors.text, 
+                    size: 22,
+                  ),
+                ),
+              ),
             ),
-            child: Icon(icon, color: AppColors.text, size: 22),
-          ),
-        ),
+          );
+        },
       ),
+    );
+  }
+
+  String _notificationTitle(NotificationEvent event) {
+    final title = event.data['title']?.toString();
+    if (title != null && title.isNotEmpty) return title;
+    return event.type.name
+        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
+        .trim();
+  }
+
+  void _showNotifications() {
+    final events = NotificationEventService()
+        .getEventHistory()
+        .reversed
+        .toList();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Notifications',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                if (events.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No notifications yet.',
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: events.length,
+                      separatorBuilder: (context, index) =>
+                          const Divider(height: 1),
+                      itemBuilder: (context, index) {
+                        final event = events[index];
+                        final body =
+                            event.data['body']?.toString() ??
+                            'Tap a notification for more details.';
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 0,
+                            vertical: 8,
+                          ),
+                          title: Text(_notificationTitle(event)),
+                          subtitle: Text(body),
+                          trailing: Text(
+                            '${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(color: Colors.black45),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            NotificationEventService().emit(
+                              NotificationEvent(
+                                type: NotificationEventType.notificationTapped,
+                                data: {
+                                  'title': _notificationTitle(event),
+                                  'body': body,
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -271,27 +410,62 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildQuickFilterChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 14, color: AppColors.muted),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.text,
+    bool _hovered = false;
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return MouseRegion(
+          onEnter: (_) => setState(() => _hovered = true),
+          onExit: (_) => setState(() => _hovered = false),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            transform: Matrix4.identity()
+              ..scaleByDouble(
+                _hovered ? 1.05 : 1.0,
+                _hovered ? 1.05 : 1.0,
+                1.0,
+                1.0,
+              ),
+            decoration: BoxDecoration(
+              color: _hovered ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: _hovered ? AppColors.primary.withValues(alpha: 0.6) : AppColors.border,
+                width: _hovered ? 1.5 : 1.0,
+              ),
+              boxShadow: _hovered
+                  ? [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.2),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                        spreadRadius: 1,
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 14,
+                  color: _hovered ? AppColors.primary : AppColors.muted,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: _hovered ? FontWeight.w600 : FontWeight.w500,
+                    color: _hovered ? AppColors.primary : AppColors.text,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -673,28 +847,33 @@ class _ModernItemCardState extends State<_ModernItemCard> {
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         transform: Matrix4.identity()
           ..scaleByDouble(
-            _hovered ? 1.01 : 1.0,
-            _hovered ? 1.01 : 1.0,
+            _hovered ? 1.02 : 1.0,
+            _hovered ? 1.02 : 1.0,
             1.0,
             1.0,
           ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(
             color: _hovered
-                ? AppColors.primary.withValues(alpha: 0.3)
-                : AppColors.border.withValues(alpha: 0.5),
+                ? AppColors.primary.withValues(alpha: 0.5)
+                : AppColors.border.withValues(alpha: 0.7),
+            width: _hovered ? 1.5 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: _hovered ? 0.08 : 0.04),
-              blurRadius: _hovered ? 16 : 10,
-              offset: const Offset(0, 4),
+              color: _hovered
+                  ? AppColors.primary.withValues(alpha: 0.15)
+                  : Colors.black.withValues(alpha: 0.05),
+              blurRadius: _hovered ? 24 : 12,
+              spreadRadius: _hovered ? 2 : 0,
+              offset: Offset(0, _hovered ? 8 : 4),
             ),
           ],
         ),
