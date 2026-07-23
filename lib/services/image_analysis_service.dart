@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'api_keys.dart';
 
@@ -34,12 +35,19 @@ class ExtractedIdentifiers {
       additionalText: map['additionalText'],
     );
   }
+
+  bool get isEmpty =>
+      studentNumber == null &&
+          fullName == null &&
+          course == null &&
+          additionalText == null;
 }
 
 class ImageAnalysisService {
   static const String _apiKey = geminiApiKey;
 
-  /// Extract text and personal identifiers from an image URL or local path
+  /// Extract text and personal identifiers from an image URL (e.g. a
+  /// Cloudinary URL after upload).
   Future<ExtractedIdentifiers?> analyzeImageFromUrl(String imageUrl) async {
     try {
       final base64Image = await _downloadAndEncodeImage(imageUrl);
@@ -51,7 +59,8 @@ class ImageAnalysisService {
     }
   }
 
-  /// Extract text and personal identifiers from a local image file
+  /// Extract text and personal identifiers from a local image file path
+  /// (e.g. the path returned by an image picker, before upload).
   Future<ExtractedIdentifiers?> analyzeImageFromFile(String imagePath) async {
     try {
       final imageBytes = await _readLocalImage(imagePath);
@@ -77,23 +86,31 @@ class ImageAnalysisService {
               'parts': [
                 {
                   'text': '''
-Analyze this image and extract any identifiable information that can help match it to its owner. Common items include student IDs, notebooks, wallets, phones, etc.
+You are an OCR and identity-extraction assistant for a lost-and-found app.
+Look ONLY at the text that is physically printed, written, or displayed in
+this image (e.g. on a student ID card, notebook cover, luggage tag, phone
+lock screen, etc). Do not guess, infer, or autocomplete missing characters.
+If a field is not clearly and legibly present in the image, set it to null
+rather than guessing.
 
-Extract the following information if present:
-- Student number or ID number
-- Full name of the person
-- Course or program
-- Any other relevant text that might help identify the owner
+Transcribe text EXACTLY as it appears (same spelling, spacing, capitalization
+where legible). Do not translate, normalize, or "correct" names.
 
-Respond ONLY with valid JSON in this exact format:
+Extract:
+- studentNumber: a student/ID/registration number if visible, exactly as printed
+- fullName: the full name of the person if visible, exactly as printed
+- course: course, program, faculty, or department if visible
+- additionalText: any other short identifying text (e.g. serial number,
+  phone number, email, house/room number) that is clearly visible
+
+Respond ONLY with valid JSON, no markdown fences, no commentary, in exactly
+this format:
 {
   "studentNumber": "string or null",
   "fullName": "string or null",
   "course": "string or null",
-  "additionalText": "string or null (any other relevant text from the image)"
+  "additionalText": "string or null"
 }
-
-If none of these are present, set all fields to null.
 ''',
                 },
                 {
@@ -105,6 +122,9 @@ If none of these are present, set all fields to null.
               ],
             },
           ],
+          // Keep the model literal/deterministic — this is transcription,
+          // not creative writing.
+          'generationConfig': {'temperature': 0},
         }),
       );
 
@@ -145,6 +165,9 @@ If none of these are present, set all fields to null.
       if (response.statusCode == 200) {
         return base64Encode(response.bodyBytes);
       }
+      print(
+        'Failed to download image: status ${response.statusCode} for $imageUrl',
+      );
       return null;
     } catch (e) {
       print('Failed to download image: $e');
@@ -152,47 +175,78 @@ If none of these are present, set all fields to null.
     }
   }
 
+  /// Reads raw bytes from a LOCAL file path on disk.
+  /// (Previously this incorrectly used http.get on the local path, which
+  /// meant local images were never actually analyzed.)
   Future<List<int>?> _readLocalImage(String imagePath) async {
     try {
-      final file = await http.get(Uri.parse(imagePath));
-      if (file.statusCode == 200) {
-        return file.bodyBytes;
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        print('Local image file does not exist: $imagePath');
+        return null;
       }
-      return null;
+      return await file.readAsBytes();
     } catch (e) {
       print('Failed to read local image: $e');
       return null;
     }
   }
 
-  /// Check if two sets of extracted identifiers match
+  /// Returns true if the two identifier sets clearly belong to the SAME
+  /// person/item (a positive match signal).
   bool identifiersMatch(
-    ExtractedIdentifiers? id1,
-    ExtractedIdentifiers? id2,
-  ) {
+      ExtractedIdentifiers? id1,
+      ExtractedIdentifiers? id2,
+      ) {
     if (id1 == null || id2 == null) return false;
 
-    // Check student number match (strongest match)
-    if (id1.studentNumber != null &&
-        id2.studentNumber != null &&
-        id1.studentNumber!.trim().toLowerCase() ==
-            id2.studentNumber!.trim().toLowerCase()) {
+    // Student number match is the strongest signal.
+    if (_normalized(id1.studentNumber) != null &&
+        _normalized(id2.studentNumber) != null &&
+        _normalized(id1.studentNumber) == _normalized(id2.studentNumber)) {
       return true;
     }
 
-    // Check full name match with course
-    if (id1.fullName != null &&
-        id2.fullName != null &&
-        id1.fullName!.trim().toLowerCase() ==
-            id2.fullName!.trim().toLowerCase()) {
-      // If names match and either course matches or one course is null
-      if ((id1.course == null || id2.course == null) ||
-          (id1.course!.trim().toLowerCase() ==
-              id2.course!.trim().toLowerCase())) {
+    // Full name match, optionally corroborated by course.
+    if (_normalized(id1.fullName) != null &&
+        _normalized(id2.fullName) != null &&
+        _normalized(id1.fullName) == _normalized(id2.fullName)) {
+      final course1 = _normalized(id1.course);
+      final course2 = _normalized(id2.course);
+      if (course1 == null || course2 == null || course1 == course2) {
         return true;
       }
     }
 
     return false;
+  }
+
+  /// Returns true if the two identifier sets clearly belong to DIFFERENT
+  /// people/items — i.e. a hard conflict that should block a match even if
+  /// other signals (image similarity, description text) looked promising.
+  /// This is what lets you say "it's the same category/description, but the
+  /// name on the ID doesn't match, so it's not the same item."
+  bool identifiersConflict(
+      ExtractedIdentifiers? id1,
+      ExtractedIdentifiers? id2,
+      ) {
+    if (id1 == null || id2 == null) return false;
+
+    final num1 = _normalized(id1.studentNumber);
+    final num2 = _normalized(id2.studentNumber);
+    if (num1 != null && num2 != null && num1 != num2) return true;
+
+    final name1 = _normalized(id1.fullName);
+    final name2 = _normalized(id2.fullName);
+    if (name1 != null && name2 != null && name1 != name2) return true;
+
+    return false;
+  }
+
+  String? _normalized(String? value) {
+    if (value == null) return null;
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || trimmed.toLowerCase() == 'null') return null;
+    return trimmed.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
   }
 }
