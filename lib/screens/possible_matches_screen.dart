@@ -139,7 +139,13 @@ class _HoverableMatchCardState extends State<_HoverableMatchCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         margin: const EdgeInsets.only(bottom: 12),
-        transform: Matrix4.identity()..scale(_hovered ? 1.01 : 1.0),
+        transform: Matrix4.identity()
+          ..scaleByDouble(
+            _hovered ? 1.01 : 1.0,
+            _hovered ? 1.01 : 1.0,
+            1.0,
+            1.0,
+          ),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -187,12 +193,51 @@ class _HoverableMatchCardState extends State<_HoverableMatchCard> {
               ],
             ),
             const SizedBox(height: 12),
-            _infoRow('Category', match.report.category),
-            _infoRow('Location', match.report.location),
-            _infoRow(
-              'Date',
-              '${match.report.date.month}/${match.report.date.day}/${match.report.date.year}',
+
+if (match.report.imageUrl != null &&
+    match.report.imageUrl!.trim().isNotEmpty) ...[
+  ClipRRect(
+    borderRadius: BorderRadius.circular(12),
+    child: Image.network(
+      match.report.imageUrl!,
+      height: 180,
+      width: double.infinity,
+      fit: BoxFit.cover,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) {
+          return child;
+        }
+
+        return const SizedBox(
+          height: 180,
+          child: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          height: 180,
+          color: Colors.grey.shade200,
+          child: const Center(
+            child: Icon(
+              Icons.broken_image,
+              size: 50,
             ),
+          ),
+        );
+      },
+    ),
+  ),
+  const SizedBox(height: 14),
+],
+
+_infoRow('Category', match.report.category),
+_infoRow('Location', match.report.location),
+_infoRow(
+  'Date',
+  '${match.report.date.month}/${match.report.date.day}/${match.report.date.year}',
+),
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,

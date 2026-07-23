@@ -30,7 +30,7 @@ class ItemDetailsScreen extends StatelessWidget {
           data['itemName'] ?? 'Item Details',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: backgroundColor.withOpacity(0.8),
+        backgroundColor: backgroundColor.withValues(alpha: 0.8),
         elevation: 0,
       ),
       body: SafeArea(
@@ -38,14 +38,26 @@ class ItemDetailsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (data['imageUrl'] != null)
+              if (data['imageUrl'] != null &&
+                  data['imageUrl'].toString().trim().isNotEmpty)
                 Container(
                   height: 250,
-                  decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(data['imageUrl']),
-                      fit: BoxFit.cover,
-                    ),
+                  child: Image.network(
+                    data['imageUrl'],
+                    height: 250,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 250,
+                        color: Colors.grey[200],
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          size: 80,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
                   ),
                 )
               else

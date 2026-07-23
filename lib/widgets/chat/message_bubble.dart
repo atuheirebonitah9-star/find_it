@@ -7,11 +7,7 @@ class MessageBubble extends StatefulWidget {
   final MessageModel message;
   final bool isMe;
 
-  const MessageBubble({
-    super.key,
-    required this.message,
-    required this.isMe,
-  });
+  const MessageBubble({super.key, required this.message, required this.isMe});
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -79,7 +75,9 @@ class _MessageBubbleState extends State<MessageBubble> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: widget.isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
           if (!widget.isMe) ...[
             const CircleAvatar(
@@ -95,8 +93,12 @@ class _MessageBubbleState extends State<MessageBubble> {
               decoration: BoxDecoration(
                 color: widget.isMe ? Colors.blue : Colors.grey[200],
                 borderRadius: BorderRadius.circular(16).copyWith(
-                  bottomLeft: widget.isMe ? const Radius.circular(16) : const Radius.circular(4),
-                  bottomRight: widget.isMe ? const Radius.circular(4) : const Radius.circular(16),
+                  bottomLeft: widget.isMe
+                      ? const Radius.circular(16)
+                      : const Radius.circular(4),
+                  bottomRight: widget.isMe
+                      ? const Radius.circular(4)
+                      : const Radius.circular(16),
                 ),
               ),
               child: Column(
@@ -121,17 +123,25 @@ class _MessageBubbleState extends State<MessageBubble> {
                             value: _position.inSeconds.toDouble(),
                             max: _duration.inSeconds.toDouble(),
                             onChanged: (value) async {
-                              await _audioPlayer.seek(Duration(seconds: value.toInt()));
+                              await _audioPlayer.seek(
+                                Duration(seconds: value.toInt()),
+                              );
                             },
-                            activeColor: widget.isMe ? Colors.white : Colors.blue,
-                            inactiveColor: widget.isMe ? Colors.white54 : Colors.grey,
+                            activeColor: widget.isMe
+                                ? Colors.white
+                                : Colors.blue,
+                            inactiveColor: widget.isMe
+                                ? Colors.white54
+                                : Colors.grey,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           '${widget.message.voiceDuration ?? 0}s',
                           style: TextStyle(
-                            color: widget.isMe ? Colors.white70 : Colors.grey[600],
+                            color: widget.isMe
+                                ? Colors.white70
+                                : Colors.grey[600],
                             fontSize: 12,
                           ),
                         ),

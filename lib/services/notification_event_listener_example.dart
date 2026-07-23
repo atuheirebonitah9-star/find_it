@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import '../services/notification_event_service.dart';
 
 /// Example implementation of listening to notification events
-/// 
+///
 /// This widget demonstrates how to listen to notification events
 /// and respond accordingly. You can integrate this pattern into
 /// your existing screens.
 class NotificationEventListener extends StatefulWidget {
   final Widget child;
 
-  const NotificationEventListener({
-    required this.child,
-    super.key,
-  });
+  const NotificationEventListener({required this.child, super.key});
 
   @override
   State<NotificationEventListener> createState() =>
@@ -27,14 +24,14 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
   void initState() {
     super.initState();
     _eventService = NotificationEventService();
-    
+
     // Subscribe to all notification events
     _eventService.subscribe(_handleNotificationEvent);
   }
 
   void _handleNotificationEvent(NotificationEvent event) {
     debugPrint('[UI] Received event: ${event.type}');
-    
+
     setState(() {
       _recentEvents.insert(0, event);
       // Keep only last 50 events
@@ -89,7 +86,7 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
   void _handleStrongMatch(NotificationEvent event) {
     debugPrint('[UI] Strong match found: ${event.data}');
-    
+
     // Show a snackbar or dialog
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -112,12 +109,14 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
   void _handleWeakMatch(NotificationEvent event) {
     debugPrint('[UI] Weak match found: ${event.data}');
-    
+
     // You can handle weak matches differently
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Possible match: ${event.data['itemName']} at ${event.data['location']}'),
+          content: Text(
+            'Possible match: ${event.data['itemName']} at ${event.data['location']}',
+          ),
           duration: const Duration(seconds: 3),
         ),
       );
@@ -126,7 +125,7 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
   void _handleItemReported(NotificationEvent event) {
     debugPrint('[UI] New item reported: ${event.data}');
-    
+
     if (mounted) {
       final isLost = event.data['isLost'] as bool;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,7 +141,7 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
   void _handleMatchConfirmed(NotificationEvent event) {
     debugPrint('[UI] Match confirmed: ${event.data}');
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -156,11 +155,13 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
   void _handleMessageReceived(NotificationEvent event) {
     debugPrint('[UI] Message received: ${event.data}');
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('New message from ${event.data['senderName'] ?? 'someone'}'),
+          content: Text(
+            'New message from ${event.data['senderName'] ?? 'someone'}',
+          ),
           duration: const Duration(seconds: 4),
         ),
       );
@@ -169,11 +170,13 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
   void _handleItemMarkedFound(NotificationEvent event) {
     debugPrint('[UI] Item marked as found: ${event.data}');
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Great! Your ${event.data['itemName']} has been marked as found!'),
+          content: Text(
+            'Great! Your ${event.data['itemName']} has been marked as found!',
+          ),
           duration: const Duration(seconds: 5),
           backgroundColor: Colors.green,
         ),
@@ -183,11 +186,13 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
   void _handleItemClaimed(NotificationEvent event) {
     debugPrint('[UI] Item claimed: ${event.data}');
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Someone claimed your ${event.data['itemName']}! Check your messages.'),
+          content: Text(
+            'Someone claimed your ${event.data['itemName']}! Check your messages.',
+          ),
           duration: const Duration(seconds: 5),
         ),
       );
@@ -196,7 +201,7 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
   void _handleReminder(NotificationEvent event) {
     debugPrint('[UI] Reminder: ${event.data}');
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -209,11 +214,13 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
   void _handleVerificationRequest(NotificationEvent event) {
     debugPrint('[UI] Verification request: ${event.data}');
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please verify the match for ${event.data['itemName']}'),
+          content: Text(
+            'Please verify the match for ${event.data['itemName']}',
+          ),
           duration: const Duration(seconds: 5),
           action: SnackBarAction(
             label: 'Verify',

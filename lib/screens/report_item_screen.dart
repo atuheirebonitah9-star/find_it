@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloudinary_public/cloudinary_public.dart';   // ✅ this one
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:image_picker/image_picker.dart';
@@ -9,7 +10,7 @@ import '../services/report_service.dart';
 import '../services/image_classification_service.dart';
 import '../providers/chat_provider.dart';
 import '../theme/app_colors.dart';
-import '../theme/app_theme.dart';
+
 import 'chat/chat_screen.dart';
 import 'possible_matches_screen.dart';
 
@@ -35,6 +36,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
   bool _isListening = false;
   bool _isUploadingImage = false;
   bool _isClassifying = false;
+  String? _uploadedImageUrl;
 
   File? _selectedImage;
   String? _autoCategory;
@@ -178,10 +180,44 @@ class _ReportItemScreenState extends State<ReportItemScreen>
       setState(() => _isListening = false);
     }
   }
+Future<void> _showImageSourceSheet() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: AppColors.primary),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: AppColors.primary),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-  Future<void> _pickImage() async {
+
+  Future<void> _pickImage(ImageSource source) async {
     final XFile? pickedFile = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
+      source: source,
       imageQuality: 80,
     );
 
@@ -386,7 +422,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   boxShadow: isLost
                       ? [
                           BoxShadow(
-                            color: AppColors.lostColor.withOpacity(0.3),
+                            color: AppColors.lostColor.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -428,7 +464,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   boxShadow: !isLost
                       ? [
                           BoxShadow(
-                            color: AppColors.secondary.withOpacity(0.3),
+                            color: AppColors.secondary.withValues(alpha: 0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -480,7 +516,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -512,7 +548,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   Image.file(_selectedImage!, fit: BoxFit.cover),
                   if (_isClassifying)
                     Container(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       child: const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -542,7 +578,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                     right: 8,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -574,7 +610,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 8,
                             ),
                           ],
@@ -606,7 +642,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
           ),
         ] else ...[
           GestureDetector(
-            onTap: _isUploadingImage ? null : _pickImage,
+            onTap: _isUploadingImage ? null : _showImageSourceSheet,
             child: Container(
               height: 150,
               width: double.infinity,
@@ -626,7 +662,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.primary.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -679,7 +715,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
             boxShadow: AppColors.softShadow,
           ),
           child: DropdownButtonFormField<String>(
-            value: selectedCategory,
+            initialValue: selectedCategory,
             isExpanded: true,
             decoration: const InputDecoration(
               contentPadding: EdgeInsets.symmetric(
@@ -800,7 +836,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(Icons.arrow_drop_down, color: AppColors.primary),
@@ -1027,7 +1063,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(

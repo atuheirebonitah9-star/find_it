@@ -6,6 +6,8 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Need microphone access to describe items using your voice</string>
+	<key>NSCameraUsageDescription</key>
+    <string>Need camera access to take a photo of the item</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import '../models/chat_model.dart';
 import '../models/message_model.dart';
@@ -40,19 +42,21 @@ class ChatProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _chatService.getMessages(chatId).listen(
-      (messageList) {
-        print('Messages loaded: ${messageList.length}');
-        _messages = messageList;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (error) {
-        print('Error loading messages: $error');
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+    _chatService
+        .getMessages(chatId)
+        .listen(
+          (messageList) {
+            print('Messages loaded: ${messageList.length}');
+            _messages = messageList;
+            _isLoading = false;
+            notifyListeners();
+          },
+          onError: (error) {
+            print('Error loading messages: $error');
+            _isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
   // Send text message
@@ -61,7 +65,11 @@ class ChatProvider extends ChangeNotifier {
   }
 
   // Send voice message
-  Future<void> sendVoiceMessage(String chatId, String voiceUrl, int voiceDuration) async {
+  Future<void> sendVoiceMessage(
+    String chatId,
+    String voiceUrl,
+    int voiceDuration,
+  ) async {
     await _chatService.sendVoiceMessage(
       chatId: chatId,
       voiceUrl: voiceUrl,

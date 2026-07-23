@@ -1,5 +1,8 @@
+// ignore_for_file: avoid_print
+
 import 'dart:math';
 import 'services/image_comparison_service.dart';
+import 'services/image_analysis_service.dart';
 
 class Report {
   final String category;
@@ -10,6 +13,7 @@ class Report {
   final String itemName;
   final List<double>? embedding;
   final String? imageUrl;
+  final ExtractedIdentifiers? extractedIdentifiers;
 
   Report({
     required this.category,
@@ -20,6 +24,7 @@ class Report {
     required this.itemName,
     this.embedding,
     this.imageUrl,
+    this.extractedIdentifiers,
   });
 }
 
@@ -77,6 +82,22 @@ int countKeywordOverlap(String desc1, String desc2) {
 }
 
 Future<MatchResult> compareReports(Report lost, Report found) async {
+  final imageAnalysisService = ImageAnalysisService();
+  
+  // FIRST: Check extracted identifiers (strongest possible signal)
+  if (lost.extractedIdentifiers != null &&
+      found.extractedIdentifiers != null) {
+    if (imageAnalysisService.identifiersMatch(
+      lost.extractedIdentifiers!,
+      found.extractedIdentifiers!,
+    )) {
+      print(
+        'IDENTIFIERS MATCH: Strong match based on extracted student ID/name/etc',
+      );
+      return MatchResult.strong;
+    }
+  }
+  
   bool locationMatch =
       lost.location.toLowerCase() == found.location.toLowerCase();
   bool dateMatch = lost.date.difference(found.date).inDays.abs() <= 3;
@@ -85,18 +106,28 @@ Future<MatchResult> compareReports(Report lost, Report found) async {
   bool hasImageComparison = false;
 
   // If both reports have images, use image comparison
-  if (lost.imageUrl != null && found.imageUrl != null && lost.imageUrl!.isNotEmpty && found.imageUrl!.isNotEmpty) {
+  if (lost.imageUrl != null &&
+      found.imageUrl != null &&
+      lost.imageUrl!.isNotEmpty &&
+      found.imageUrl!.isNotEmpty) {
     final imageComparisonService = ImageComparisonService();
-    final imageResult = await imageComparisonService.compareImages(lost.imageUrl!, found.imageUrl!);
-    
+    final imageResult = await imageComparisonService.compareImages(
+      lost.imageUrl!,
+      found.imageUrl!,
+    );
+
     if (imageResult != null) {
       hasImageComparison = true;
       imageSimilarityScore = imageResult.similarityScore;
-      print('IMAGE COMPARISON: isSameItem=${imageResult.isSameItem}, similarity=$imageSimilarityScore, differences=${imageResult.differences}, confidence=${imageResult.confidence}');
-      
+      print(
+        'IMAGE COMPARISON: isSameItem=${imageResult.isSameItem}, similarity=$imageSimilarityScore, differences=${imageResult.differences}, confidence=${imageResult.confidence}',
+      );
+
       // If AI says they're different with high confidence, return none immediately
       if (!imageResult.isSameItem && imageResult.confidence == 'high') {
-        print('IMAGE COMPARISON: High confidence that items are different - returning no match');
+        print(
+          'IMAGE COMPARISON: High confidence that items are different - returning no match',
+        );
         return MatchResult.none;
       }
     }
@@ -104,14 +135,14 @@ Future<MatchResult> compareReports(Report lost, Report found) async {
 
   if (lost.embedding != null && found.embedding != null) {
     double semanticScore = cosineSimilarity(lost.embedding!, found.embedding!);
-    
+
     // Incorporate image similarity into the score if available
     double score = semanticScore;
     if (hasImageComparison) {
       // Give image comparison significant weight (40% of total score)
       score = (semanticScore * 0.6) + (imageSimilarityScore * 0.4);
     }
-    
+
     score += (locationMatch ? 0.05 : 0) + (dateMatch ? 0.05 : 0);
 
     print(
@@ -127,12 +158,20 @@ Future<MatchResult> compareReports(Report lost, Report found) async {
     }
   }
 
-  // Fallback: keyword-based matching if embeddings are unavailable
+  // Fallback: keyword-based matching if embeddings are unavailable.
+  // Location and date are bonus signals here too, not requirements —
+  // a genuine match can happen even if the reports were filed in
+  // different locations.
   int overlapCount = countKeywordOverlap(lost.description, found.description);
+  int score = overlapCount + (locationMatch ? 1 : 0) + (dateMatch ? 1 : 0);
 
-  if (locationMatch && dateMatch && overlapCount >= 2) {
+  print(
+    'DEBUG (fallback): overlapCount=$overlapCount, locationMatch=$locationMatch, dateMatch=$dateMatch, score=$score',
+  );
+
+  if (overlapCount >= 3 || score >= 4) {
     return MatchResult.strong;
-  } else if (locationMatch && overlapCount >= 1) {
+  } else if (overlapCount >= 1) {
     return MatchResult.weak;
   } else {
     return MatchResult.none;

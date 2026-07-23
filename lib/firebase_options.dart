@@ -66,7 +66,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '148508225506',
     projectId: 'find-it-f5d35',
     storageBucket: 'find-it-f5d35.firebasestorage.app',
-    iosClientId: '148508225506-7ip9p8l8v8lg8nrphvprlappj5okqmqd.apps.googleusercontent.com',
+    iosClientId:
+        '148508225506-7ip9p8l8v8lg8nrphvprlappj5okqmqd.apps.googleusercontent.com',
     iosBundleId: 'com.group22.findIt',
   );
 

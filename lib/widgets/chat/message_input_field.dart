@@ -38,6 +38,7 @@ class _MessageInputFieldState extends State<MessageInputField> {
   Future<void> _startRecording() async {
     // Request permissions
     final hasPermission = await _audioRecorder.hasPermission();
+    if (!mounted) return;
     if (!hasPermission) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Microphone permission required')),
@@ -47,7 +48,8 @@ class _MessageInputFieldState extends State<MessageInputField> {
 
     // Get temporary directory to save the recording
     final tempDir = await getTemporaryDirectory();
-    final filePath = '${tempDir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final filePath =
+        '${tempDir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
     await _audioRecorder.start(
       const RecordConfig(
@@ -79,7 +81,8 @@ class _MessageInputFieldState extends State<MessageInputField> {
 
     // Upload to Firebase Storage
     try {
-      final fileName = 'voice_notes/${DateTime.now().millisecondsSinceEpoch}.m4a';
+      final fileName =
+          'voice_notes/${DateTime.now().millisecondsSinceEpoch}.m4a';
       final storageRef = FirebaseStorage.instance.ref().child(fileName);
       await storageRef.putFile(File(path));
       final downloadUrl = await storageRef.getDownloadURL();
@@ -87,6 +90,7 @@ class _MessageInputFieldState extends State<MessageInputField> {
       // Send the voice message
       widget.onSendVoice(downloadUrl, duration);
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error sending voice message: $e')),
       );
@@ -113,7 +117,7 @@ class _MessageInputFieldState extends State<MessageInputField> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
+            color: Colors.grey.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),
@@ -140,7 +144,10 @@ class _MessageInputFieldState extends State<MessageInputField> {
                   ),
                   filled: true,
                   fillColor: Colors.grey[100],
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                 ),
                 maxLines: null,
                 onChanged: (text) {
@@ -169,7 +176,10 @@ class _MessageInputFieldState extends State<MessageInputField> {
           ] else ...[
             Expanded(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(24),

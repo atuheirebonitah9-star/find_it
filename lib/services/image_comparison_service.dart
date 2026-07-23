@@ -1,5 +1,6 @@
+// ignore_for_file: avoid_print
+
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'api_keys.dart';
 
@@ -49,20 +50,20 @@ Respond in JSON format with this exact structure:
   "confidence": "high/medium/low"
 }
 
-Be precise - even small differences like scratches, color variations, or missing accessories should be noted.
+Be precise and check for the types of each for example in laptops - even small differences like scratches, color variations, or missing accessories should be noted.
 ''',
                 },
                 {
                   'inline_data': {
                     'mime_type': 'image/jpeg',
                     'data': base64Image1,
-                  }
+                  },
                 },
                 {
                   'inline_data': {
                     'mime_type': 'image/jpeg',
                     'data': base64Image2,
-                  }
+                  },
                 },
               ],
             },
@@ -73,25 +74,28 @@ Be precise - even small differences like scratches, color variations, or missing
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final content = data['candidates'][0]['content']['parts'][0]['text'];
-        
+
         // Extract JSON from the response
         final jsonStart = content.indexOf('{');
         final jsonEnd = content.lastIndexOf('}') + 1;
-        
+
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
           final jsonStr = content.substring(jsonStart, jsonEnd);
           final result = jsonDecode(jsonStr);
-          
+
           return ImageComparisonResult(
             isSameItem: result['is_same_item'] ?? false,
-            similarityScore: (result['similarity_score'] as num?)?.toDouble() ?? 0.0,
+            similarityScore:
+                (result['similarity_score'] as num?)?.toDouble() ?? 0.0,
             differences: result['differences'] ?? '',
             confidence: result['confidence'] ?? 'low',
           );
         }
       }
-      
-      print('IMAGE COMPARISON ERROR: status ${response.statusCode}, body: ${response.body}');
+
+      print(
+        'IMAGE COMPARISON ERROR: status ${response.statusCode}, body: ${response.body}',
+      );
       return null;
     } catch (e) {
       print('IMAGE COMPARISON EXCEPTION: $e');
