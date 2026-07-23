@@ -49,35 +49,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final userName = user?.displayName ?? 'User';
 
     return Scaffold(
-      // Transparent background to allow the GIF to show through
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFF1C1C1E),
       appBar: _buildAppBar(context),
       body: Stack(
         children: [
-          // ============ BACKGROUND GIF (40% OPACITY) ============
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.4, // Reduced to 40% opacity as requested
-              child: Image.asset(
-                'assets/lost_found_animation.gif', // TODO: Replace with your actual GIF asset path
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              ),
-            ),
-          ),
-
-          // ============ SUBTLE OVERLAY FOR READABILITY ============
+          // ============ BLACK-TO-GREY GRADIENT BACKGROUND ============
           Positioned.fill(
             child: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                   colors: [
-                    Colors.black.withValues(alpha: 0.1),
-                    Colors.black.withValues(alpha: 0.25),
+                    Color(0xFF1C1C1E), // near-black
+                    Color(0xFF2E2E32), // charcoal
+                    Color(0xFF48484C), // lighter grey
                   ],
+                  stops: [0.0, 0.55, 1.0],
                 ),
               ),
             ),
@@ -127,17 +115,17 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.search, color: AppColors.primary, size: 20),
+            child: const Icon(Icons.search, color: Colors.white, size: 20),
           ),
           const SizedBox(width: 10),
           const Text(
             'FindIt',
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: AppColors.text,
+              color: Colors.white,
               fontSize: 20,
             ),
           ),
@@ -146,10 +134,8 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       elevation: 0,
       actions: [
-        // ============ NOTIFICATION ICON ADDED ============
         _buildActionButton(
           context,
-
           icon: Icons.notifications_outlined,
           tooltip: 'Notifications',
           onTap: () {
@@ -204,10 +190,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: Colors.white.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(30),
             ),
-            child: Icon(icon, color: AppColors.text, size: 22),
+            child: Icon(icon, color: Colors.white, size: 22),
           ),
         ),
       ),
@@ -385,9 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(
-          alpha: 0.95,
-        ), // Slightly transparent to blend with GIF
+        color: Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -440,7 +424,7 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: AppColors.text,
+            color: Colors.white,
           ),
         ),
         const SizedBox(height: 12),
@@ -493,9 +477,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(
-            alpha: 0.95,
-          ), // Slightly transparent to blend with GIF
+          color: Colors.white.withValues(alpha: 0.95),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -542,9 +524,7 @@ class _HomeScreenState extends State<HomeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(
-          alpha: 0.85,
-        ), // Increased opacity slightly for readability over GIF
+        color: AppColors.primary.withValues(alpha: 0.85),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -574,7 +554,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: AppColors.text,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -583,7 +563,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Reports are matched to real people — misuse may be reported to campus administration.',
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: AppColors.muted,
+                    color: Colors.white.withValues(alpha: 0.85),
                     height: 1.5,
                   ),
                 ),
@@ -613,13 +593,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.text,
+                  color: Colors.white,
                 ),
               ),
               SizedBox(height: 12),
-              Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
+              Center(child: CircularProgressIndicator(color: Colors.white)),
             ],
           );
         }
@@ -635,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.text,
+                  color: Colors.white,
                 ),
               ),
               const SizedBox(height: 12),
@@ -674,7 +652,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.text,
+                    color: Colors.white,
                   ),
                 ),
                 TextButton(
@@ -689,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Text(
                     'See All',
                     style: TextStyle(
-                      color: AppColors.primary,
+                      color: Colors.white,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -735,9 +713,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(
-          alpha: 0.95,
-        ), // Slightly transparent to blend with GIF
+        color: Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
       ),

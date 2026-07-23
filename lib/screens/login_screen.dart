@@ -1,9 +1,8 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/notification_event_service.dart';
+import '../theme/app_colors.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -202,20 +201,12 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Stack(
           children: [
+            // Black-to-grey gradient background (was previously the
+            // lost_found_animation.gif).
             Positioned.fill(
-              child: Image.asset(
-                'assets/lost_found_animation.gif',
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                alignment: Alignment.center,
-              ),
-            ),
-            Positioned.fill(
-              child: ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 1.0, sigmaY: 1.0),
-                  child: Container(color: Colors.white.withValues(alpha: 0.06)),
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: AppColors.backgroundGradient,
                 ),
               ),
             ),
@@ -251,20 +242,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.30),
+                      color: Colors.white.withValues(alpha: 0.92),
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.38),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color.fromARGB(
-                            255,
-                            231,
-                            10,
-                            10,
-                          ).withValues(alpha: 0.03),
-                          blurRadius: 20,
+                          color: Colors.black.withValues(alpha: 0.25),
+                          blurRadius: 24,
                           offset: const Offset(0, 12),
                         ),
                       ],
