@@ -508,7 +508,7 @@ Future<void> _showImageSourceSheet() async {
               'Item Photo',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: AppColors.text,
+                color: Colors.white,
                 fontSize: 15,
               ),
             ),
@@ -702,7 +702,7 @@ Future<void> _showImageSourceSheet() async {
           'Category',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: AppColors.text,
+            color: Colors.white,
             fontSize: 15,
           ),
         ),
@@ -790,7 +790,7 @@ Future<void> _showImageSourceSheet() async {
           'Date',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: AppColors.text,
+            color: Colors.white,
             fontSize: 15,
           ),
         ),
@@ -857,7 +857,7 @@ Future<void> _showImageSourceSheet() async {
           'Location',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: AppColors.text,
+            color: Colors.white,
             fontSize: 15,
           ),
         ),
@@ -946,7 +946,7 @@ Future<void> _showImageSourceSheet() async {
           label,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            color: AppColors.text,
+            color: Colors.white,
             fontSize: 15,
           ),
         ),
@@ -1030,146 +1030,154 @@ Future<void> _showImageSourceSheet() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      // Background is now painted by the gradient Container below;
+      // keep this transparent so the gradient shows through.
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Report an Item'),
         backgroundColor: Colors.transparent,
-        foregroundColor: AppColors.text,
+        foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back),
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          physics: const BouncingScrollPhysics(),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: AppColors.cardShadow,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          isLost ? Icons.search : Icons.check_circle,
-                          color: isLost
-                              ? AppColors.lostColor
-                              : AppColors.secondary,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isLost ? 'Report Lost Item' : 'Report Found Item',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.text,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              isLost
-                                  ? 'Help us find your lost item'
-                                  : 'Help reunite this item with its owner',
-                              style: const TextStyle(
-                                color: AppColors.muted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Item Type Toggle
-                const Text(
-                  'Item Type',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.text,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildLostFoundToggle(),
-                const SizedBox(height: 24),
-
-                // Image Upload
-                _buildImageUploadSection(),
-                const SizedBox(height: 20),
-
-                // Category
-                _buildCategoryDropdown(),
-                const SizedBox(height: 16),
-
-                // Date
-                _buildDatePicker(),
-                const SizedBox(height: 16),
-
-                // Item Name
-                _buildTextField(
-                  controller: itemNameController,
-                  hint: 'e.g., Black wallet, Blue backpack',
-                  label: 'Item Name',
-                ),
-                const SizedBox(height: 16),
-
-                // Location
-                _buildLocationField(),
-                const SizedBox(height: 16),
-
-                // Description
-                _buildTextField(
-                  controller: descriptionController,
-                  hint: 'Describe the item in detail...',
-                  label: 'Description',
-                  maxLines: 4,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isListening ? Icons.mic : Icons.mic_none,
-                      color: _isListening
-                          ? AppColors.lostColor
-                          : AppColors.primary,
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            physics: const BouncingScrollPhysics(),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: AppColors.cardShadow,
                     ),
-                    onPressed: () {
-                      if (_isListening) {
-                        _stopListening();
-                      } else {
-                        _startListening();
-                      }
-                    },
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            isLost ? Icons.search : Icons.check_circle,
+                            color: isLost
+                                ? AppColors.lostColor
+                                : AppColors.secondary,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isLost
+                                    ? 'Report Lost Item'
+                                    : 'Report Found Item',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.text,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                isLost
+                                    ? 'Help us find your lost item'
+                                    : 'Help reunite this item with its owner',
+                                style: const TextStyle(
+                                  color: AppColors.muted,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
-                // Submit Button
-                _buildSubmitButton(),
+                  // Item Type Toggle
+                  const Text(
+                    'Item Type',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildLostFoundToggle(),
+                  const SizedBox(height: 24),
 
-                const SizedBox(height: 12),
-              ],
+                  // Image Upload
+                  _buildImageUploadSection(),
+                  const SizedBox(height: 20),
+
+                  // Category
+                  _buildCategoryDropdown(),
+                  const SizedBox(height: 16),
+
+                  // Date
+                  _buildDatePicker(),
+                  const SizedBox(height: 16),
+
+                  // Item Name
+                  _buildTextField(
+                    controller: itemNameController,
+                    hint: 'e.g., Black wallet, Blue backpack',
+                    label: 'Item Name',
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Location
+                  _buildLocationField(),
+                  const SizedBox(height: 16),
+
+                  // Description
+                  _buildTextField(
+                    controller: descriptionController,
+                    hint: 'Describe the item in detail...',
+                    label: 'Description',
+                    maxLines: 4,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isListening ? Icons.mic : Icons.mic_none,
+                        color: _isListening
+                            ? AppColors.lostColor
+                            : AppColors.primary,
+                      ),
+                      onPressed: () {
+                        if (_isListening) {
+                          _stopListening();
+                        } else {
+                          _startListening();
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Submit Button
+                  _buildSubmitButton(),
+
+                  const SizedBox(height: 12),
+                ],
+              ),
             ),
           ),
         ),

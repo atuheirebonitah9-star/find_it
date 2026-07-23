@@ -231,6 +231,9 @@ class _SignUpScreenState extends State<SignUpScreen>
     );
   }
 
+  // Labels sit directly on the screen's gradient background (the text
+  // fields themselves have their own white fill), so they need to be
+  // white/light rather than AppColors.text to stay legible.
   Widget _label(String text) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 6),
@@ -239,7 +242,7 @@ class _SignUpScreenState extends State<SignUpScreen>
         style: const TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: AppColors.text,
+          color: Colors.white,
         ),
       ),
     );
@@ -248,55 +251,61 @@ class _SignUpScreenState extends State<SignUpScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      // Background is painted by the gradient Container in `body`;
+      // keep this transparent so the gradient shows through.
+      backgroundColor: Colors.transparent,
       appBar: _buildAppBar(),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header Section
-                    _buildHeaderSection(),
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header Section
+                      _buildHeaderSection(),
 
-                    const SizedBox(height: 28),
+                      const SizedBox(height: 28),
 
-                    // Form Fields
-                    _buildFormFields(),
+                      // Form Fields
+                      _buildFormFields(),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    // Terms Checkbox
-                    _buildTermsCheckbox(),
+                      // Terms Checkbox
+                      _buildTermsCheckbox(),
 
-                    // Error Message
-                    if (_errorMessage != null) ...[
-                      const SizedBox(height: 12),
-                      _buildErrorMessage(),
+                      // Error Message
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        _buildErrorMessage(),
+                      ],
+
+                      const SizedBox(height: 24),
+
+                      // Sign Up Button
+                      _buildSignUpButton(),
+
+                      const SizedBox(height: 20),
+
+                      // Login Link
+                      _buildLoginLink(),
+
+                      const SizedBox(height: 28),
+
+                      // Security Card
+                      _buildSecurityCard(),
                     ],
-
-                    const SizedBox(height: 24),
-
-                    // Sign Up Button
-                    _buildSignUpButton(),
-
-                    const SizedBox(height: 20),
-
-                    // Login Link
-                    _buildLoginLink(),
-
-                    const SizedBox(height: 28),
-
-                    // Security Card
-                    _buildSecurityCard(),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -314,7 +323,7 @@ class _SignUpScreenState extends State<SignUpScreen>
       title: const Text(
         'FindIt',
         style: TextStyle(
-          color: AppColors.text,
+          color: Colors.white,
           fontWeight: FontWeight.w700,
           fontSize: 20,
           letterSpacing: -0.3,
@@ -322,7 +331,7 @@ class _SignUpScreenState extends State<SignUpScreen>
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.close, color: AppColors.text),
+          icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
       ],
@@ -361,7 +370,7 @@ class _SignUpScreenState extends State<SignUpScreen>
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppColors.text,
+                color: Colors.white,
                 letterSpacing: -0.5,
               ),
             ),
@@ -370,7 +379,11 @@ class _SignUpScreenState extends State<SignUpScreen>
         const SizedBox(height: 12),
         Text(
           'Join a global community dedicated to reuniting lost items with their owners. Dependable, precise, and built for peace of mind.',
-          style: TextStyle(fontSize: 15, color: AppColors.muted, height: 1.6),
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.white.withValues(alpha: 0.75),
+            height: 1.6,
+          ),
         ),
       ],
     );
@@ -493,7 +506,7 @@ class _SignUpScreenState extends State<SignUpScreen>
               borderRadius: BorderRadius.circular(6),
             ),
             side: BorderSide(
-              color: _agreedToTerms ? AppColors.primary : AppColors.border,
+              color: _agreedToTerms ? AppColors.primary : Colors.white70,
               width: 2,
             ),
             onChanged: (v) => setState(() => _agreedToTerms = v ?? false),
@@ -505,7 +518,7 @@ class _SignUpScreenState extends State<SignUpScreen>
             text: TextSpan(
               style: TextStyle(
                 fontSize: 13,
-                color: AppColors.muted,
+                color: Colors.white.withValues(alpha: 0.75),
                 height: 1.5,
               ),
               children: [
@@ -513,7 +526,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                 TextSpan(
                   text: 'Terms of Service',
                   style: const TextStyle(
-                    color: AppColors.primary,
+                    color: AppColors.secondaryLight,
                     fontWeight: FontWeight.w700,
                   ),
                   recognizer: TapGestureRecognizer()
@@ -528,7 +541,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                 TextSpan(
                   text: 'Privacy Policy',
                   style: const TextStyle(
-                    color: AppColors.primary,
+                    color: AppColors.secondaryLight,
                     fontWeight: FontWeight.w700,
                   ),
                   recognizer: TapGestureRecognizer()
@@ -553,9 +566,9 @@ class _SignUpScreenState extends State<SignUpScreen>
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.lostColor.withValues(alpha: 0.08),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.lostColor.withValues(alpha: 0.2)),
+        border: Border.all(color: AppColors.lostColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -607,13 +620,16 @@ class _SignUpScreenState extends State<SignUpScreen>
     return Center(
       child: RichText(
         text: TextSpan(
-          style: TextStyle(fontSize: 15, color: AppColors.muted),
+          style: TextStyle(
+            fontSize: 15,
+            color: Colors.white.withValues(alpha: 0.75),
+          ),
           children: [
             const TextSpan(text: 'Already have an account? '),
             TextSpan(
               text: 'Log in',
-              style: TextStyle(
-                color: AppColors.primary,
+              style: const TextStyle(
+                color: AppColors.secondaryLight,
                 fontWeight: FontWeight.w700,
               ),
               recognizer: TapGestureRecognizer()
@@ -626,11 +642,13 @@ class _SignUpScreenState extends State<SignUpScreen>
   }
 
   // ============ SECURITY CARD ============
+  // Given a solid white background (rather than the previous faint
+  // primary tint) so its dark text stays legible over the gradient.
   Widget _buildSecurityCard() {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.06),
+        color: Colors.white.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
       ),
