@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -40,12 +39,25 @@ class ReportService {
   /// ask Gemini to double-check — this catches brand/model conflicts and
   /// judges item identity independent of location. Falls back to the
   /// embedding result if Gemini fails or the result was already "none".
+  ///
+  /// Before asking Gemini, this also applies a hard veto: if the text read
+  /// off each item's image (student number / full name) clearly conflicts
+  /// — e.g. two different names on two ID cards — the reports can't be the
+  /// same item, regardless of how similar the embeddings or descriptions
+  /// looked.
   Future<MatchResult> _refineWithGemini(
       MatchResult embeddingResult,
       Report a,
       Report b,
       ) async {
     if (embeddingResult == MatchResult.none) return embeddingResult;
+
+    if (_imageAnalysisService.identifiersConflict(
+      a.extractedIdentifiers,
+      b.extractedIdentifiers,
+    )) {
+      return MatchResult.none;
+    }
 
     final geminiResult = await _geminiService.judgeMatch(a, b);
     return geminiResult ?? embeddingResult;
