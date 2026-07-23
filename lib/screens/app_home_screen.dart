@@ -61,6 +61,25 @@ class _HomeScreenState extends State<HomeScreen>
     };
   }
 
+  // Items stream, filtered by the currently selected status tab.
+  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
+    final collection = FirebaseFirestore.instance
+        .collection('items')
+        .withConverter<Map<String, dynamic>>(
+      fromFirestore: (snapshot, _) => snapshot.data() ?? {},
+      toFirestore: (data, _) => data,
+    );
+
+    if (_statusFilter == 'All') {
+      return collection.orderBy('createdAt', descending: true).snapshots();
+    }
+
+    return collection
+        .where('status', isEqualTo: _statusFilter.toLowerCase())
+        .orderBy('createdAt', descending: true)
+        .snapshots();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -344,12 +363,12 @@ class _HomeScreenState extends State<HomeScreen>
                   borderRadius: BorderRadius.circular(26),
                   boxShadow: isSelected
                       ? [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
                       : null,
                 ),
                 child: Row(
@@ -524,10 +543,10 @@ class _HomeScreenState extends State<HomeScreen>
 
   // ============ HELPER METHODS ============
   void _showActionDialog(
-    BuildContext context,
-    Map<String, dynamic> data,
-    bool isLost,
-  ) {
+      BuildContext context,
+      Map<String, dynamic> data,
+      bool isLost,
+      ) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -696,13 +715,13 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                       gradient: LinearGradient(
                         colors: isLost
                             ? [
-                                AppColors.lostColor.withValues(alpha: 0.1),
-                                AppColors.lostColor.withValues(alpha: 0.05),
-                              ]
+                          AppColors.lostColor.withValues(alpha: 0.1),
+                          AppColors.lostColor.withValues(alpha: 0.05),
+                        ]
                             : [
-                                AppColors.secondary.withValues(alpha: 0.1),
-                                AppColors.secondary.withValues(alpha: 0.05),
-                              ],
+                          AppColors.secondary.withValues(alpha: 0.1),
+                          AppColors.secondary.withValues(alpha: 0.05),
+                        ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -710,15 +729,15 @@ class _ModernItemCardState extends State<_ModernItemCard> {
                     ),
                     child: hasImage
                         ? ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.network(
-                              data['imageUrl'],
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return _buildItemIcon(isLost);
-                              },
-                            ),
-                          )
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        data['imageUrl'] as String,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildItemIcon(isLost);
+                        },
+                      ),
+                    )
                         : _buildItemIcon(isLost),
                   ),
                   const SizedBox(width: 14),

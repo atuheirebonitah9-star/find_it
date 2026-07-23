@@ -1,4 +1,3 @@
-// ignore_for_file: use_null_aware_elements
 
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -42,10 +41,10 @@ class ReportService {
   /// judges item identity independent of location. Falls back to the
   /// embedding result if Gemini fails or the result was already "none".
   Future<MatchResult> _refineWithGemini(
-    MatchResult embeddingResult,
-    Report a,
-    Report b,
-  ) async {
+      MatchResult embeddingResult,
+      Report a,
+      Report b,
+      ) async {
     if (embeddingResult == MatchResult.none) return embeddingResult;
 
     final geminiResult = await _geminiService.judgeMatch(a, b);
@@ -64,13 +63,13 @@ class ReportService {
     // Upload image to Cloudinary first (if provided)
     String? imageUrl;
     ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
-    
+
     if (report.imageUrl != null) {
       imageUrl = await uploadImage(report.imageUrl!);
-      
+
       // Extract identifiers from the uploaded image if not already extracted
       extractedIdentifiers ??=
-          await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
+      await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
     }
 
     // Write to lost_reports collection
@@ -111,7 +110,6 @@ class ReportService {
       description: report.description,
       itemName: report.itemName,
       userId: currentUser?.uid,
-      imageUrl:report.imageUrl,
       embedding: embedding,
       imageUrl: imageUrl,
       extractedIdentifiers: extractedIdentifiers,
@@ -130,16 +128,16 @@ class ReportService {
     );
 
     final matches = await checkForFoundMatches(reportWithEmbedding);
-    
+
     // Save matches for user
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
-        currentUser!.uid, 
-        matches, 
+        currentUser!.uid,
+        matches,
         report.itemName,
       );
     }
-    
+
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -176,13 +174,13 @@ class ReportService {
     // Upload image to Cloudinary first (if provided)
     String? imageUrl;
     ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
-    
+
     if (report.imageUrl != null) {
       imageUrl = await uploadImage(report.imageUrl!);
-      
+
       // Extract identifiers from the uploaded image if not already extracted
       extractedIdentifiers ??=
-          await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
+      await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
     }
 
     // Write to found_reports collection
@@ -223,9 +221,7 @@ class ReportService {
       description: report.description,
       itemName: report.itemName,
       userId: currentUser?.uid,
-      imageUrl:report.imageUrl,
       embedding: embedding,
-      
       imageUrl: imageUrl,
       extractedIdentifiers: extractedIdentifiers,
     );
@@ -243,16 +239,16 @@ class ReportService {
     );
 
     final matches = await checkForMatches(reportWithEmbedding);
-    
+
     // Save matches for user
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
-        currentUser!.uid, 
-        matches, 
+        currentUser!.uid,
+        matches,
         report.itemName,
       );
     }
-    
+
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -301,15 +297,14 @@ class ReportService {
         description: data['description'],
         itemName: data['itemName'] ?? 'Lost Item',
         userId: data['userId'],
-        imageUrl: data['imageUrl'],
         embedding: data['embedding'] != null
             ? List<double>.from(data['embedding'])
             : null,
         imageUrl: data['imageUrl'],
         extractedIdentifiers: data['extractedIdentifiers'] != null
             ? ExtractedIdentifiers.fromMap(
-                Map<String, dynamic>.from(data['extractedIdentifiers']),
-              )
+          Map<String, dynamic>.from(data['extractedIdentifiers']),
+        )
             : null,
       );
 
@@ -346,15 +341,14 @@ class ReportService {
         description: data['description'],
         itemName: data['itemName'] ?? 'Found Item',
         userId: data['userId'],
-        imageUrl: data['imageUrl'],
         embedding: data['embedding'] != null
             ? List<double>.from(data['embedding'])
             : null,
         imageUrl: data['imageUrl'],
         extractedIdentifiers: data['extractedIdentifiers'] != null
             ? ExtractedIdentifiers.fromMap(
-                Map<String, dynamic>.from(data['extractedIdentifiers']),
-              )
+          Map<String, dynamic>.from(data['extractedIdentifiers']),
+        )
             : null,
       );
 
@@ -374,10 +368,10 @@ class ReportService {
 
   Future<void> _saveMatchesForUser(String userId, List<MatchDocument> matches, String reportItemName) async {
     final batch = FirebaseFirestore.instance.batch();
-    
+
     for (var match in matches) {
       if (match.result == MatchResult.none) continue;
-      
+
       final matchDoc = userMatches.doc();
       batch.set(matchDoc, {
         'userId': userId,
@@ -396,7 +390,7 @@ class ReportService {
         'createdAt': FieldValue.serverTimestamp(),
       });
     }
-    
+
     await batch.commit();
   }
 
