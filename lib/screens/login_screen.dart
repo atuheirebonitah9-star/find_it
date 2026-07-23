@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -203,20 +201,12 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Stack(
           children: [
+            // Black-to-grey gradient background (was previously the
+            // lost_found_animation.gif).
             Positioned.fill(
-              child: Image.asset(
-                'assets/lost_found_animation.gif',
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-                alignment: Alignment.center,
-              ),
-            ),
-            Positioned.fill(
-              child: ClipRect(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 1.0, sigmaY: 1.0),
-                  child: Container(color: Colors.white.withValues(alpha: 0.06)),
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: AppColors.backgroundGradient,
                 ),
               ),
             ),

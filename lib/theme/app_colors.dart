@@ -37,6 +37,10 @@ class AppColors {
   static const Color border = Color(0xFFCBD5E1);
   static const Color divider = Color(0xFFE2E8F0);
 
+  // ============ BLACK-TO-GREY (screen backgrounds) ============
+  static const Color backgroundGreyDark = Color(0xFF0A0A0A);
+  static const Color backgroundGreyLight = Color(0xFF3A3D42);
+
   // ============ SHADOWS ============
   static List<BoxShadow> cardShadow = const [
     BoxShadow(
@@ -82,6 +86,14 @@ class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [accent, accentLight],
+  );
+
+  // Black-to-grey background gradient, used behind screen content
+  // app-wide (cards/forms stay light/white on top of it).
+  static const LinearGradient backgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [backgroundGreyDark, backgroundGreyLight],
   );
 }
 
