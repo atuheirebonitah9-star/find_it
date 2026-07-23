@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_print
 
 import 'package:cloudinary_public/cloudinary_public.dart';
+
 import 'dart:io';
 
 class CloudinaryService {

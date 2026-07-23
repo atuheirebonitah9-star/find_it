@@ -111,6 +111,7 @@ class ReportService {
       description: report.description,
       itemName: report.itemName,
       userId: currentUser?.uid,
+      imageUrl:report.imageUrl,
       embedding: embedding,
       imageUrl: imageUrl,
       extractedIdentifiers: extractedIdentifiers,
@@ -222,7 +223,9 @@ class ReportService {
       description: report.description,
       itemName: report.itemName,
       userId: currentUser?.uid,
+      imageUrl:report.imageUrl,
       embedding: embedding,
+      
       imageUrl: imageUrl,
       extractedIdentifiers: extractedIdentifiers,
     );
@@ -298,6 +301,7 @@ class ReportService {
         description: data['description'],
         itemName: data['itemName'] ?? 'Lost Item',
         userId: data['userId'],
+        imageUrl: data['imageUrl'],
         embedding: data['embedding'] != null
             ? List<double>.from(data['embedding'])
             : null,
@@ -342,6 +346,7 @@ class ReportService {
         description: data['description'],
         itemName: data['itemName'] ?? 'Found Item',
         userId: data['userId'],
+        imageUrl: data['imageUrl'],
         embedding: data['embedding'] != null
             ? List<double>.from(data['embedding'])
             : null,
