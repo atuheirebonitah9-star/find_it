@@ -320,14 +320,11 @@ class _SignUpScreenState extends State<SignUpScreen>
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      title: const Text(
-        'FindIt',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 20,
-          letterSpacing: -0.3,
-        ),
+      title: Image.asset(
+        'assets/ChatGPT Image Jul 23, 2026, 09_38_30 AM.png',
+        width: 150,
+        height: 40,
+        fit: BoxFit.contain,
       ),
       actions: [
         IconButton(

@@ -38,30 +38,38 @@ class ItemDetailsScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-             if (data['imageUrl'] != null &&
-    data['imageUrl'].toString().trim().isNotEmpty)
-  Container(
-    height: 250,
-    child: Image.network(
-      data['imageUrl'],
-      height: 250,
-      width: double.infinity,
-      fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) {
-        return Container(
-          height: 250,
-          color: Colors.grey[200],
-          child: const Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
-        );
-      },
-    ),
-  )
-else
-  Container(
-    height: 200,
-    color: Colors.grey[200],
-    child: const Icon(Icons.image_not_supported, size: 80, color: Colors.grey),
-  ), 
+              if (data['imageUrl'] != null &&
+                  data['imageUrl'].toString().trim().isNotEmpty)
+                Container(
+                  height: 250,
+                  child: Image.network(
+                    data['imageUrl'],
+                    height: 250,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 250,
+                        color: Colors.grey[200],
+                        child: const Icon(
+                          Icons.image_not_supported,
+                          size: 80,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
+                  ),
+                )
+              else
+                Container(
+                  height: 200,
+                  color: Colors.grey[200],
+                  child: const Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: Colors.grey,
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(

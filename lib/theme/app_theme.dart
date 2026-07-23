@@ -115,14 +115,19 @@ class AppTheme {
 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.hovered)) {
+            return AppColors.surface;
+          }
+          return AppColors.surface;
+        }),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: AppColors.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderSide: BorderSide(color: AppColors.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -142,43 +147,127 @@ class AppTheme {
           horizontal: 16,
           vertical: 14,
         ),
-        prefixIconColor: AppColors.muted,
-        suffixIconColor: AppColors.muted,
+        prefixIconColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.hovered)) {
+            return AppColors.primary;
+          }
+          return AppColors.muted;
+        }),
+        suffixIconColor: WidgetStateColor.resolveWith((states) {
+          if (states.contains(WidgetState.hovered)) {
+            return AppColors.primary;
+          }
+          return AppColors.muted;
+        }),
       ),
 
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        style: ButtonStyle(
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return AppColors.primaryLight;
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return AppColors.primaryDark;
+            }
+            return AppColors.primary;
+          }),
+          foregroundColor: WidgetStateProperty.all(Colors.white),
+          padding: WidgetStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           ),
-          elevation: 0,
-          textStyle: buttonText,
-          minimumSize: const Size(double.infinity, 48),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          elevation: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return 8;
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return 2;
+            }
+            return 0;
+          }),
+          textStyle: WidgetStateProperty.all(buttonText),
+          minimumSize: WidgetStateProperty.all(
+            const Size(double.infinity, 48),
+          ),
+          overlayColor: WidgetStateProperty.all(
+            Colors.white.withValues(alpha: 0.2),
+          ),
+          shadowColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return AppColors.primary.withValues(alpha: 0.4);
+            }
+            return Colors.transparent;
+          }),
         ),
       ),
 
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        style: ButtonStyle(
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return AppColors.primaryDark;
+            }
+            return AppColors.primary;
+          }),
+          textStyle: WidgetStateProperty.all(
+            const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return AppColors.primary.withValues(alpha: 0.1);
+            }
+            if (states.contains(WidgetState.pressed)) {
+              return AppColors.primary.withValues(alpha: 0.15);
+            }
+            return Colors.transparent;
+          }),
+          overlayColor: WidgetStateProperty.all(
+            AppColors.primary.withValues(alpha: 0.15),
           ),
         ),
       ),
 
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.text,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        style: ButtonStyle(
+          foregroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return AppColors.primary;
+            }
+            return AppColors.text;
+          }),
+          padding: WidgetStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           ),
-          side: const BorderSide(color: AppColors.border),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          side: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return BorderSide(color: AppColors.primary, width: 2);
+            }
+            return BorderSide(color: AppColors.border, width: 1);
+          }),
+          backgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.hovered)) {
+              return AppColors.primary.withValues(alpha: 0.05);
+            }
+            return Colors.transparent;
+          }),
+          textStyle: WidgetStateProperty.all(
+            const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+          ),
         ),
       ),
 

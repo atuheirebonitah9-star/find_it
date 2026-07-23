@@ -22,14 +22,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  static const Color primaryColor = Color(0xFF131B2E);
-  static const Color secondaryColor = Color(0xFF006A61);
-  static const Color secondaryContainer = Color(0xFF86F2E4);
-  static const Color surfaceLowest = Color.fromARGB(255, 253, 251, 251);
-  static const Color outlineVariant = Color(0xFFC6C6CD);
-  static const Color onSurface = Color(0xFF191C1E);
-  static const Color onSurfaceVariant = Color(0xFF45464D);
-  static const Color errorColor = Color(0xFFBA1A1A);
+  static const Color primaryColor = AppColors.primary;
+  static const Color secondaryColor = AppColors.secondary;
+  static final Color secondaryContainer = AppColors.secondary.withValues(alpha: 0.2);
+  static const Color surfaceLowest = AppColors.surface;
+  static const Color outlineVariant = AppColors.border;
+  static const Color onSurface = AppColors.text;
+  static const Color onSurfaceVariant = AppColors.textSecondary;
+  static const Color errorColor = AppColors.lostColor;
 
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
@@ -210,31 +210,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            Positioned(
-              top: 16,
-              right: 16,
-              child: Material(
-                color: Colors.white.withValues(alpha: 0.92),
-                shape: const CircleBorder(),
-                elevation: 6,
-                child: IconButton(
-                  onPressed: _showNotifications,
-                  icon: Image.asset(
-                    'assets/notification.png',
-                    width: 28,
-                    height: 28,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.notifications,
-                        size: 26,
-                        color: Colors.black87,
-                      );
-                    },
-                  ),
-                  tooltip: 'Show notifications',
-                ),
-              ),
-            ),
+
             SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Center(
@@ -242,16 +218,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   constraints: const BoxConstraints(maxWidth: 560),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.92),
+                      color: Colors.white.withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.38),
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.25),
+                          color: const Color.fromARGB(
+                            255,
+                            0,
+                            0,
+                            0,
+                          ).withValues(alpha: 0.2),
                           blurRadius: 24,
-                          offset: const Offset(0, 12),
+                          offset: const Offset(0, 14),
                         ),
                       ],
                     ),
@@ -262,15 +243,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const SizedBox(height: 32),
-                          const Text(
-                            'Find_It',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.bold,
-                              color: primaryColor,
-                            ),
+                        Center(
+                          child: Image.asset(
+                            'assets/ChatGPT Image Jul 23, 2026, 09_38_30 AM.png',
+                            width: 300,
+                            height: 100,
+                            fit: BoxFit.contain,
                           ),
+                        ),
                           const SizedBox(height: 22),
                           const Text(
                             'Welcome Back',
@@ -283,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 10),
                           const Text(
-                            'Log in to keep track of your lost and found  with the network.',
+                            'Log in to keep track of your lost and found items, and stay connected with the network.',
                             style: TextStyle(
                               fontSize: 16,
                               color: onSurfaceVariant,
@@ -458,7 +438,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Container(
                                   width: 40,
                                   height: 30,
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     color: secondaryContainer,
                                     shape: BoxShape.circle,
                                   ),
