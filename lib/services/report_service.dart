@@ -68,6 +68,7 @@ class ReportService {
     return await CloudinaryService.uploadItemImage(File(imagePath));
   }
 
+  // ============ SUBMIT LOST REPORT ============
   Future<List<MatchDocument>> submitLostReport(Report report) async {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
@@ -139,9 +140,21 @@ class ReportService {
       ),
     );
 
+    // ============ GET MATCHES ============
     final matches = await checkForFoundMatches(reportWithEmbedding);
 
-    // Save matches for user
+    // Sort matches by result (strong first) and then by score if available
+    matches.sort((a, b) {
+      // First by result (strong > weak > none)
+      if (a.result == MatchResult.strong && b.result != MatchResult.strong) return -1;
+      if (a.result != MatchResult.strong && b.result == MatchResult.strong) return 1;
+      if (a.result == MatchResult.weak && b.result == MatchResult.none) return -1;
+      if (a.result == MatchResult.none && b.result == MatchResult.weak) return 1;
+      // Then by score (if available)
+      return b.score.compareTo(a.score);
+    });
+
+    // ============ SAVE MATCHES FOR USER ============
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
         currentUser?.uid ?? '',
@@ -150,6 +163,7 @@ class ReportService {
       );
     }
 
+    // ============ EMIT NOTIFICATIONS ============
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -176,9 +190,11 @@ class ReportService {
       }
     }
 
+    // ============ RETURN ALL MATCHES (ALWAYS) ============
     return matches;
   }
 
+  // ============ SUBMIT FOUND REPORT ============
   Future<List<MatchDocument>> submitFoundReport(Report report) async {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
@@ -250,9 +266,21 @@ class ReportService {
       ),
     );
 
+    // ============ GET MATCHES ============
     final matches = await checkForMatches(reportWithEmbedding);
 
-    // Save matches for user
+    // Sort matches by result (strong first) and then by score if available
+    matches.sort((a, b) {
+      // First by result (strong > weak > none)
+      if (a.result == MatchResult.strong && b.result != MatchResult.strong) return -1;
+      if (a.result != MatchResult.strong && b.result == MatchResult.strong) return 1;
+      if (a.result == MatchResult.weak && b.result == MatchResult.none) return -1;
+      if (a.result == MatchResult.none && b.result == MatchResult.weak) return 1;
+      // Then by score (if available)
+      return b.score.compareTo(a.score);
+    });
+
+    // ============ SAVE MATCHES FOR USER ============
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
         currentUser?.uid ?? '',
@@ -261,6 +289,7 @@ class ReportService {
       );
     }
 
+    // ============ EMIT NOTIFICATIONS ============
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -287,9 +316,11 @@ class ReportService {
       }
     }
 
+    // ============ RETURN ALL MATCHES (ALWAYS) ============
     return matches;
   }
 
+  // ============ CHECK FOR MATCHES ============
   Future<List<MatchDocument>> checkForMatches(Report newFoundReport) async {
     final currentUserUid = _auth.currentUser?.uid;
     final querySnapshot = await lostReports
@@ -322,18 +353,34 @@ class ReportService {
 
       if (lostReport.userId == currentUserUid) continue;
 
-      final embeddingResult = await compareReports(lostReport, newFoundReport);
-      final finalResult = await _refineWithGemini(
-        embeddingResult,
-        lostReport,
-        newFoundReport,
-      );
-      matches.add(MatchDocument(report: lostReport, result: finalResult));
+      // Use the new compareReportsWithDetails function
+      final matchResult = await compareReportsWithDetails(lostReport, newFoundReport);
+      
+      // Refine with Gemini if needed
+      if (matchResult.result != MatchResult.none) {
+        final refinedResult = await _refineWithGemini(
+          matchResult.result,
+          lostReport,
+          newFoundReport,
+        );
+        
+        // Update the result if refined
+        final updatedMatch = MatchDocument(
+          report: matchResult.report,
+          result: refinedResult,
+          score: matchResult.score,
+          details: matchResult.details,
+        );
+        matches.add(updatedMatch);
+      } else {
+        matches.add(matchResult);
+      }
     }
 
     return matches;
   }
 
+  // ============ CHECK FOR FOUND MATCHES ============
   Future<List<MatchDocument>> checkForFoundMatches(Report newLostReport) async {
     final currentUserUid = _auth.currentUser?.uid;
     final querySnapshot = await foundReports
@@ -366,18 +413,34 @@ class ReportService {
 
       if (foundReport.userId == currentUserUid) continue;
 
-      final embeddingResult = await compareReports(newLostReport, foundReport);
-      final finalResult = await _refineWithGemini(
-        embeddingResult,
-        newLostReport,
-        foundReport,
-      );
-      matches.add(MatchDocument(report: foundReport, result: finalResult));
+      // Use the new compareReportsWithDetails function
+      final matchResult = await compareReportsWithDetails(newLostReport, foundReport);
+      
+      // Refine with Gemini if needed
+      if (matchResult.result != MatchResult.none) {
+        final refinedResult = await _refineWithGemini(
+          matchResult.result,
+          newLostReport,
+          foundReport,
+        );
+        
+        // Update the result if refined
+        final updatedMatch = MatchDocument(
+          report: matchResult.report,
+          result: refinedResult,
+          score: matchResult.score,
+          details: matchResult.details,
+        );
+        matches.add(updatedMatch);
+      } else {
+        matches.add(matchResult);
+      }
     }
 
     return matches;
   }
 
+  // ============ SAVE MATCHES FOR USER ============
   Future<void> _saveMatchesForUser(String userId, List<MatchDocument> matches, String reportItemName) async {
     final batch = FirebaseFirestore.instance.batch();
 
@@ -398,6 +461,7 @@ class ReportService {
           'extractedIdentifiers': match.report.extractedIdentifiers?.toMap(),
         },
         'result': match.result.toString().split('.').last,
+        'score': match.score, // Save the score
         'reportItemName': reportItemName,
         'createdAt': FieldValue.serverTimestamp(),
       });

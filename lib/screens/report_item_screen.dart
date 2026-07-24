@@ -326,41 +326,43 @@ class _ReportItemScreenState extends State<ReportItemScreen>
     }
   }
 
+  // ============ UPDATED: ALWAYS SHOW POSSIBLE MATCHES ============
   Future<void> _handleMatches(List<MatchDocument> matches) async {
-    final strongMatch = matches
-        .where((m) => m.result == MatchResult.strong)
-        .toList();
-    final weakMatches = matches
-        .where((m) => m.result == MatchResult.weak)
-        .toList();
+    // Clear the form first
+    _clearForm();
 
-    if (strongMatch.isNotEmpty && mounted) {
-      await _openChatWithMatch(strongMatch.first);
-      _clearForm();
-    } else if (weakMatches.isNotEmpty && mounted) {
-      _clearForm();
+    if (matches.isEmpty) {
+      // No matches found
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isLost
+                  ? 'Lost report submitted. No matches found yet.'
+                  : 'Found report submitted. No matches found yet.',
+            ),
+            backgroundColor: AppColors.primary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    // ALWAYS show the Possible Matches screen first
+    // This lets users see all potential matches before deciding to chat
+    if (mounted) {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => PossibleMatchesScreen(matches: weakMatches),
-        ),
-      );
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isLost
-                ? 'Lost report submitted. No match yet.'
-                : 'Found report submitted. No match yet.',
-          ),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+          builder: (context) => PossibleMatchesScreen(
+            matches: matches,
           ),
         ),
       );
-      _clearForm();
     }
   }
 
