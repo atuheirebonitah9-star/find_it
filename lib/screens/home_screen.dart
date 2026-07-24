@@ -5,6 +5,7 @@ import '../theme/app_colors.dart';
 import 'report_item_screen.dart';
 import 'profile_screen.dart';
 import 'chat/chat_list_screen.dart';
+import 'my_lost_items_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String _searchQuery = '';
+  String _statusFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
 
   @override
@@ -22,11 +25,20 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // Get counts for filter tabs
-  Future<Map<String, int>> _getFilterCounts() async {
-    final allSnapshot = await FirebaseFirestore.instance
+  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
+    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
         .collection('items')
-        .get();
+        .orderBy('createdAt', descending: true);
+
+    if (_statusFilter != 'All') {
+      query = query.where('status', isEqualTo: _statusFilter.toLowerCase());
+    }
+
+    return query.snapshots();
+  }
+
+  Future<Map<String, int>> _getFilterCounts() async {
+    final allSnapshot = await FirebaseFirestore.instance.collection('items').get();
     final lostSnapshot = await FirebaseFirestore.instance
         .collection('items')
         .where('status', isEqualTo: 'lost')
@@ -35,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .collection('items')
         .where('status', isEqualTo: 'found')
         .get();
-
+    
     return {
       'All': allSnapshot.docs.length,
       'Lost': lostSnapshot.docs.length,
@@ -49,58 +61,35 @@ class _HomeScreenState extends State<HomeScreen> {
     final userName = user?.displayName ?? 'User';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1C1C1E),
+      backgroundColor: AppColors.background,
       appBar: _buildAppBar(context),
-      body: Stack(
-        children: [
-          // ============ BLACK-TO-GREY GRADIENT BACKGROUND ============
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF1C1C1E), // near-black
-                    Color(0xFF2E2E32), // charcoal
-                    Color(0xFF48484C), // lighter grey
-                  ],
-                  stops: [0.0, 0.55, 1.0],
-                ),
-              ),
-            ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ============ WELCOME SECTION ============
+              _buildWelcomeSection(userName),
+              const SizedBox(height: 16),
+
+              // ============ QUICK STATS ============
+              _buildQuickStats(),
+              const SizedBox(height: 24),
+
+              // ============ QUICK ACTIONS ============
+              _buildQuickActions(context),
+              const SizedBox(height: 24),
+
+              // ============ COMMUNITY CONDUCT ============
+              _buildCommunityConduct(),
+              const SizedBox(height: 24),
+
+              // ============ RECENT ACTIVITY ============
+              _buildRecentActivity(),
+            ],
           ),
-
-          // ============ MAIN CONTENT ============
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ============ WELCOME SECTION ============
-                  _buildWelcomeSection(userName),
-                  const SizedBox(height: 24),
-
-                  // ============ QUICK STATS ============
-                  _buildQuickStats(),
-                  const SizedBox(height: 24),
-
-                  // ============ QUICK ACTIONS GRID ============
-                  _buildQuickActions(context),
-                  const SizedBox(height: 24),
-
-                  // ============ COMMUNITY CONDUCT ============
-                  _buildCommunityConduct(),
-                  const SizedBox(height: 24),
-
-                  // ============ RECENT ACTIVITY ============
-                  _buildRecentActivity(),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
       floatingActionButton: _buildFloatingActionButton(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
@@ -115,18 +104,23 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: AppColors.primary.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.search, color: Colors.white, size: 20),
+            child: const Icon(
+              Icons.search,
+              color: AppColors.primary,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 10),
           const Text(
             'FindIt',
             style: TextStyle(
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: AppColors.text,
               fontSize: 20,
+              fontFamily: 'Plus Jakarta Sans',
             ),
           ),
         ],
@@ -136,10 +130,13 @@ class _HomeScreenState extends State<HomeScreen> {
       actions: [
         _buildActionButton(
           context,
-          icon: Icons.notifications_outlined,
-          tooltip: 'Notifications',
+          icon: Icons.image_search_outlined,
+          tooltip: 'My Lost Items',
           onTap: () {
-            // TODO: Navigate to your notifications screen
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyLostItemsScreen()),
+            );
           },
         ),
         _buildActionButton(
@@ -190,10 +187,14 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.12),
+              color: AppColors.surfaceContainerHigh.withOpacity(0.5),
               borderRadius: BorderRadius.circular(30),
             ),
-            child: Icon(icon, color: Colors.white, size: 22),
+            child: Icon(
+              icon,
+              color: AppColors.text,
+              size: 22,
+            ),
           ),
         ),
       ),
@@ -206,14 +207,8 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: AppColors.orangeGlow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: const BoxDecoration(
-                  color: Colors.white24,
+                  color: Colors.black26,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -241,8 +236,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Welcome back,',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.8),
+                        color: Colors.white.withOpacity(0.85),
                         fontWeight: FontWeight.w500,
+                        fontFamily: 'Inter',
                       ),
                     ),
                     Text(
@@ -251,6 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
+                        fontFamily: 'Plus Jakarta Sans',
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -259,12 +256,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.secondary.withValues(alpha: 0.3),
+                  color: AppColors.primary.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: Colors.white24),
                 ),
@@ -274,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 8,
                       height: 8,
                       decoration: const BoxDecoration(
-                        color: AppColors.secondary,
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -285,6 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fontSize: 12,
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
+                        fontFamily: 'Plus Jakarta Sans',
                       ),
                     ),
                   ],
@@ -296,20 +291,25 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: Colors.black.withOpacity(0.25),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
               children: [
-                const Icon(Icons.help_outline, color: Colors.white, size: 18),
+                const Icon(
+                  Icons.help_outline,
+                  color: Colors.white,
+                  size: 18,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Report a lost or found item using the button below. Help reunite items with their owners!',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: Colors.white.withOpacity(0.9),
                       height: 1.4,
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ),
@@ -333,8 +333,8 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _buildStatCard(
                 icon: Icons.search,
                 value: counts['Lost']?.toString() ?? '0',
-                label: 'Lost Items',
-                color: AppColors.lostColor,
+                label: 'LOST ITEMS',
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -342,17 +342,16 @@ class _HomeScreenState extends State<HomeScreen> {
               child: _buildStatCard(
                 icon: Icons.check_circle,
                 value: counts['Found']?.toString() ?? '0',
-                label: 'Found Items',
-                color: AppColors.secondary,
+                label: 'FOUND ITEMS',
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _buildStatCard(
                 icon: Icons.verified,
-                value: ((counts['Lost'] ?? 0) + (counts['Found'] ?? 0))
-                    .toString(),
-                label: 'Total',
+                value: ((counts['Lost'] ?? 0) + (counts['Found'] ?? 0)).toString(),
+                label: 'TOTAL',
                 color: AppColors.primary,
               ),
             ),
@@ -371,42 +370,45 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: AppColors.surfaceContainerHighest.withOpacity(0.3),
+        ),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 16),
+            child: Icon(
+              icon,
+              color: color,
+              size: 16,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             value,
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
               color: AppColors.text,
+              fontFamily: 'Plus Jakarta Sans',
+              letterSpacing: -0.02,
             ),
           ),
           Text(
             label,
             style: TextStyle(
               fontSize: 10,
-              color: AppColors.muted,
-              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.05,
+              fontFamily: 'Plus Jakarta Sans',
             ),
           ),
         ],
@@ -419,12 +421,14 @@ class _HomeScreenState extends State<HomeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quick Actions',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: AppColors.text,
+            fontFamily: 'Plus Jakarta Sans',
+            letterSpacing: -0.02,
           ),
         ),
         const SizedBox(height: 12),
@@ -435,7 +439,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.report_problem_outlined,
                 title: 'Report Lost',
                 subtitle: 'Item you lost',
-                color: AppColors.lostColor,
+                color: AppColors.primary,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -450,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icons.check_circle_outline,
                 title: 'Report Found',
                 subtitle: 'Item you found',
-                color: AppColors.secondary,
+                color: AppColors.primary,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -477,16 +481,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.95),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: AppColors.surfaceContainerHighest.withOpacity(0.3),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -494,10 +493,14 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(
+                icon,
+                color: color,
+                size: 20,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
@@ -506,11 +509,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 color: AppColors.text,
+                fontFamily: 'Plus Jakarta Sans',
               ),
             ),
             Text(
               subtitle,
-              style: TextStyle(fontSize: 11, color: AppColors.muted),
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontFamily: 'Inter',
+              ),
             ),
           ],
         ),
@@ -524,9 +532,11 @@ class _HomeScreenState extends State<HomeScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.85),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+        color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.surfaceContainerHighest.withOpacity(0.3),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,12 +545,12 @@ class _HomeScreenState extends State<HomeScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: AppColors.primary.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.shield_outlined,
-              color: Colors.white,
+              color: AppColors.primary,
               size: 20,
             ),
           ),
@@ -549,12 +559,13 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Community Conduct',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
-                    color: Colors.white,
+                    color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -563,8 +574,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   'Reports are matched to real people — misuse may be reported to campus administration.',
                   style: TextStyle(
                     fontSize: 12.5,
-                    color: Colors.white.withValues(alpha: 0.85),
+                    color: AppColors.textSecondary,
                     height: 1.5,
+                    fontFamily: 'Inter',
                   ),
                 ),
               ],
@@ -591,48 +603,64 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(
                 'Recent Activity',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.text,
+                  fontFamily: 'Plus Jakarta Sans',
+                  letterSpacing: -0.02,
                 ),
               ),
               SizedBox(height: 12),
-              Center(child: CircularProgressIndicator(color: Colors.white)),
+              Center(
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                ),
+              ),
             ],
           );
         }
 
         final docs = snapshot.data?.docs ?? [];
-
+        
         if (docs.isEmpty) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Recent Activity',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: AppColors.text,
+                  fontFamily: 'Plus Jakarta Sans',
+                  letterSpacing: -0.02,
                 ),
               ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.95),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: AppColors.border.withValues(alpha: 0.5),
+                    color: AppColors.surfaceContainerHighest.withOpacity(0.3),
                   ),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, color: AppColors.muted, size: 20),
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
                     const SizedBox(width: 12),
                     Text(
                       'No recent activity',
-                      style: TextStyle(fontSize: 13, color: AppColors.muted),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                        fontFamily: 'Inter',
+                      ),
                     ),
                   ],
                 ),
@@ -647,18 +675,18 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Recent Activity',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
+                    letterSpacing: -0.02,
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    // Navigate to all items
-                  },
+                  onPressed: () {},
                   style: TextButton.styleFrom(
                     padding: EdgeInsets.zero,
                     minimumSize: Size.zero,
@@ -667,9 +695,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Text(
                     'See All',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
+                      fontFamily: 'Plus Jakarta Sans',
                     ),
                   ),
                 ),
@@ -678,26 +707,22 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(height: 12),
             ...docs.map((doc) {
               final data = doc.data();
-              final status = (data['status'] ?? 'found')
-                  .toString()
-                  .toLowerCase();
+              final status = (data['status'] ?? 'found').toString().toLowerCase();
               final isLost = status == 'lost';
-              final timeAgo = data['createdAt'] != null
+              final timeAgo = data['createdAt'] != null 
                   ? _getTimeAgo((data['createdAt'] as Timestamp).toDate())
                   : 'Recently';
-
+              
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _buildActivityItem(
-                  icon: isLost
-                      ? Icons.report_problem_outlined
-                      : Icons.check_circle_outline,
+                  icon: isLost ? Icons.report_problem_outlined : Icons.check_circle_outline,
                   title: isLost ? 'Reported Lost Item' : 'Reported Found Item',
                   subtitle: '${data['itemName'] ?? 'Item'} · $timeAgo',
-                  color: isLost ? AppColors.lostColor : AppColors.secondary,
+                  color: AppColors.primary,
                 ),
               );
-            }),
+            }).toList(),
           ],
         );
       },
@@ -713,19 +738,25 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.surfaceContainerHighest.withOpacity(0.3),
+        ),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: color, size: 16),
+            child: Icon(
+              icon,
+              color: color,
+              size: 16,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -738,11 +769,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
                   ),
                 ),
                 Text(
                   subtitle,
-                  style: TextStyle(fontSize: 11, color: AppColors.muted),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                    fontFamily: 'Inter',
+                  ),
                 ),
               ],
             ),
@@ -750,7 +786,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
           ),
         ],
       ),
@@ -759,13 +798,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String _getTimeAgo(DateTime dateTime) {
     final difference = DateTime.now().difference(dateTime);
-
-    if (difference.inDays > 365) {
-      return '${(difference.inDays / 365).floor()}y ago';
-    }
-    if (difference.inDays > 30) {
-      return '${(difference.inDays / 30).floor()}mo ago';
-    }
+    
+    if (difference.inDays > 365) return '${(difference.inDays / 365).floor()}y ago';
+    if (difference.inDays > 30) return '${(difference.inDays / 30).floor()}mo ago';
     if (difference.inDays > 7) return '${(difference.inDays / 7).floor()}w ago';
     if (difference.inDays > 0) return '${difference.inDays}d ago';
     if (difference.inHours > 0) return '${difference.inHours}h ago';
@@ -783,13 +818,20 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
       backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
+      foregroundColor: Colors.black,
       elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-      icon: const Icon(Icons.add, size: 20),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(30),
+      ),
+      icon: const Icon(Icons.add, size: 20, color: Colors.black),
       label: const Text(
         'Report Item',
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        style: TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 14,
+          color: Colors.black,
+          fontFamily: 'Plus Jakarta Sans',
+        ),
       ),
     );
   }

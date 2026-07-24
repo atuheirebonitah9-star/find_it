@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../theme/app_colors.dart';
 
 class MyLostItemsScreen extends StatelessWidget {
   const MyLostItemsScreen({super.key});
-
-  static const Color primaryColor = Color(0xFF131B2E);
-  static const Color secondaryColor = Color(0xFF006A61);
-  static const Color backgroundColor = Color(0xFFF7F9FB);
-  static const Color onSurfaceVariant = Color(0xFF45464D);
 
   Stream<QuerySnapshot<Map<String, dynamic>>> _myLostItemsStream(
       String uid) {
@@ -25,30 +21,54 @@ class MyLostItemsScreen extends StatelessWidget {
 
     if (currentUser == null) {
       return const Scaffold(
-        body: Center(child: Text('Not logged in.')),
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: Text(
+            'Not logged in.',
+            style: TextStyle(
+              color: AppColors.text,
+              fontFamily: 'Inter',
+            ),
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'My Lost Items',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Plus Jakarta Sans',
+          ),
         ),
-        backgroundColor: backgroundColor,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: primaryColor,
+        foregroundColor: AppColors.text,
       ),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: _myLostItemsStream(currentUser.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(
+                color: AppColors.primary,
+              ),
+            );
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}',
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            );
           }
 
           final docs = snapshot.data?.docs ?? [];
@@ -58,14 +78,36 @@ class MyLostItemsScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.search_off_rounded,
-                      size: 80, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.06),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.search_off_rounded,
+                      size: 56,
+                      color: AppColors.primary.withOpacity(0.4),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   const Text(
                     'No lost items reported yet.',
                     style: TextStyle(
-                      fontSize: 16,
-                      color: onSurfaceVariant,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'When you report a lost item, it will appear here.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ],
@@ -78,7 +120,7 @@ class MyLostItemsScreen extends StatelessWidget {
             final imageUrl = d.data()['imageUrl'];
             return imageUrl != null &&
                 imageUrl.toString().trim().isNotEmpty;
-}).toList();
+          }).toList();
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -92,7 +134,9 @@ class MyLostItemsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: primaryColor,
+                      color: AppColors.text,
+                      fontFamily: 'Plus Jakarta Sans',
+                      letterSpacing: -0.02,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -121,7 +165,9 @@ class MyLostItemsScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: primaryColor,
+                    color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
+                    letterSpacing: -0.02,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -151,30 +197,22 @@ class _ImageCard extends StatelessWidget {
 
   const _ImageCard({required this.data});
 
-  static const Color primaryColor = Color(0xFF131B2E);
-  static const Color onSurfaceVariant = Color(0xFF45464D);
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-     onTap: () {
-  final imageUrl = (data['imageUrl'] ?? '').toString().trim();
-
-  if (imageUrl.isNotEmpty) {
-    _showFullImage(context, imageUrl);
-  }
-},
+      onTap: () {
+        final imageUrl = (data['imageUrl'] ?? '').toString().trim();
+        if (imageUrl.isNotEmpty) {
+          _showFullImage(context, imageUrl);
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppColors.surfaceContainerHighest.withOpacity(0.3),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -182,26 +220,36 @@ class _ImageCard extends StatelessWidget {
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
+                  top: Radius.circular(16),
                 ),
                 child: Image.network(
                   data['imageUrl'] as String,
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, progress) {
                     if (progress == null) return child;
-                    return const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                    return Container(
+                      color: AppColors.surface,
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                          strokeWidth: 2,
+                        ),
+                      ),
                     );
                   },
-                  errorBuilder: (context, _, __) => const Center(
-                    child: Icon(Icons.broken_image_outlined,
-                        color: Colors.grey, size: 40),
+                  errorBuilder: (context, _, __) => Container(
+                    color: AppColors.surface,
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: AppColors.muted,
+                      size: 40,
+                    ),
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -212,18 +260,32 @@ class _ImageCard extends StatelessWidget {
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
-                      color: primaryColor,
+                      color: AppColors.text,
+                      fontFamily: 'Plus Jakarta Sans',
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    data['location'] ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: onSurfaceVariant,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_on_outlined,
+                        size: 12,
+                        color: AppColors.muted,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          data['location'] ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.muted,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -245,9 +307,15 @@ class _ImageCard extends StatelessWidget {
           child: Image.network(
             imageUrl,
             fit: BoxFit.contain,
-            errorBuilder: (context, _, __) => const Center(
-              child: Icon(Icons.broken_image_outlined,
-                  color: Colors.grey, size: 60),
+            errorBuilder: (context, _, __) => Container(
+              color: AppColors.surface,
+              child: const Center(
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  color: AppColors.muted,
+                  size: 60,
+                ),
+              ),
             ),
           ),
         ),
@@ -263,31 +331,26 @@ class _ReportListTile extends StatelessWidget {
 
   const _ReportListTile({required this.data});
 
-  static const Color primaryColor = Color(0xFF131B2E);
-  static const Color onSurfaceVariant = Color(0xFF45464D);
-
   @override
   Widget build(BuildContext context) {
-   final hasImage = data['imageUrl'] != null &&
-    data['imageUrl'].toString().trim().isNotEmpty; 
+    final hasImage = data['imageUrl'] != null &&
+        data['imageUrl'].toString().trim().isNotEmpty;
+
+    final isResolved = data['status']?.toString().toLowerCase() == 'resolved';
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.surfaceContainerHighest.withOpacity(0.3),
+        ),
       ),
       child: ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           child: hasImage
               ? Image.network(
                   data['imageUrl'] as String,
@@ -303,7 +366,8 @@ class _ReportListTile extends StatelessWidget {
           style: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 15,
-            color: primaryColor,
+            color: AppColors.text,
+            fontFamily: 'Plus Jakarta Sans',
           ),
         ),
         subtitle: Column(
@@ -312,14 +376,20 @@ class _ReportListTile extends StatelessWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.location_on_outlined,
-                    size: 13, color: onSurfaceVariant),
+                Icon(
+                  Icons.location_on_outlined,
+                  size: 13,
+                  color: AppColors.muted,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     data['location'] ?? 'Unknown location',
                     style: const TextStyle(
-                        fontSize: 12, color: onSurfaceVariant),
+                      fontSize: 12,
+                      color: AppColors.muted,
+                      fontFamily: 'Inter',
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -328,24 +398,35 @@ class _ReportListTile extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               _formatDate(data['date']),
-              style:
-                  const TextStyle(fontSize: 12, color: onSurfaceVariant),
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.muted,
+                fontFamily: 'Inter',
+              ),
             ),
           ],
         ),
         trailing: Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: Colors.red[50],
+            color: isResolved
+                ? AppColors.secondary.withOpacity(0.15)
+                : AppColors.primary.withOpacity(0.15),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: isResolved
+                  ? AppColors.secondary.withOpacity(0.3)
+                  : AppColors.primary.withOpacity(0.3),
+            ),
           ),
           child: Text(
             (data['status'] ?? 'open').toString().toUpperCase(),
             style: TextStyle(
-              fontSize: 11,
+              fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: Colors.red[700],
+              color: isResolved ? AppColors.secondary : AppColors.primary,
+              fontFamily: 'Plus Jakarta Sans',
+              letterSpacing: 0.5,
             ),
           ),
         ),
@@ -358,11 +439,14 @@ class _ReportListTile extends StatelessWidget {
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: const Icon(Icons.image_not_supported_outlined,
-          color: Colors.grey, size: 24),
+      child: Icon(
+        Icons.image_not_supported_outlined,
+        color: AppColors.muted,
+        size: 24,
+      ),
     );
   }
 

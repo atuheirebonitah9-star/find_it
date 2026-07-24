@@ -58,12 +58,12 @@ class _ChatListScreenState extends State<ChatListScreen>
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withValues(alpha: 0.1),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.delete_outline,
-                    color: AppColors.lostColor,
+                    color: AppColors.error,
                     size: 32,
                   ),
                 ),
@@ -74,6 +74,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -82,8 +83,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.muted,
+                    color: AppColors.textSecondary,
                     height: 1.5,
+                    fontFamily: 'Inter',
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -104,6 +106,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                           style: TextStyle(
                             color: AppColors.text,
                             fontWeight: FontWeight.w600,
+                            fontFamily: 'Plus Jakarta Sans',
                           ),
                         ),
                       ),
@@ -112,7 +115,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.lostColor,
+                          backgroundColor: AppColors.errorContainer,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
                           shape: RoundedRectangleBorder(
@@ -121,7 +124,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                         ),
                         onPressed: () async {
                           Navigator.pop(context);
-                          final messenger = ScaffoldMessenger.of(this.context);
+                          final messenger = ScaffoldMessenger.of(context);
                           await Provider.of<ChatProvider>(
                             context,
                             listen: false,
@@ -140,7 +143,11 @@ class _ChatListScreenState extends State<ChatListScreen>
                         },
                         child: const Text(
                           'Delete',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
                         ),
                       ),
                     ),
@@ -165,7 +172,9 @@ class _ChatListScreenState extends State<ChatListScreen>
           builder: (context, chatProvider, child) {
             if (chatProvider.isLoading) {
               return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
+                child: CircularProgressIndicator(
+                  color: AppColors.primary,
+                ),
               );
             }
 
@@ -187,7 +196,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.lostColor,
+                      color: AppColors.errorContainer,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     alignment: Alignment.centerRight,
@@ -237,7 +246,7 @@ class _ChatListScreenState extends State<ChatListScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: AppColors.primary.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -253,6 +262,8 @@ class _ChatListScreenState extends State<ChatListScreen>
               fontWeight: FontWeight.w700,
               color: AppColors.text,
               fontSize: 20,
+              fontFamily: 'Plus Jakarta Sans',
+              letterSpacing: -0.02,
             ),
           ),
         ],
@@ -261,7 +272,10 @@ class _ChatListScreenState extends State<ChatListScreen>
       elevation: 0,
       actions: [
         IconButton(
-          icon: Icon(Icons.search_outlined, color: AppColors.text),
+          icon: Icon(
+            Icons.search_outlined,
+            color: AppColors.text,
+          ),
           onPressed: () {
             // Implement search functionality
           },
@@ -280,13 +294,13 @@ class _ChatListScreenState extends State<ChatListScreen>
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.06),
+              color: AppColors.primary.withOpacity(0.06),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.chat_bubble_outline,
               size: 56,
-              color: AppColors.primary.withValues(alpha: 0.4),
+              color: AppColors.primary.withOpacity(0.3),
             ),
           ),
           const SizedBox(height: 24),
@@ -296,6 +310,8 @@ class _ChatListScreenState extends State<ChatListScreen>
               fontSize: 20,
               fontWeight: FontWeight.w700,
               color: AppColors.text,
+              fontFamily: 'Plus Jakarta Sans',
+              letterSpacing: -0.02,
             ),
           ),
           const SizedBox(height: 8),
@@ -306,8 +322,9 @@ class _ChatListScreenState extends State<ChatListScreen>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.muted,
+                color: AppColors.textSecondary,
                 height: 1.5,
+                fontFamily: 'Inter',
               ),
             ),
           ),
