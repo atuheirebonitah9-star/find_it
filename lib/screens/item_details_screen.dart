@@ -398,7 +398,7 @@ class ItemDetailsScreen extends StatelessWidget {
           } else {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+                SnackBar(
                   content: Text('Could not contact reporter'),
                   backgroundColor: AppColors.errorContainer,
                   behavior: SnackBarBehavior.floating,

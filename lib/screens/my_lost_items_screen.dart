@@ -175,7 +175,7 @@ class MyLostItemsScreen extends StatelessWidget {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: docs.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final data = docs[index].data();
                     return _ReportListTile(data: data);
@@ -237,7 +237,7 @@ class _ImageCard extends StatelessWidget {
                       ),
                     );
                   },
-                  errorBuilder: (context, _, __) => Container(
+                  errorBuilder: (context, _, _) => Container(
                     color: AppColors.surface,
                     child: Icon(
                       Icons.broken_image_outlined,
@@ -307,7 +307,7 @@ class _ImageCard extends StatelessWidget {
           child: Image.network(
             imageUrl,
             fit: BoxFit.contain,
-            errorBuilder: (context, _, __) => Container(
+            errorBuilder: (context, _, _) => Container(
               color: AppColors.surface,
               child: const Center(
                 child: Icon(
@@ -357,7 +357,7 @@ class _ReportListTile extends StatelessWidget {
                   width: 52,
                   height: 52,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _placeholder(),
+                  errorBuilder: (_, _, _) => _placeholder(),
                 )
               : _placeholder(),
         ),

@@ -15,27 +15,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _searchQuery = '';
-  String _statusFilter = 'All';
-  final TextEditingController _searchController = TextEditingController();
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
-    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
-        .collection('items')
-        .orderBy('createdAt', descending: true);
-
-    if (_statusFilter != 'All') {
-      query = query.where('status', isEqualTo: _statusFilter.toLowerCase());
-    }
-
-    return query.snapshots();
-  }
 
   Future<Map<String, int>> _getFilterCounts() async {
     final allSnapshot = await FirebaseFirestore.instance.collection('items').get();
@@ -706,23 +685,23 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 12),
             ...docs.map((doc) {
-              final data = doc.data();
-              final status = (data['status'] ?? 'found').toString().toLowerCase();
-              final isLost = status == 'lost';
-              final timeAgo = data['createdAt'] != null 
-                  ? _getTimeAgo((data['createdAt'] as Timestamp).toDate())
-                  : 'Recently';
-              
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _buildActivityItem(
-                  icon: isLost ? Icons.report_problem_outlined : Icons.check_circle_outline,
-                  title: isLost ? 'Reported Lost Item' : 'Reported Found Item',
-                  subtitle: '${data['itemName'] ?? 'Item'} · $timeAgo',
-                  color: AppColors.primary,
-                ),
-              );
-            }).toList(),
+                    final data = doc.data();
+                    final status = (data['status'] ?? 'found').toString().toLowerCase();
+                    final isLost = status == 'lost';
+                    final timeAgo = data['createdAt'] != null 
+                        ? _getTimeAgo((data['createdAt'] as Timestamp).toDate())
+                        : 'Recently';
+                    
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _buildActivityItem(
+                        icon: isLost ? Icons.report_problem_outlined : Icons.check_circle_outline,
+                        title: isLost ? 'Reported Lost Item' : 'Reported Found Item',
+                        subtitle: '${data['itemName'] ?? 'Item'} · $timeAgo',
+                        color: AppColors.primary,
+                      ),
+                    );
+                  }),
           ],
         );
       },

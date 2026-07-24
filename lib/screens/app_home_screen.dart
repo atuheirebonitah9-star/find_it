@@ -6,9 +6,7 @@ import 'report_item_screen.dart';
 import 'item_details_screen.dart';
 import 'profile_screen.dart';
 import 'chat/chat_list_screen.dart';
-import '../services/report_service.dart';
 import '../services/notification_event_service.dart';
-import '../matching_logic.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,11 +17,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
+  late AnimationController _fabController;
+  final TextEditingController _searchController = TextEditingController();
+  final NotificationEventService _notificationService = NotificationEventService();
   String _searchQuery = '';
   String _statusFilter = 'All';
-  final TextEditingController _searchController = TextEditingController();
-  late AnimationController _fabController;
-  final ReportService _reportService = ReportService();
+  int _unreadCount = 0;
+  final List<NotificationEvent> _readEvents = [];
 
   @override
   void initState() {
@@ -32,13 +32,38 @@ class _HomeScreenState extends State<HomeScreen>
       duration: const Duration(milliseconds: 600),
       vsync: this,
     )..forward();
+    // Calculate initial unread count
+    final allEvents = _notificationService.getEventHistory();
+    _unreadCount = allEvents.where((e) => !_readEvents.contains(e)).length;
+    // Subscribe to new events
+    _notificationService.subscribe(_onNotificationEvent);
+  }
+
+  void _onNotificationEvent(NotificationEvent event) {
+    if (!_readEvents.contains(event)) {
+      setState(() => _unreadCount++);
+    }
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
     _fabController.dispose();
+    _searchController.dispose();
+    _notificationService.unsubscribe(_onNotificationEvent);
     super.dispose();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
+    Query<Map<String, dynamic>> query =
+        FirebaseFirestore.instance.collection('items');
+
+    if (_statusFilter != 'All') {
+      query = query.where('status', isEqualTo: _statusFilter.toLowerCase());
+    }
+
+    query = query.orderBy('createdAt', descending: true);
+
+    return query.snapshots();
   }
 
   // Get counts for filter tabs
@@ -62,24 +87,7 @@ class _HomeScreenState extends State<HomeScreen>
     };
   }
 
-  // Items stream, filtered by the currently selected status tab.
-  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
-    final collection = FirebaseFirestore.instance
-        .collection('items')
-        .withConverter<Map<String, dynamic>>(
-      fromFirestore: (snapshot, _) => snapshot.data() ?? {},
-      toFirestore: (data, _) => data,
-    );
 
-    if (_statusFilter == 'All') {
-      return collection.orderBy('createdAt', descending: true).snapshots();
-    }
-
-    return collection
-        .where('status', isEqualTo: _statusFilter.toLowerCase())
-        .orderBy('createdAt', descending: true)
-        .snapshots();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +142,7 @@ class _HomeScreenState extends State<HomeScreen>
           icon: Icons.notifications_outlined,
           tooltip: 'Notifications',
           onTap: _showNotifications,
+          badgeCount: _unreadCount,
         ),
         _buildActionButton(
           icon: Icons.chat_bubble_outline,
@@ -151,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ProfileScreen(),
+              MaterialPageRoute(builder: (_) => const ProfileScreen()),
             );
           },
         ),
@@ -168,6 +177,7 @@ class _HomeScreenState extends State<HomeScreen>
     required IconData icon,
     required String tooltip,
     required VoidCallback onTap,
+    int badgeCount = 0,
   }) {
     bool _hovered = false;
     return Padding(
@@ -182,11 +192,9 @@ class _HomeScreenState extends State<HomeScreen>
               curve: Curves.easeOutCubic,
               padding: const EdgeInsets.all(8),
               transform: Matrix4.identity()
-                ..scaleByDouble(
+                ..scale(
                   _hovered ? 1.1 : 1.0,
                   _hovered ? 1.1 : 1.0,
-                  1.0,
-                  1.0,
                 ),
               decoration: BoxDecoration(
                 color: _hovered
@@ -209,10 +217,47 @@ class _HomeScreenState extends State<HomeScreen>
                 child: InkWell(
                   onTap: onTap,
                   borderRadius: BorderRadius.circular(30),
-                  child: Icon(
-                    icon, 
-                    color: _hovered ? AppColors.primary : AppColors.text, 
-                    size: 22,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Icon(
+                        icon,
+                        color: _hovered ? AppColors.primary : AppColors.text,
+                        size: 22,
+                      ),
+                      if (badgeCount > 0)
+                        Positioned(
+                          right: -4,
+                          top: -4,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(10),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 18,
+                              minHeight: 18,
+                            ),
+                            child: Text(
+                              badgeCount > 99 ? '99+' : badgeCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -232,10 +277,15 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   void _showNotifications() {
-    final events = NotificationEventService()
+    final events = _notificationService
         .getEventHistory()
         .reversed
         .toList();
+    // Mark all notifications as read
+    setState(() {
+      _readEvents.addAll(events.where((e) => !_readEvents.contains(e)));
+      _unreadCount = 0;
+    });
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -261,9 +311,29 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Notifications',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Notifications',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    if (events.isNotEmpty)
+                      TextButton(
+                        onPressed: () {
+                          _notificationService.clearHistory();
+                          setState(() {
+                            _readEvents.clear();
+                            _unreadCount = 0;
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Text(
+                          'Clear All',
+                          style: TextStyle(color: AppColors.primary),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 12),
                 if (events.isEmpty)
@@ -285,6 +355,7 @@ class _HomeScreenState extends State<HomeScreen>
                           const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final event = events[index];
+                        final isUnread = !_readEvents.contains(event);
                         final body =
                             event.data['body']?.toString() ??
                             'Tap a notification for more details.';
@@ -293,7 +364,22 @@ class _HomeScreenState extends State<HomeScreen>
                             horizontal: 0,
                             vertical: 8,
                           ),
-                          title: Text(_notificationTitle(event)),
+                          leading: isUnread
+                              ? Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                )
+                              : const SizedBox(width: 8),
+                          title: Text(
+                            _notificationTitle(event),
+                            style: TextStyle(
+                              fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          ),
                           subtitle: Text(body),
                           trailing: Text(
                             '${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}',
@@ -301,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                           onTap: () {
                             Navigator.pop(context);
-                            NotificationEventService().emit(
+                            _notificationService.emit(
                               NotificationEvent(
                                 type: NotificationEventType.notificationTapped,
                                 data: {
@@ -421,11 +507,9 @@ class _HomeScreenState extends State<HomeScreen>
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             transform: Matrix4.identity()
-              ..scaleByDouble(
+              ..scale(
                 _hovered ? 1.05 : 1.0,
                 _hovered ? 1.05 : 1.0,
-                1.0,
-                1.0,
               ),
             decoration: BoxDecoration(
               color: _hovered ? AppColors.primary.withValues(alpha: 0.1) : Colors.white,
@@ -851,11 +935,9 @@ class _ModernItemCardState extends State<_ModernItemCard> {
         curve: Curves.easeOutCubic,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         transform: Matrix4.identity()
-          ..scaleByDouble(
+          ..scale(
             _hovered ? 1.02 : 1.0,
             _hovered ? 1.02 : 1.0,
-            1.0,
-            1.0,
           ),
         decoration: BoxDecoration(
           color: Colors.white,

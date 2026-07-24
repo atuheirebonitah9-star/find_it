@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:image_picker/image_picker.dart';
@@ -35,7 +34,6 @@ class _ReportItemScreenState extends State<ReportItemScreen>
   bool _isListening = false;
   bool _isUploadingImage = false;
   bool _isClassifying = false;
-  String? _uploadedImageUrl;
 
   File? _selectedImage;
   String? _autoCategory;
