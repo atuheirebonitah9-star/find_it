@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloudinary_public/cloudinary_public.dart';   // ✅ this one
+import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:image_picker/image_picker.dart';
@@ -10,7 +10,6 @@ import '../services/report_service.dart';
 import '../services/image_classification_service.dart';
 import '../providers/chat_provider.dart';
 import '../theme/app_colors.dart';
-
 import 'chat/chat_screen.dart';
 import 'possible_matches_screen.dart';
 
@@ -58,26 +57,36 @@ class _ReportItemScreenState extends State<ReportItemScreen>
   ];
 
   final Map<String, String> locations = {
-    // Level 1
-    'LLT 1A': 'level 1', 'LLT 1B': 'level 1', 'Big Lab 1': 'level 1',
-    'Corridor - Level 1': 'level 1', 'Toilets - Level 1': 'level 1',
-    // Level 2
-    'LLT 2A': 'level 2', 'LLT 2B': 'level 2', 'LLT 2C': 'level 2',
-    'Big Lab 2': 'level 2', 'Leaders Office': 'level 2',
-    'Corridor - Level 2': 'level 2', 'Toilets - Level 2': 'level 2',
-    // Level 3
-    'LLT 3A': 'level 3', 'LLT 3B': 'level 3',
-    'Corridor - Level 3': 'level 3', 'Toilets - Level 3': 'level 3',
-    // Level 4
-    'LLT 4A': 'level 4', 'LLT 4B': 'level 4', 'Lab 4': 'level 4',
-    'Corridor - Level 4': 'level 4', 'Toilets - Level 4': 'level 4',
-    // Level 5
-    'LLT 5A': 'level 5', 'LLT 5B': 'level 5',
-    'Corridor - Level 5': 'level 5', 'Toilets - Level 5': 'level 5',
-    // Level 6
-    'LLT 6A': 'level 6', 'LLT 6B': 'level 6', 'Lab 6': 'level 6',
-    'Corridor - Level 6': 'level 6', 'Toilets - Level 6': 'level 6',
-    // General
+    'LLT 1A': 'level 1',
+    'LLT 1B': 'level 1',
+    'Big Lab 1': 'level 1',
+    'Corridor - Level 1': 'level 1',
+    'Toilets - Level 1': 'level 1',
+    'LLT 2A': 'level 2',
+    'LLT 2B': 'level 2',
+    'LLT 2C': 'level 2',
+    'Big Lab 2': 'level 2',
+    'Leaders Office': 'level 2',
+    'Corridor - Level 2': 'level 2',
+    'Toilets - Level 2': 'level 2',
+    'LLT 3A': 'level 3',
+    'LLT 3B': 'level 3',
+    'Corridor - Level 3': 'level 3',
+    'Toilets - Level 3': 'level 3',
+    'LLT 4A': 'level 4',
+    'LLT 4B': 'level 4',
+    'Lab 4': 'level 4',
+    'Corridor - Level 4': 'level 4',
+    'Toilets - Level 4': 'level 4',
+    'LLT 5A': 'level 5',
+    'LLT 5B': 'level 5',
+    'Corridor - Level 5': 'level 5',
+    'Toilets - Level 5': 'level 5',
+    'LLT 6A': 'level 6',
+    'LLT 6B': 'level 6',
+    'Lab 6': 'level 6',
+    'Corridor - Level 6': 'level 6',
+    'Toilets - Level 6': 'level 6',
     'Canteen': 'general',
   };
 
@@ -107,7 +116,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
     super.dispose();
   }
 
-  // ============ EXISTING METHODS (unchanged) ============
+  // ============ METHODS ============
   Future<void> _selectDate() async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -117,12 +126,13 @@ class _ReportItemScreenState extends State<ReportItemScreen>
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
+            colorScheme: const ColorScheme.dark(
               primary: AppColors.primary,
-              onPrimary: Colors.white,
-              surface: Colors.white,
+              onPrimary: Colors.black,
+              surface: AppColors.surface,
               onSurface: AppColors.text,
             ),
+            dialogBackgroundColor: AppColors.surface,
           ),
           child: child!,
         );
@@ -180,10 +190,11 @@ class _ReportItemScreenState extends State<ReportItemScreen>
       setState(() => _isListening = false);
     }
   }
-Future<void> _showImageSourceSheet() async {
+
+  Future<void> _showImageSourceSheet() async {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -193,7 +204,10 @@ Future<void> _showImageSourceSheet() async {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt, color: AppColors.primary),
-                title: const Text('Take Photo'),
+                title: const Text(
+                  'Take Photo',
+                  style: TextStyle(color: AppColors.text),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.camera);
@@ -201,7 +215,10 @@ Future<void> _showImageSourceSheet() async {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library, color: AppColors.primary),
-                title: const Text('Choose from Gallery'),
+                title: const Text(
+                  'Choose from Gallery',
+                  style: TextStyle(color: AppColors.text),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _pickImage(ImageSource.gallery);
@@ -213,7 +230,6 @@ Future<void> _showImageSourceSheet() async {
       },
     );
   }
-
 
   Future<void> _pickImage(ImageSource source) async {
     final XFile? pickedFile = await _imagePicker.pickImage(
@@ -243,9 +259,12 @@ Future<void> _showImageSourceSheet() async {
           SnackBar(
             content: Row(
               children: [
-                const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
+                const Icon(Icons.auto_awesome, color: Colors.black, size: 18),
                 const SizedBox(width: 8),
-                Text('AI detected: $category'),
+                Text(
+                  'AI detected: $category',
+                  style: const TextStyle(color: Colors.black),
+                ),
               ],
             ),
             backgroundColor: AppColors.primary,
@@ -264,7 +283,7 @@ Future<void> _showImageSourceSheet() async {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Classification failed: $e'),
-            backgroundColor: AppColors.lostColor,
+            backgroundColor: AppColors.errorContainer,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -373,7 +392,7 @@ Future<void> _showImageSourceSheet() async {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to submit report: $e'),
-              backgroundColor: AppColors.lostColor,
+              backgroundColor: AppColors.errorContainer,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -397,13 +416,13 @@ Future<void> _showImageSourceSheet() async {
     });
   }
 
-  // ============ MODERNIZED UI WIDGETS ============
+  // ============ UI WIDGETS ============
 
   Widget _buildLostFoundToggle() {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),
@@ -417,12 +436,12 @@ Future<void> _showImageSourceSheet() async {
                 curve: Curves.easeInOut,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: isLost ? AppColors.lostColor : Colors.transparent,
+                  color: isLost ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isLost
                       ? [
                           BoxShadow(
-                            color: AppColors.lostColor.withValues(alpha: 0.3),
+                            color: AppColors.primary.withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -434,16 +453,17 @@ Future<void> _showImageSourceSheet() async {
                   children: [
                     Icon(
                       Icons.search,
-                      color: isLost ? Colors.white : AppColors.muted,
+                      color: isLost ? Colors.black : AppColors.muted,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Lost',
                       style: TextStyle(
-                        color: isLost ? Colors.white : AppColors.muted,
+                        color: isLost ? Colors.black : AppColors.muted,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
+                        fontFamily: 'Plus Jakarta Sans',
                       ),
                     ),
                   ],
@@ -459,12 +479,12 @@ Future<void> _showImageSourceSheet() async {
                 curve: Curves.easeInOut,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
-                  color: !isLost ? AppColors.secondary : Colors.transparent,
+                  color: !isLost ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: !isLost
                       ? [
                           BoxShadow(
-                            color: AppColors.secondary.withValues(alpha: 0.3),
+                            color: AppColors.primary.withOpacity(0.3),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -476,16 +496,17 @@ Future<void> _showImageSourceSheet() async {
                   children: [
                     Icon(
                       Icons.check_circle,
-                      color: !isLost ? Colors.white : AppColors.muted,
+                      color: !isLost ? Colors.black : AppColors.muted,
                       size: 18,
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'Found',
                       style: TextStyle(
-                        color: !isLost ? Colors.white : AppColors.muted,
+                        color: !isLost ? Colors.black : AppColors.muted,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
+                        fontFamily: 'Plus Jakarta Sans',
                       ),
                     ),
                   ],
@@ -508,15 +529,16 @@ Future<void> _showImageSourceSheet() async {
               'Item Photo',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: AppColors.text,
                 fontSize: 15,
+                fontFamily: 'Plus Jakarta Sans',
               ),
             ),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.1),
+                color: AppColors.primary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -525,6 +547,7 @@ Future<void> _showImageSourceSheet() async {
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primary,
+                  fontFamily: 'Plus Jakarta Sans',
                 ),
               ),
             ),
@@ -538,7 +561,6 @@ Future<void> _showImageSourceSheet() async {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.border),
-              boxShadow: AppColors.cardShadow,
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
@@ -548,7 +570,7 @@ Future<void> _showImageSourceSheet() async {
                   Image.file(_selectedImage!, fit: BoxFit.cover),
                   if (_isClassifying)
                     Container(
-                      color: Colors.black.withValues(alpha: 0.6),
+                      color: Colors.black.withOpacity(0.6),
                       child: const Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -557,7 +579,7 @@ Future<void> _showImageSourceSheet() async {
                               width: 40,
                               height: 40,
                               child: CircularProgressIndicator(
-                                color: Colors.white,
+                                color: AppColors.primary,
                                 strokeWidth: 3,
                               ),
                             ),
@@ -567,6 +589,7 @@ Future<void> _showImageSourceSheet() async {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w500,
+                                fontFamily: 'Inter',
                               ),
                             ),
                           ],
@@ -578,7 +601,7 @@ Future<void> _showImageSourceSheet() async {
                     right: 8,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.6),
+                        color: Colors.black.withOpacity(0.6),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -610,7 +633,7 @@ Future<void> _showImageSourceSheet() async {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
+                              color: Colors.black.withOpacity(0.2),
                               blurRadius: 8,
                             ),
                           ],
@@ -620,16 +643,17 @@ Future<void> _showImageSourceSheet() async {
                           children: [
                             const Icon(
                               Icons.auto_awesome,
-                              color: Colors.white,
+                              color: Colors.black,
                               size: 14,
                             ),
                             const SizedBox(width: 6),
                             Text(
                               '$_autoCategory',
                               style: const TextStyle(
-                                color: Colors.white,
+                                color: Colors.black,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
+                                fontFamily: 'Plus Jakarta Sans',
                               ),
                             ),
                           ],
@@ -647,14 +671,13 @@ Future<void> _showImageSourceSheet() async {
               height: 150,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: AppColors.border,
                   style: BorderStyle.solid,
                   width: 2,
                 ),
-                boxShadow: AppColors.softShadow,
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -662,7 +685,7 @@ Future<void> _showImageSourceSheet() async {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.1),
+                      color: AppColors.primary.withOpacity(0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -678,12 +701,17 @@ Future<void> _showImageSourceSheet() async {
                       color: AppColors.text,
                       fontWeight: FontWeight.w600,
                       fontSize: 15,
+                      fontFamily: 'Plus Jakarta Sans',
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'AI will auto-categorize your item',
-                    style: TextStyle(color: AppColors.muted, fontSize: 12),
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontFamily: 'Inter',
+                    ),
                   ),
                 ],
               ),
@@ -702,21 +730,23 @@ Future<void> _showImageSourceSheet() async {
           'Category',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: AppColors.text,
             fontSize: 15,
+            fontFamily: 'Plus Jakarta Sans',
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: AppColors.border),
-            boxShadow: AppColors.softShadow,
           ),
           child: DropdownButtonFormField<String>(
             initialValue: selectedCategory,
             isExpanded: true,
+            dropdownColor: AppColors.surface,
+            style: const TextStyle(color: AppColors.text),
             decoration: const InputDecoration(
               contentPadding: EdgeInsets.symmetric(
                 horizontal: 16,
@@ -728,7 +758,7 @@ Future<void> _showImageSourceSheet() async {
               children: [
                 Icon(Icons.category, color: AppColors.muted, size: 18),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'Select Category',
                   style: TextStyle(color: AppColors.muted),
                 ),
@@ -745,7 +775,10 @@ Future<void> _showImageSourceSheet() async {
                       size: 18,
                     ),
                     const SizedBox(width: 10),
-                    Text(category),
+                    Text(
+                      category,
+                      style: const TextStyle(color: AppColors.text),
+                    ),
                   ],
                 ),
               );
@@ -790,8 +823,9 @@ Future<void> _showImageSourceSheet() async {
           'Date',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: AppColors.text,
             fontSize: 15,
+            fontFamily: 'Plus Jakarta Sans',
           ),
         ),
         const SizedBox(height: 8),
@@ -800,10 +834,9 @@ Future<void> _showImageSourceSheet() async {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: AppColors.border),
-              boxShadow: AppColors.softShadow,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -829,6 +862,7 @@ Future<void> _showImageSourceSheet() async {
                         fontWeight: selectedDate == null
                             ? FontWeight.w400
                             : FontWeight.w500,
+                        fontFamily: 'Inter',
                       ),
                     ),
                   ],
@@ -836,7 +870,7 @@ Future<void> _showImageSourceSheet() async {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: AppColors.primary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(Icons.arrow_drop_down, color: AppColors.primary),
@@ -857,8 +891,9 @@ Future<void> _showImageSourceSheet() async {
           'Location',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: AppColors.text,
             fontSize: 15,
+            fontFamily: 'Plus Jakarta Sans',
           ),
         ),
         const SizedBox(height: 8),
@@ -891,7 +926,7 @@ Future<void> _showImageSourceSheet() async {
                   color: AppColors.primary,
                 ),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.surface,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 14,
@@ -910,14 +945,14 @@ Future<void> _showImageSourceSheet() async {
                 errorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(
-                    color: AppColors.lostColor,
+                    color: AppColors.errorContainer,
                     width: 1.5,
                   ),
                 ),
                 focusedErrorBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: const BorderSide(
-                    color: AppColors.lostColor,
+                    color: AppColors.errorContainer,
                     width: 2,
                   ),
                 ),
@@ -946,8 +981,9 @@ Future<void> _showImageSourceSheet() async {
           label,
           style: const TextStyle(
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: AppColors.text,
             fontSize: 15,
+            fontFamily: 'Plus Jakarta Sans',
           ),
         ),
         const SizedBox(height: 8),
@@ -959,7 +995,7 @@ Future<void> _showImageSourceSheet() async {
             hintText: hint,
             hintStyle: const TextStyle(color: AppColors.muted),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.surface,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 14,
@@ -976,14 +1012,14 @@ Future<void> _showImageSourceSheet() async {
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
-                color: AppColors.lostColor,
+                color: AppColors.errorContainer,
                 width: 1.5,
               ),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(
-                color: AppColors.lostColor,
+                color: AppColors.errorContainer,
                 width: 2,
               ),
             ),
@@ -1003,8 +1039,8 @@ Future<void> _showImageSourceSheet() async {
         child: ElevatedButton(
           onPressed: _submitReport,
           style: ElevatedButton.styleFrom(
-            backgroundColor: isLost ? AppColors.lostColor : AppColors.secondary,
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.black,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -1012,14 +1048,22 @@ Future<void> _showImageSourceSheet() async {
             textStyle: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
+              fontFamily: 'Plus Jakarta Sans',
             ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(isLost ? Icons.search : Icons.check_circle, size: 20),
+              Icon(
+                isLost ? Icons.search : Icons.check_circle,
+                size: 20,
+                color: Colors.black,
+              ),
               const SizedBox(width: 10),
-              Text('Submit ${isLost ? 'Lost' : 'Found'} Report'),
+              Text(
+                'Submit ${isLost ? 'Lost' : 'Found'} Report',
+                style: const TextStyle(color: Colors.black),
+              ),
             ],
           ),
         ),
@@ -1030,154 +1074,157 @@ Future<void> _showImageSourceSheet() async {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Background is now painted by the gradient Container below;
-      // keep this transparent so the gradient shows through.
-      backgroundColor: Colors.transparent,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Report an Item'),
+        title: const Text(
+          'Report an Item',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.text,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back),
         ),
       ),
-      extendBodyBehindAppBar: true,
-      body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            physics: const BouncingScrollPhysics(),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Header Card
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: AppColors.cardShadow,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20),
+          physics: const BouncingScrollPhysics(),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.surfaceContainerHighest.withOpacity(0.3),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            isLost ? Icons.search : Icons.check_circle,
-                            color: isLost
-                                ? AppColors.lostColor
-                                : AppColors.secondary,
-                            size: 24,
-                          ),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                isLost
-                                    ? 'Report Lost Item'
-                                    : 'Report Found Item',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.text,
-                                  fontSize: 16,
-                                ),
-                              ),
-                              Text(
-                                isLost
-                                    ? 'Help us find your lost item'
-                                    : 'Help reunite this item with its owner',
-                                style: const TextStyle(
-                                  color: AppColors.muted,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
+                        child: Icon(
+                          isLost ? Icons.search : Icons.check_circle,
+                          color: AppColors.primary,
+                          size: 24,
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Item Type Toggle
-                  const Text(
-                    'Item Type',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _buildLostFoundToggle(),
-                  const SizedBox(height: 24),
-
-                  // Image Upload
-                  _buildImageUploadSection(),
-                  const SizedBox(height: 20),
-
-                  // Category
-                  _buildCategoryDropdown(),
-                  const SizedBox(height: 16),
-
-                  // Date
-                  _buildDatePicker(),
-                  const SizedBox(height: 16),
-
-                  // Item Name
-                  _buildTextField(
-                    controller: itemNameController,
-                    hint: 'e.g., Black wallet, Blue backpack',
-                    label: 'Item Name',
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Location
-                  _buildLocationField(),
-                  const SizedBox(height: 16),
-
-                  // Description
-                  _buildTextField(
-                    controller: descriptionController,
-                    hint: 'Describe the item in detail...',
-                    label: 'Description',
-                    maxLines: 4,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isListening ? Icons.mic : Icons.mic_none,
-                        color: _isListening
-                            ? AppColors.lostColor
-                            : AppColors.primary,
                       ),
-                      onPressed: () {
-                        if (_isListening) {
-                          _stopListening();
-                        } else {
-                          _startListening();
-                        }
-                      },
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isLost
+                                  ? 'Report Lost Item'
+                                  : 'Report Found Item',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.text,
+                                fontSize: 16,
+                                fontFamily: 'Plus Jakarta Sans',
+                              ),
+                            ),
+                            Text(
+                              isLost
+                                  ? 'Help us find your lost item'
+                                  : 'Help reunite this item with its owner',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 32),
+                ),
+                const SizedBox(height: 24),
 
-                  // Submit Button
-                  _buildSubmitButton(),
+                // Item Type Toggle
+                const Text(
+                  'Item Type',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.text,
+                    fontSize: 15,
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildLostFoundToggle(),
+                const SizedBox(height: 24),
 
-                  const SizedBox(height: 12),
-                ],
-              ),
+                // Image Upload
+                _buildImageUploadSection(),
+                const SizedBox(height: 20),
+
+                // Category
+                _buildCategoryDropdown(),
+                const SizedBox(height: 16),
+
+                // Date
+                _buildDatePicker(),
+                const SizedBox(height: 16),
+
+                // Item Name
+                _buildTextField(
+                  controller: itemNameController,
+                  hint: 'e.g., Black wallet, Blue backpack',
+                  label: 'Item Name',
+                ),
+                const SizedBox(height: 16),
+
+                // Location
+                _buildLocationField(),
+                const SizedBox(height: 16),
+
+                // Description
+                _buildTextField(
+                  controller: descriptionController,
+                  hint: 'Describe the item in detail...',
+                  label: 'Description',
+                  maxLines: 4,
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _isListening ? Icons.mic : Icons.mic_none,
+                      color: _isListening
+                          ? AppColors.primary
+                          : AppColors.muted,
+                    ),
+                    onPressed: () {
+                      if (_isListening) {
+                        _stopListening();
+                      } else {
+                        _startListening();
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Submit Button
+                _buildSubmitButton(),
+
+                const SizedBox(height: 12),
+              ],
             ),
           ),
         ),

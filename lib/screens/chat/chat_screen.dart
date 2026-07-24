@@ -81,7 +81,9 @@ class _ChatScreenState extends State<ChatScreen>
               builder: (context, chatProvider, child) {
                 if (chatProvider.isLoading) {
                   return const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary,
+                    ),
                   );
                 }
 
@@ -156,6 +158,7 @@ class _ChatScreenState extends State<ChatScreen>
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                   fontSize: 18,
+                  fontFamily: 'Plus Jakarta Sans',
                 ),
               ),
             ),
@@ -173,6 +176,7 @@ class _ChatScreenState extends State<ChatScreen>
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -193,6 +197,7 @@ class _ChatScreenState extends State<ChatScreen>
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.muted,
+                        fontFamily: 'Inter',
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -229,13 +234,13 @@ class _ChatScreenState extends State<ChatScreen>
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.06),
+              color: AppColors.primary.withOpacity(0.06),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.chat_outlined,
               size: 40,
-              color: AppColors.primary.withValues(alpha: 0.4),
+              color: AppColors.primary.withOpacity(0.3),
             ),
           ),
           const SizedBox(height: 16),
@@ -243,14 +248,19 @@ class _ChatScreenState extends State<ChatScreen>
             'No messages yet',
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               color: AppColors.text,
+              fontFamily: 'Plus Jakarta Sans',
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Send a message to start the conversation',
-            style: TextStyle(fontSize: 14, color: AppColors.muted),
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.muted,
+              fontFamily: 'Inter',
+            ),
           ),
         ],
       ),
@@ -280,7 +290,7 @@ class _ChatScreenState extends State<ChatScreen>
                     height: 4,
                     decoration: BoxDecoration(
                       color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: const BorderRadius.all(Radius.circular(2)),
                     ),
                   ),
                 ),
@@ -289,18 +299,21 @@ class _ChatScreenState extends State<ChatScreen>
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.1),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.report_problem_outlined,
-                    color: AppColors.accent,
+                    color: AppColors.error,
                     size: 22,
                   ),
                 ),
                 title: const Text(
                   'Report User',
-                  style: TextStyle(color: AppColors.text),
+                  style: TextStyle(
+                    color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -311,7 +324,7 @@ class _ChatScreenState extends State<ChatScreen>
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: AppColors.primary.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -322,7 +335,10 @@ class _ChatScreenState extends State<ChatScreen>
                 ),
                 title: const Text(
                   'Archive Chat',
-                  style: TextStyle(color: AppColors.text),
+                  style: TextStyle(
+                    color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -333,18 +349,21 @@ class _ChatScreenState extends State<ChatScreen>
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withValues(alpha: 0.1),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.delete_outline,
-                    color: AppColors.lostColor,
+                    color: AppColors.error,
                     size: 22,
                   ),
                 ),
                 title: Text(
                   'Delete Chat',
-                  style: TextStyle(color: AppColors.lostColor),
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -355,18 +374,21 @@ class _ChatScreenState extends State<ChatScreen>
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withValues(alpha: 0.1),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.block_outlined,
-                    color: AppColors.lostColor,
+                    color: AppColors.error,
                     size: 22,
                   ),
                 ),
                 title: Text(
                   'Block User',
-                  style: TextStyle(color: AppColors.lostColor),
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
                 ),
                 onTap: () {
                   Navigator.pop(context);
@@ -386,8 +408,8 @@ class _ChatScreenState extends State<ChatScreen>
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
           ),
           backgroundColor: AppColors.surface,
           child: Padding(
@@ -399,12 +421,12 @@ class _ChatScreenState extends State<ChatScreen>
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withValues(alpha: 0.1),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.delete_outline,
-                    color: AppColors.lostColor,
+                    color: AppColors.error,
                     size: 32,
                   ),
                 ),
@@ -415,6 +437,7 @@ class _ChatScreenState extends State<ChatScreen>
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -423,8 +446,9 @@ class _ChatScreenState extends State<ChatScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.muted,
+                    color: AppColors.textSecondary,
                     height: 1.5,
+                    fontFamily: 'Inter',
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -435,8 +459,8 @@ class _ChatScreenState extends State<ChatScreen>
                         onPressed: () => Navigator.pop(context),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                             side: BorderSide(color: AppColors.border),
                           ),
                         ),
@@ -445,6 +469,7 @@ class _ChatScreenState extends State<ChatScreen>
                           style: TextStyle(
                             color: AppColors.text,
                             fontWeight: FontWeight.w600,
+                            fontFamily: 'Plus Jakarta Sans',
                           ),
                         ),
                       ),
@@ -453,11 +478,11 @@ class _ChatScreenState extends State<ChatScreen>
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.lostColor,
+                          backgroundColor: AppColors.errorContainer,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                         onPressed: () {
@@ -466,7 +491,11 @@ class _ChatScreenState extends State<ChatScreen>
                         },
                         child: const Text(
                           'Delete',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
                         ),
                       ),
                     ),
@@ -492,6 +521,9 @@ class _ChatScreenState extends State<ChatScreen>
           content: Text('Chat deleted successfully'),
           backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
         ),
       );
     }
@@ -503,8 +535,8 @@ class _ChatScreenState extends State<ChatScreen>
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
           ),
           backgroundColor: AppColors.surface,
           child: Padding(
@@ -516,12 +548,12 @@ class _ChatScreenState extends State<ChatScreen>
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.accent.withValues(alpha: 0.1),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.report_problem_outlined,
-                    color: AppColors.accent,
+                    color: AppColors.error,
                     size: 32,
                   ),
                 ),
@@ -532,6 +564,7 @@ class _ChatScreenState extends State<ChatScreen>
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -540,8 +573,9 @@ class _ChatScreenState extends State<ChatScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.muted,
+                    color: AppColors.textSecondary,
                     height: 1.5,
+                    fontFamily: 'Inter',
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -552,8 +586,8 @@ class _ChatScreenState extends State<ChatScreen>
                         onPressed: () => Navigator.pop(context),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                             side: BorderSide(color: AppColors.border),
                           ),
                         ),
@@ -562,6 +596,7 @@ class _ChatScreenState extends State<ChatScreen>
                           style: TextStyle(
                             color: AppColors.text,
                             fontWeight: FontWeight.w600,
+                            fontFamily: 'Plus Jakarta Sans',
                           ),
                         ),
                       ),
@@ -570,11 +605,11 @@ class _ChatScreenState extends State<ChatScreen>
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.accent,
+                          backgroundColor: AppColors.errorContainer,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                         onPressed: () {
@@ -584,12 +619,19 @@ class _ChatScreenState extends State<ChatScreen>
                               content: Text('User reported successfully'),
                               backgroundColor: AppColors.primary,
                               behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(12)),
+                              ),
                             ),
                           );
                         },
                         child: const Text(
                           'Report',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
                         ),
                       ),
                     ),
@@ -609,8 +651,8 @@ class _ChatScreenState extends State<ChatScreen>
       context: context,
       builder: (context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(20)),
           ),
           backgroundColor: AppColors.surface,
           child: Padding(
@@ -622,12 +664,12 @@ class _ChatScreenState extends State<ChatScreen>
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.lostColor.withValues(alpha: 0.1),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.block_outlined,
-                    color: AppColors.lostColor,
+                    color: AppColors.error,
                     size: 32,
                   ),
                 ),
@@ -638,6 +680,7 @@ class _ChatScreenState extends State<ChatScreen>
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: AppColors.text,
+                    fontFamily: 'Plus Jakarta Sans',
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -646,8 +689,9 @@ class _ChatScreenState extends State<ChatScreen>
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.muted,
+                    color: AppColors.textSecondary,
                     height: 1.5,
+                    fontFamily: 'Inter',
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -658,8 +702,8 @@ class _ChatScreenState extends State<ChatScreen>
                         onPressed: () => Navigator.pop(context),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                             side: BorderSide(color: AppColors.border),
                           ),
                         ),
@@ -668,6 +712,7 @@ class _ChatScreenState extends State<ChatScreen>
                           style: TextStyle(
                             color: AppColors.text,
                             fontWeight: FontWeight.w600,
+                            fontFamily: 'Plus Jakarta Sans',
                           ),
                         ),
                       ),
@@ -676,11 +721,11 @@ class _ChatScreenState extends State<ChatScreen>
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.lostColor,
+                          backgroundColor: AppColors.errorContainer,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
                           ),
                         ),
                         onPressed: () {
@@ -690,12 +735,19 @@ class _ChatScreenState extends State<ChatScreen>
                               content: Text('User blocked successfully'),
                               backgroundColor: AppColors.primary,
                               behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.all(Radius.circular(12)),
+                              ),
                             ),
                           );
                         },
                         child: const Text(
                           'Block',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
                         ),
                       ),
                     ),
@@ -721,6 +773,9 @@ class _ChatScreenState extends State<ChatScreen>
         content: Text('Chat archived'),
         backgroundColor: AppColors.primary,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(12)),
+        ),
       ),
     );
   }
