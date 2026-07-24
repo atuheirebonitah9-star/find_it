@@ -144,7 +144,7 @@ class ReportService {
     // Save matches for user
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
-        currentUser!.uid,
+        currentUser?.uid ?? '',
         matches,
         report.itemName,
       );
@@ -255,7 +255,7 @@ class ReportService {
     // Save matches for user
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
-        currentUser!.uid,
+        currentUser?.uid ?? '',
         matches,
         report.itemName,
       );

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../services/notification_event_service.dart';
 import '../theme/app_colors.dart';
 import 'signup_screen.dart';
 import 'forgot_password_screen.dart';
@@ -75,130 +74,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
-  String _notificationTitle(NotificationEvent event) {
-    final title = event.data['title']?.toString();
-    if (title != null && title.isNotEmpty) return title;
-    return event.type.name
-        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
-        .trim();
-  }
 
-  void _showNotifications() {
-    final events = NotificationEventService()
-        .getEventHistory()
-        .reversed
-        .toList();
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 48,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Notifications',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.text,
-                    fontFamily: 'Plus Jakarta Sans',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (events.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text(
-                        'No notifications yet.',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  Flexible(
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: events.length,
-                      separatorBuilder: (context, index) =>
-                          Divider(color: AppColors.divider, height: 1),
-                      itemBuilder: (context, index) {
-                        final event = events[index];
-                        final body =
-                            event.data['body']?.toString() ??
-                            'Tap a notification for more details.';
-                        return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 0,
-                            vertical: 8,
-                          ),
-                          title: Text(
-                            _notificationTitle(event),
-                            style: const TextStyle(
-                              color: AppColors.text,
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          subtitle: Text(
-                            body,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                          trailing: Text(
-                            '${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}',
-                            style: const TextStyle(
-                              color: AppColors.muted,
-                              fontFamily: 'Inter',
-                              fontSize: 12,
-                            ),
-                          ),
-                          onTap: () {
-                            Navigator.pop(context);
-                            NotificationEventService().emit(
-                              NotificationEvent(
-                                type: NotificationEventType.notificationTapped,
-                                data: {
-                                  'title': _notificationTitle(event),
-                                  'body': body,
-                                },
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
