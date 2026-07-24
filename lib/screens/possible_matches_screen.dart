@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:vector_math/vector_math_64.dart' as vm;
 import '../matching_logic.dart';
 import '../providers/chat_provider.dart';
 import '../theme/app_colors.dart';
@@ -173,10 +174,12 @@ class _HoverableMatchCardState extends State<_HoverableMatchCard> {
         duration: const Duration(milliseconds: 250),
         margin: const EdgeInsets.only(bottom: 12),
         transform: Matrix4.identity()
-          ..scale(
-            _hovered ? 1.01 : 1.0,
-            _hovered ? 1.01 : 1.0,
-            1.0,
+          ..scaleByVector3(
+            vm.Vector3(
+              _hovered ? 1.01 : 1.0,
+              _hovered ? 1.01 : 1.0,
+              1.0,
+            ),
           ),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(

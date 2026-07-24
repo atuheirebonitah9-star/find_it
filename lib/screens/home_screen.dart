@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../services/notification_event_service.dart';
 import 'report_item_screen.dart';
 import 'profile_screen.dart';
 import 'chat/chat_list_screen.dart';
@@ -15,26 +16,184 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _searchQuery = '';
-  String _statusFilter = 'All';
-  final TextEditingController _searchController = TextEditingController();
+  final NotificationEventService _notificationService = NotificationEventService();
+  int _unreadCount = 0;
+  final List<NotificationEvent> _readEvents = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Calculate initial unread count
+    final allEvents = _notificationService.getEventHistory();
+    _unreadCount = allEvents.where((e) => !_readEvents.contains(e)).length;
+    // Subscribe to new events
+    _notificationService.subscribe(_onNotificationEvent);
+  }
+
+  void _onNotificationEvent(NotificationEvent event) {
+    if (!_readEvents.contains(event)) {
+      setState(() => _unreadCount++);
+    }
+  }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _notificationService.unsubscribe(_onNotificationEvent);
     super.dispose();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> _itemsStream() {
-    Query<Map<String, dynamic>> query = FirebaseFirestore.instance
-        .collection('items')
-        .orderBy('createdAt', descending: true);
+  void _showNotifications() {
+    final events = _notificationService
+        .getEventHistory()
+        .reversed
+        .toList();
+    // Mark all notifications as read
+    setState(() {
+      _readEvents.addAll(events.where((e) => !_readEvents.contains(e)));
+      _unreadCount = 0;
+    });
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Notifications',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.text,
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
+                    ),
+                    if (events.isNotEmpty)
+                      TextButton(
+                        onPressed: () {
+                          _notificationService.clearHistory();
+                          setState(() {
+                            _readEvents.clear();
+                            _unreadCount = 0;
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Text(
+                          'Clear All',
+                          style: TextStyle(color: AppColors.primary),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (events.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        'No notifications yet.',
+                        style: TextStyle(color: AppColors.textSecondary),
+                      ),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: events.length,
+                      separatorBuilder: (context, index) =>
+                          Divider(height: 1, color: AppColors.surfaceContainerHighest),
+                      itemBuilder: (context, index) {
+                        final event = events[index];
+                        final isUnread = !_readEvents.contains(event);
+                        final body =
+                            event.data['body']?.toString() ??
+                            'Tap a notification for more details.';
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 0,
+                            vertical: 8,
+                          ),
+                          leading: isUnread
+                              ? Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                )
+                              : const SizedBox(width: 8),
+                          title: Text(
+                            _notificationTitle(event),
+                            style: TextStyle(
+                              fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
+                              color: AppColors.text,
+                              fontFamily: 'Plus Jakarta Sans',
+                            ),
+                          ),
+                          subtitle: Text(
+                            body,
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                          trailing: Text(
+                            '${event.timestamp.hour.toString().padLeft(2, '0')}:${event.timestamp.minute.toString().padLeft(2, '0')}',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _notificationService.emit(
+                              NotificationEvent(
+                                type: NotificationEventType.notificationTapped,
+                                data: {
+                                  'title': _notificationTitle(event),
+                                  'body': body,
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-    if (_statusFilter != 'All') {
-      query = query.where('status', isEqualTo: _statusFilter.toLowerCase());
-    }
-
-    return query.snapshots();
+  String _notificationTitle(NotificationEvent event) {
+    final title = event.data['title']?.toString();
+    if (title != null && title.isNotEmpty) return title;
+    return event.type.name
+        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
+        .trim();
   }
 
   Future<Map<String, int>> _getFilterCounts() async {
@@ -130,6 +289,13 @@ class _HomeScreenState extends State<HomeScreen> {
       actions: [
         _buildActionButton(
           context,
+          icon: Icons.notifications_outlined,
+          tooltip: 'Notifications',
+          onTap: _showNotifications,
+          badgeCount: _unreadCount,
+        ),
+        _buildActionButton(
+          context,
           icon: Icons.image_search_outlined,
           tooltip: 'My Lost Items',
           onTap: () {
@@ -176,6 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
     required IconData icon,
     required String tooltip,
     required VoidCallback onTap,
+    int badgeCount = 0,
   }) {
     return Padding(
       padding: const EdgeInsets.only(right: 4),
@@ -190,10 +357,47 @@ class _HomeScreenState extends State<HomeScreen> {
               color: AppColors.surfaceContainerHigh.withOpacity(0.5),
               borderRadius: BorderRadius.circular(30),
             ),
-            child: Icon(
-              icon,
-              color: AppColors.text,
-              size: 22,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Icon(
+                  icon,
+                  color: AppColors.text,
+                  size: 22,
+                ),
+                if (badgeCount > 0)
+                  Positioned(
+                    right: -4,
+                    top: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Text(
+                        badgeCount > 99 ? '99+' : badgeCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),

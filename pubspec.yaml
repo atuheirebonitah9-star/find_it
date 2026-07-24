@@ -26,6 +26,7 @@ dependencies:
   http: ^1.6.0
   cloudinary_public: ^0.23.1
   google_fonts: ^8.2.0
+  vector_math: ^2.1.4
 
 dev_dependencies:
   flutter_test:
