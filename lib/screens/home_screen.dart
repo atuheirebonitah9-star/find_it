@@ -85,8 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildCommunityConduct(),
               const SizedBox(height: 24),
 
-              // ============ RECENT ACTIVITY ============
-              _buildRecentActivity(),
+              // ============ SAFETY GUIDE ============
+              _buildSafetyGuide(),
             ],
           ),
         ),
@@ -587,176 +587,76 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============ RECENT ACTIVITY ============
-  Widget _buildRecentActivity() {
-    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('items')
-          .orderBy('createdAt', descending: true)
-          .limit(3)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Recent Activity',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
-                  fontFamily: 'Plus Jakarta Sans',
-                  letterSpacing: -0.02,
-                ),
-              ),
-              SizedBox(height: 12),
-              Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.primary,
-                ),
-              ),
-            ],
-          );
-        }
-
-        final docs = snapshot.data?.docs ?? [];
-        
-        if (docs.isEmpty) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Recent Activity',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text,
-                  fontFamily: 'Plus Jakarta Sans',
-                  letterSpacing: -0.02,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.surfaceContainerHighest.withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'No recent activity',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        }
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Recent Activity',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                    fontFamily: 'Plus Jakarta Sans',
-                    letterSpacing: -0.02,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.zero,
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'See All',
-                    style: TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                      fontFamily: 'Plus Jakarta Sans',
-                    ),
-                  ),
-                ),
-              ],
+  // ============ SAFETY GUIDE ============
+  Widget _buildSafetyGuide() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '🛡️ Safety Guide',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.text,
+            fontFamily: 'Plus Jakarta Sans',
+            letterSpacing: -0.02,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.surfaceContainerHighest.withOpacity(0.3),
             ),
-            const SizedBox(height: 12),
-            ...docs.map((doc) {
-              final data = doc.data();
-              final status = (data['status'] ?? 'found').toString().toLowerCase();
-              final isLost = status == 'lost';
-              final timeAgo = data['createdAt'] != null 
-                  ? _getTimeAgo((data['createdAt'] as Timestamp).toDate())
-                  : 'Recently';
-              
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: _buildActivityItem(
-                  icon: isLost ? Icons.report_problem_outlined : Icons.check_circle_outline,
-                  title: isLost ? 'Reported Lost Item' : 'Reported Found Item',
-                  subtitle: '${data['itemName'] ?? 'Item'} · $timeAgo',
-                  color: AppColors.primary,
-                ),
-              );
-            }).toList(),
-          ],
-        );
-      },
+          ),
+          child: Column(
+            children: [
+              _buildSafetyItem(
+                Icons.verified,
+                'Verify Ownership',
+                'Ask for specific details only the owner would know.',
+              ),
+              const Divider(color: AppColors.divider),
+              _buildSafetyItem(
+                Icons.chat,
+                'Use In-App Chat',
+                'Never share personal contact info before verifying.',
+              ),
+              const Divider(color: AppColors.divider),
+              _buildSafetyItem(
+                Icons.location_on,
+                'Meet in Public',
+                'Arrange meetings in well-lit public areas on campus.',
+              ),
+              const Divider(color: AppColors.divider),
+              _buildSafetyItem(
+                Icons.shield_outlined,
+                'Report Suspicious',
+                'Report any suspicious activity to campus security.',
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildActivityItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.surfaceContainerHighest.withOpacity(0.3),
-        ),
-      ),
+  Widget _buildSafetyItem(IconData icon, String title, String description) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: AppColors.primary.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 16,
-            ),
+            child: Icon(icon, color: AppColors.primary, size: 16),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -766,16 +666,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.text,
                     fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
                   ),
                 ),
                 Text(
-                  subtitle,
+                  description,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     color: AppColors.textSecondary,
                     fontFamily: 'Inter',
                   ),
@@ -783,29 +683,9 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  String _getTimeAgo(DateTime dateTime) {
-    final difference = DateTime.now().difference(dateTime);
-    
-    if (difference.inDays > 365) return '${(difference.inDays / 365).floor()}y ago';
-    if (difference.inDays > 30) return '${(difference.inDays / 30).floor()}mo ago';
-    if (difference.inDays > 7) return '${(difference.inDays / 7).floor()}w ago';
-    if (difference.inDays > 0) return '${difference.inDays}d ago';
-    if (difference.inHours > 0) return '${difference.inHours}h ago';
-    if (difference.inMinutes > 0) return '${difference.inMinutes}m ago';
-    return 'Just now';
   }
 
   // ============ FLOATING ACTION BUTTON ============
