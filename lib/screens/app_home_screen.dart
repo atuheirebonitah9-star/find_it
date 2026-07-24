@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   @override
   void initState() {
-    super.initState();
+    super.init
     _fabController = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
