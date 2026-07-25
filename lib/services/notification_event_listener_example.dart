@@ -89,17 +89,19 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
     // Show a snackbar or dialog
     if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Strong match found! ${event.data['itemName']} at ${event.data['location']}',
           ),
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
           action: SnackBarAction(
-            label: 'View',
+            label: 'Dismiss',
+            textColor: Colors.white,
             onPressed: () {
-              // Navigate to match details
-              debugPrint('Navigate to match');
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
             },
           ),
         ),
@@ -112,12 +114,21 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
     // You can handle weak matches differently
     if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Possible match: ${event.data['itemName']} at ${event.data['location']}',
           ),
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -128,12 +139,21 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
 
     if (mounted) {
       final isLost = event.data['isLost'] as bool;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'New ${isLost ? 'lost' : 'found'} item: ${event.data['itemName']} at ${event.data['location']}',
           ),
-          duration: const Duration(seconds: 3),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -143,11 +163,20 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
     debugPrint('[UI] Match confirmed: ${event.data}');
 
     if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Match confirmed! Check your messages.'),
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 3),
           backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -157,12 +186,21 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
     debugPrint('[UI] Message received: ${event.data}');
 
     if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'New message from ${event.data['senderName'] ?? 'someone'}',
           ),
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -172,13 +210,22 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
     debugPrint('[UI] Item marked as found: ${event.data}');
 
     if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Great! Your ${event.data['itemName']} has been marked as found!',
           ),
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 3),
           backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -188,12 +235,21 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
     debugPrint('[UI] Item claimed: ${event.data}');
 
     if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Someone claimed your ${event.data['itemName']}! Check your messages.',
           ),
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -203,10 +259,19 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
     debugPrint('[UI] Reminder: ${event.data}');
 
     if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Reminder: Follow up on your lost item reports!'),
-          duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -216,16 +281,19 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
     debugPrint('[UI] Verification request: ${event.data}');
 
     if (mounted) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             'Please verify the match for ${event.data['itemName']}',
           ),
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
           action: SnackBarAction(
-            label: 'Verify',
+            label: 'Dismiss',
+            textColor: Colors.white,
             onPressed: () {
-              debugPrint('Navigate to verification');
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
             },
           ),
         ),
