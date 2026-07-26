@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../services/notification_event_service.dart';
 
@@ -29,7 +30,16 @@ class _NotificationEventListenerState extends State<NotificationEventListener> {
     _eventService.subscribe(_handleNotificationEvent);
   }
 
+  bool _isForCurrentUser(NotificationEvent event) {
+    // Events without a targetUserId are treated as global/internal (e.g., taps/closes)
+    if (event.targetUserId == null) return true;
+    return event.targetUserId == FirebaseAuth.instance.currentUser?.uid;
+  }
+
   void _handleNotificationEvent(NotificationEvent event) {
+    // Skip events meant for other users
+    if (!_isForCurrentUser(event)) return;
+
     debugPrint('[UI] Received event: ${event.type}');
 
     setState(() {

@@ -22,16 +22,18 @@ class NotificationEvent {
   final NotificationEventType type;
   final Map<String, dynamic> data;
   final DateTime timestamp;
+  final String? targetUserId;
 
   NotificationEvent({
     required this.type,
     required this.data,
     DateTime? timestamp,
+    this.targetUserId,
   }) : timestamp = timestamp ?? DateTime.now();
 
   @override
   String toString() =>
-      'NotificationEvent(type: $type, timestamp: $timestamp, data: $data)';
+      'NotificationEvent(type: $type, targetUserId: $targetUserId, timestamp: $timestamp, data: $data)';
 }
 
 /// Callback type for notification event listeners

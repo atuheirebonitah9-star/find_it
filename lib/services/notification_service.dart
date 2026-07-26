@@ -109,6 +109,7 @@ class NotificationService {
           'data': message.data,
           'isBackground': false,
         },
+        targetUserId: _auth.currentUser?.uid,
       ),
     );
   }
