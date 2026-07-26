@@ -2,10 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/user_profile.dart';
 import '../services/auth_service.dart';
+import '../services/cloudinary_service.dart';
 import '../theme/app_colors.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -66,14 +66,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final userId = FirebaseAuth.instance.currentUser?.uid;
       if (userId == null) return;
 
-      // Upload to Firebase Storage
-      final storageRef = FirebaseStorage.instance
-          .ref()
-          .child('profile_pictures')
-          .child('$userId.jpg');
+      // Upload to Cloudinary
+      final downloadUrl = await CloudinaryService.uploadProfilePicture(
+        File(pickedFile.path),
+      );
 
-      await storageRef.putFile(File(pickedFile.path));
-      final downloadUrl = await storageRef.getDownloadURL();
+      if (downloadUrl == null) {
+        throw Exception('Upload failed, please try again.');
+      }
 
       // Update Firestore
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
@@ -132,64 +132,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SafeArea(
         child: _isLoading
             ? const Center(
-                child: CircularProgressIndicator(
-                  color: AppColors.primary,
-                ),
-              )
+          child: CircularProgressIndicator(
+            color: AppColors.primary,
+          ),
+        )
             : SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ============ PROFILE PICTURE ============
-                    _buildProfilePicture(),
-                    
-                    const SizedBox(height: 24),
-                    
-                    if (_userProfile != null) ...[
-                      // ============ PROFILE INFO CARDS ============
-                      _buildInfoCard(
-                        'Full Name',
-                        _userProfile!.fullName,
-                        Icons.person_outline,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildInfoCard(
-                        'Email',
-                        _userProfile!.email,
-                        Icons.email_outlined,
-                      ),
-                      const SizedBox(height: 12),
-                      _buildInfoCard(
-                        'Student ID',
-                        _userProfile!.studentId,
-                        Icons.badge_outlined,
-                      ),
-                      if (_userProfile!.regNumber != null) ...[
-                        const SizedBox(height: 12),
-                        _buildInfoCard(
-                          'Registration Number',
-                          _userProfile!.regNumber!,
-                          Icons.description_outlined,
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                      _buildInfoCard(
-                        'Course',
-                        _userProfile!.course,
-                        Icons.school_outlined,
-                      ),
-                      
-                      const SizedBox(height: 32),
-                      
-                      // ============ SIGN OUT BUTTON ============
-                      _buildSignOutButton(),
-                    ] else ...[
-                      _buildEmptyState(),
-                    ],
-                  ],
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ============ PROFILE PICTURE ============
+              _buildProfilePicture(),
+
+              const SizedBox(height: 24),
+
+              if (_userProfile != null) ...[
+                // ============ PROFILE INFO CARDS ============
+                _buildInfoCard(
+                  'Full Name',
+                  _userProfile!.fullName,
+                  Icons.person_outline,
                 ),
-              ),
+                const SizedBox(height: 12),
+                _buildInfoCard(
+                  'Email',
+                  _userProfile!.email,
+                  Icons.email_outlined,
+                ),
+                const SizedBox(height: 12),
+                _buildInfoCard(
+                  'Student ID',
+                  _userProfile!.studentId,
+                  Icons.badge_outlined,
+                ),
+                if (_userProfile!.regNumber != null) ...[
+                  const SizedBox(height: 12),
+                  _buildInfoCard(
+                    'Registration Number',
+                    _userProfile!.regNumber!,
+                    Icons.description_outlined,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                _buildInfoCard(
+                  'Course',
+                  _userProfile!.course,
+                  Icons.school_outlined,
+                ),
+
+                const SizedBox(height: 32),
+
+                // ============ SIGN OUT BUTTON ============
+                _buildSignOutButton(),
+              ] else ...[
+                _buildEmptyState(),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -218,10 +218,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   : null,
               child: _userProfile?.photoUrl == null
                   ? Icon(
-                      Icons.person_outline,
-                      size: 56,
-                      color: AppColors.muted,
-                    )
+                Icons.person_outline,
+                size: 56,
+                color: AppColors.muted,
+              )
                   : null,
             ),
           ),

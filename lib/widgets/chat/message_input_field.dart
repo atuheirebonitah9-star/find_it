@@ -1,12 +1,20 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:record/record.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
+import '../../services/cloudinary_service.dart';
+import '../../theme/app_colors.dart';
 
+/// Text + voice message composer for [ChatScreen].
+///
+/// [onSend] is called with the typed text when the user sends a text
+/// message. [onSendVoice] is called with the uploaded voice note's
+/// Cloudinary URL and its recorded duration once recording finishes.
 class MessageInputField extends StatefulWidget {
-  final Function(String) onSend;
-  final Function(String, int) onSendVoice;
+  final Future<void> Function(String text) onSend;
+  final Future<void> Function(String voiceUrl, int durationSeconds)
+  onSendVoice;
 
   const MessageInputField({
     super.key,
@@ -19,193 +27,318 @@ class MessageInputField extends StatefulWidget {
 }
 
 class _MessageInputFieldState extends State<MessageInputField> {
-  final TextEditingController _controller = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
+  final TextEditingController _textController = TextEditingController();
   final AudioRecorder _audioRecorder = AudioRecorder();
-  bool _isTyping = false;
+
   bool _isRecording = false;
-  DateTime? _recordingStartTime;
-  String? _recordingPath;
+  bool _isUploadingVoice = false;
+  bool _isSendingText = false;
+  Duration _recordDuration = Duration.zero;
+  Timer? _recordTimer;
+
+  bool get _hasText => _textController.text.trim().isNotEmpty;
 
   @override
   void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
+    _textController.dispose();
+    _recordTimer?.cancel();
     _audioRecorder.dispose();
     super.dispose();
   }
 
+  // ============ TEXT SEND ============
+  Future<void> _handleSendText() async {
+    final text = _textController.text.trim();
+    if (text.isEmpty || _isSendingText) return;
+
+    setState(() => _isSendingText = true);
+    _textController.clear();
+
+    try {
+      await widget.onSend(text);
+    } finally {
+      if (mounted) setState(() => _isSendingText = false);
+    }
+  }
+
+  // ============ VOICE RECORDING ============
   Future<void> _startRecording() async {
-    // Request permissions
+    if (_isRecording) return;
+
     final hasPermission = await _audioRecorder.hasPermission();
-    if (!mounted) return;
     if (!hasPermission) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Microphone permission required')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Microphone permission is required to record voice messages.',
+            ),
+          ),
+        );
+      }
       return;
     }
 
-    // Get temporary directory to save the recording
-    final tempDir = await getTemporaryDirectory();
-    final filePath =
-        '${tempDir.path}/voice_note_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final dir = await getTemporaryDirectory();
+    final path =
+        '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
 
     await _audioRecorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 128000,
-        sampleRate: 44100,
-      ),
-      path: filePath,
+      const RecordConfig(encoder: AudioEncoder.aacLc),
+      path: path,
     );
 
     setState(() {
       _isRecording = true;
-      _recordingStartTime = DateTime.now();
-      _recordingPath = filePath;
+      _recordDuration = Duration.zero;
+    });
+
+    _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() => _recordDuration += const Duration(seconds: 1));
     });
   }
 
-  Future<void> _stopRecordingAndSend() async {
-    if (!_isRecording || _recordingPath == null) return;
+  Future<void> _cancelRecording() async {
+    _recordTimer?.cancel();
 
-    // Stop recording
-    final path = await _audioRecorder.stop();
-    final duration = DateTime.now().difference(_recordingStartTime!).inSeconds;
-
-    if (path == null) {
-      setState(() => _isRecording = false);
-      return;
+    if (_isRecording) {
+      final path = await _audioRecorder.stop();
+      if (path != null) {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      }
     }
 
-    // Upload to Firebase Storage
-    try {
-      final fileName =
-          'voice_notes/${DateTime.now().millisecondsSinceEpoch}.m4a';
-      final storageRef = FirebaseStorage.instance.ref().child(fileName);
-      await storageRef.putFile(File(path));
-      final downloadUrl = await storageRef.getDownloadURL();
-
-      // Send the voice message
-      widget.onSendVoice(downloadUrl, duration);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error sending voice message: $e')),
-      );
-    } finally {
-      setState(() => _isRecording = false);
-      _recordingPath = null;
+    if (mounted) {
+      setState(() {
+        _isRecording = false;
+        _recordDuration = Duration.zero;
+      });
     }
   }
 
-  void _sendMessage() {
-    final text = _controller.text.trim();
-    if (text.isNotEmpty) {
-      widget.onSend(text);
-      _controller.clear();
-      setState(() => _isTyping = false);
+  Future<void> _stopAndSendRecording() async {
+    _recordTimer?.cancel();
+    final duration = _recordDuration;
+    final path = await _audioRecorder.stop();
+
+    setState(() {
+      _isRecording = false;
+      _isUploadingVoice = path != null;
+    });
+
+    if (path == null) return;
+
+    try {
+      final voiceUrl = await CloudinaryService.uploadVoiceMessage(File(path));
+
+      if (voiceUrl == null) {
+        throw Exception('Upload failed, please try again.');
+      }
+
+      await widget.onSendVoice(voiceUrl, duration.inSeconds);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send voice message: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingVoice = false;
+          _recordDuration = Duration.zero;
+        });
+      }
     }
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
+      padding: EdgeInsets.only(
+        left: 12,
+        right: 12,
+        top: 8,
+        bottom: MediaQuery.of(context).padding.bottom + 8,
       ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.emoji_emotions_outlined, color: Colors.grey),
-            onPressed: () {
-              // Implement emoji picker if needed
-            },
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.divider)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: _isRecording || _isUploadingVoice
+            ? _buildRecordingBar()
+            : _buildTextBar(),
+      ),
+    );
+  }
+
+  // ============ TEXT INPUT BAR ============
+  Widget _buildTextBar() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 120),
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: TextField(
+              controller: _textController,
+              minLines: 1,
+              maxLines: 5,
+              textCapitalization: TextCapitalization.sentences,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(
+                color: AppColors.text,
+                fontFamily: 'Inter',
+                fontSize: 15,
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Type a message...',
+                hintStyle: TextStyle(
+                  color: AppColors.muted,
+                  fontFamily: 'Inter',
+                ),
+                border: InputBorder.none,
+                contentPadding:
+                EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
           ),
-          if (!_isRecording) ...[
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                decoration: InputDecoration(
-                  hintText: 'Type a message...',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[100],
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                ),
-                maxLines: null,
-                onChanged: (text) {
-                  setState(() => _isTyping = text.isNotEmpty);
-                },
-                onSubmitted: (_) => _sendMessage(),
-              ),
+        ),
+        const SizedBox(width: 8),
+        _hasText
+            ? _RoundIconButton(
+          icon: Icons.send_rounded,
+          loading: _isSendingText,
+          onTap: _isSendingText ? null : _handleSendText,
+        )
+            : _RoundIconButton(
+          icon: Icons.mic,
+          onTap: _startRecording,
+        ),
+      ],
+    );
+  }
+
+  // ============ RECORDING / UPLOADING BAR ============
+  Widget _buildRecordingBar() {
+    if (_isUploadingVoice) {
+      return Row(
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: AppColors.primary,
             ),
-            const SizedBox(width: 4),
-            if (_isTyping)
-              CircleAvatar(
-                backgroundColor: Colors.blue,
-                child: IconButton(
-                  icon: const Icon(Icons.send, color: Colors.white, size: 20),
-                  onPressed: _sendMessage,
-                ),
-              )
-            else
-              CircleAvatar(
-                backgroundColor: Colors.grey[300],
-                child: IconButton(
-                  icon: const Icon(Icons.mic, color: Colors.grey, size: 20),
-                  onPressed: _startRecording,
-                ),
-              ),
-          ] else ...[
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.circle, color: Colors.red, size: 12),
-                    const SizedBox(width: 8),
-                    Text(
-                      '${DateTime.now().difference(_recordingStartTime!).inSeconds}s',
-                      style: const TextStyle(fontSize: 16),
-                    ),
-                  ],
-                ),
-              ),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Sending voice message...',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontFamily: 'Inter',
+              fontSize: 14,
             ),
-            const SizedBox(width: 4),
-            CircleAvatar(
-              backgroundColor: Colors.red,
-              child: IconButton(
-                icon: const Icon(Icons.stop, color: Colors.white, size: 20),
-                onPressed: _stopRecordingAndSend,
-              ),
-            ),
-          ],
+          ),
         ],
+      );
+    }
+
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: const BoxDecoration(
+            color: AppColors.error,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          _formatDuration(_recordDuration),
+          style: const TextStyle(
+            color: AppColors.text,
+            fontFamily: 'Plus Jakarta Sans',
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text(
+            'Recording voice message...',
+            style: TextStyle(
+              color: AppColors.muted,
+              fontFamily: 'Inter',
+              fontSize: 13,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_outline, color: AppColors.error),
+          onPressed: _cancelRecording,
+        ),
+        _RoundIconButton(
+          icon: Icons.send_rounded,
+          onTap: _stopAndSendRecording,
+        ),
+      ],
+    );
+  }
+}
+
+// ── Round gradient icon button ───────────────────────────────────────────────
+
+class _RoundIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback? onTap;
+  final bool loading;
+
+  const _RoundIconButton({
+    required this.icon,
+    required this.onTap,
+    this.loading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: const BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: loading
+              ? const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          )
+              : Icon(icon, color: Colors.white, size: 22),
+        ),
       ),
     );
   }

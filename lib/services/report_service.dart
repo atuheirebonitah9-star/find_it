@@ -13,8 +13,9 @@ class ReportService {
     'lost_reports',
   );
 
-  final CollectionReference foundReports = FirebaseFirestore.instance
-      .collection('found_reports');
+  final CollectionReference foundReports = FirebaseFirestore.instance.collection(
+    'found_reports',
+  );
 
   final CollectionReference items = FirebaseFirestore.instance.collection(
     'items',
@@ -35,16 +36,6 @@ class ReportService {
     return await _embeddingService.getEmbedding(text);
   }
 
-  /// If the embedding-based result already looks promising (weak or strong),
-  /// ask Gemini to double-check — this catches brand/model conflicts and
-  /// judges item identity independent of location. Falls back to the
-  /// embedding result if Gemini fails or the result was already "none".
-  ///
-  /// Before asking Gemini, this also applies a hard veto: if the text read
-  /// off each item's image (student number / full name) clearly conflicts
-  /// — e.g. two different names on two ID cards — the reports can't be the
-  /// same item, regardless of how similar the embeddings or descriptions
-  /// looked.
   Future<MatchResult> _refineWithGemini(
       MatchResult embeddingResult,
       Report a,
@@ -64,8 +55,26 @@ class ReportService {
   }
 
   /// Uploads an image file to Cloudinary and returns the secure URL.
-  Future<String?> uploadImage(String imagePath) async {
-    return await CloudinaryService.uploadItemImage(File(imagePath));
+  Future<String?> uploadImage(String? imagePath) async {
+    if (imagePath == null || imagePath.isEmpty) return null;
+    try {
+      final result = await CloudinaryService.uploadItemImage(File(imagePath));
+      return result;
+    } catch (e) {
+      print('Cloudinary upload error: $e');
+      return null;
+    }
+  }
+
+  /// Analyzes image and extracts text/identifiers from it
+  Future<ExtractedIdentifiers?> analyzeImage(String? imageUrl) async {
+    if (imageUrl == null || imageUrl.isEmpty) return null;
+    try {
+      return await _imageAnalysisService.analyzeImageFromUrl(imageUrl);
+    } catch (e) {
+      print('Image analysis error: $e');
+      return null;
+    }
   }
 
   // ============ SUBMIT LOST REPORT ============
@@ -73,20 +82,23 @@ class ReportService {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
 
-    // Upload image to Cloudinary first (if provided)
+    // 1. Upload image to Cloudinary and analyze it
     String? imageUrl;
     ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
 
-    if (report.imageUrl != null) {
-      imageUrl = await uploadImage(report.imageUrl!);
+    if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
+      // Upload to Cloudinary
+      imageUrl = await uploadImage(report.imageUrl);
 
-      // Extract identifiers from the uploaded image if not already extracted
-      extractedIdentifiers ??=
-      await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
+      // Analyze the uploaded image for text/identifiers
+      if (imageUrl != null) {
+        extractedIdentifiers = await analyzeImage(imageUrl);
+        print('AI Analysis Result: ${extractedIdentifiers?.toMap()}');
+      }
     }
 
-    // Write to lost_reports collection
-    await lostReports.add({
+    // 2. Save to lost_reports collection
+    final lostReportData = {
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
@@ -99,9 +111,11 @@ class ReportService {
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (extractedIdentifiers != null)
         'extractedIdentifiers': extractedIdentifiers.toMap(),
-    });
+    };
 
-    // Also write to the shared items collection so the home feed shows it
+    await lostReports.add(lostReportData);
+
+    // 3. Also save to items collection for home feed
     await items.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
@@ -128,6 +142,7 @@ class ReportService {
       extractedIdentifiers: extractedIdentifiers,
     );
 
+    // 4. Emit notification event
     _eventService.emit(
       NotificationEvent(
         type: NotificationEventType.itemReported,
@@ -136,25 +151,24 @@ class ReportService {
           'category': report.category,
           'location': report.location,
           'isLost': true,
+          'imageUrl': imageUrl ?? '',
         },
       ),
     );
 
-    // ============ GET MATCHES ============
+    // 5. Check for matches
     final matches = await checkForFoundMatches(reportWithEmbedding);
 
     // Sort matches by result (strong first) and then by score if available
     matches.sort((a, b) {
-      // First by result (strong > weak > none)
       if (a.result == MatchResult.strong && b.result != MatchResult.strong) return -1;
       if (a.result != MatchResult.strong && b.result == MatchResult.strong) return 1;
       if (a.result == MatchResult.weak && b.result == MatchResult.none) return -1;
       if (a.result == MatchResult.none && b.result == MatchResult.weak) return 1;
-      // Then by score (if available)
       return b.score.compareTo(a.score);
     });
 
-    // ============ SAVE MATCHES FOR USER ============
+    // 6. Save matches
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
         currentUser?.uid ?? '',
@@ -163,7 +177,7 @@ class ReportService {
       );
     }
 
-    // ============ EMIT NOTIFICATIONS ============
+    // 7. Emit match notifications
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -174,6 +188,7 @@ class ReportService {
               'location': match.report.location,
               'lostReportUserId': _auth.currentUser?.uid,
               'foundReportUserId': match.report.userId,
+              'imageUrl': match.report.imageUrl ?? '',
             },
           ),
         );
@@ -190,7 +205,6 @@ class ReportService {
       }
     }
 
-    // ============ RETURN ALL MATCHES (ALWAYS) ============
     return matches;
   }
 
@@ -199,20 +213,23 @@ class ReportService {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
 
-    // Upload image to Cloudinary first (if provided)
+    // 1. Upload image to Cloudinary and analyze it
     String? imageUrl;
     ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
 
-    if (report.imageUrl != null) {
-      imageUrl = await uploadImage(report.imageUrl!);
+    if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
+      // Upload to Cloudinary
+      imageUrl = await uploadImage(report.imageUrl);
 
-      // Extract identifiers from the uploaded image if not already extracted
-      extractedIdentifiers ??=
-      await _imageAnalysisService.analyzeImageFromUrl(imageUrl!);
+      // Analyze the uploaded image for text/identifiers
+      if (imageUrl != null) {
+        extractedIdentifiers = await analyzeImage(imageUrl);
+        print('AI Analysis Result: ${extractedIdentifiers?.toMap()}');
+      }
     }
 
-    // Write to found_reports collection
-    await foundReports.add({
+    // 2. Save to found_reports collection
+    final foundReportData = {
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
@@ -225,9 +242,11 @@ class ReportService {
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (extractedIdentifiers != null)
         'extractedIdentifiers': extractedIdentifiers.toMap(),
-    });
+    };
 
-    // Also write to the shared items collection so the home feed shows it
+    await foundReports.add(foundReportData);
+
+    // 3. Also save to items collection for home feed
     await items.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
@@ -254,6 +273,7 @@ class ReportService {
       extractedIdentifiers: extractedIdentifiers,
     );
 
+    // 4. Emit notification event
     _eventService.emit(
       NotificationEvent(
         type: NotificationEventType.itemReported,
@@ -262,25 +282,24 @@ class ReportService {
           'category': report.category,
           'location': report.location,
           'isLost': false,
+          'imageUrl': imageUrl ?? '',
         },
       ),
     );
 
-    // ============ GET MATCHES ============
+    // 5. Check for matches
     final matches = await checkForMatches(reportWithEmbedding);
 
     // Sort matches by result (strong first) and then by score if available
     matches.sort((a, b) {
-      // First by result (strong > weak > none)
       if (a.result == MatchResult.strong && b.result != MatchResult.strong) return -1;
       if (a.result != MatchResult.strong && b.result == MatchResult.strong) return 1;
       if (a.result == MatchResult.weak && b.result == MatchResult.none) return -1;
       if (a.result == MatchResult.none && b.result == MatchResult.weak) return 1;
-      // Then by score (if available)
       return b.score.compareTo(a.score);
     });
 
-    // ============ SAVE MATCHES FOR USER ============
+    // 6. Save matches
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
         currentUser?.uid ?? '',
@@ -289,7 +308,7 @@ class ReportService {
       );
     }
 
-    // ============ EMIT NOTIFICATIONS ============
+    // 7. Emit match notifications
     for (var match in matches) {
       if (match.result == MatchResult.strong) {
         _eventService.emit(
@@ -300,6 +319,7 @@ class ReportService {
               'location': match.report.location,
               'lostReportUserId': match.report.userId,
               'foundReportUserId': _auth.currentUser?.uid,
+              'imageUrl': match.report.imageUrl ?? '',
             },
           ),
         );
@@ -316,7 +336,6 @@ class ReportService {
       }
     }
 
-    // ============ RETURN ALL MATCHES (ALWAYS) ============
     return matches;
   }
 
@@ -334,10 +353,10 @@ class ReportService {
       final data = doc.data() as Map<String, dynamic>;
 
       final lostReport = Report(
-        category: data['category'],
-        location: data['location'],
+        category: data['category'] ?? '',
+        location: data['location'] ?? '',
         date: (data['date'] as Timestamp).toDate(),
-        description: data['description'],
+        description: data['description'] ?? '',
         itemName: data['itemName'] ?? 'Lost Item',
         userId: data['userId'],
         embedding: data['embedding'] != null
@@ -353,18 +372,15 @@ class ReportService {
 
       if (lostReport.userId == currentUserUid) continue;
 
-      // Use the new compareReportsWithDetails function
       final matchResult = await compareReportsWithDetails(lostReport, newFoundReport);
-      
-      // Refine with Gemini if needed
+
       if (matchResult.result != MatchResult.none) {
         final refinedResult = await _refineWithGemini(
           matchResult.result,
           lostReport,
           newFoundReport,
         );
-        
-        // Update the result if refined
+
         final updatedMatch = MatchDocument(
           report: matchResult.report,
           result: refinedResult,
@@ -394,10 +410,10 @@ class ReportService {
       final data = doc.data() as Map<String, dynamic>;
 
       final foundReport = Report(
-        category: data['category'],
-        location: data['location'],
+        category: data['category'] ?? '',
+        location: data['location'] ?? '',
         date: (data['date'] as Timestamp).toDate(),
-        description: data['description'],
+        description: data['description'] ?? '',
         itemName: data['itemName'] ?? 'Found Item',
         userId: data['userId'],
         embedding: data['embedding'] != null
@@ -413,18 +429,15 @@ class ReportService {
 
       if (foundReport.userId == currentUserUid) continue;
 
-      // Use the new compareReportsWithDetails function
       final matchResult = await compareReportsWithDetails(newLostReport, foundReport);
-      
-      // Refine with Gemini if needed
+
       if (matchResult.result != MatchResult.none) {
         final refinedResult = await _refineWithGemini(
           matchResult.result,
           newLostReport,
           foundReport,
         );
-        
-        // Update the result if refined
+
         final updatedMatch = MatchDocument(
           report: matchResult.report,
           result: refinedResult,
@@ -461,7 +474,7 @@ class ReportService {
           'extractedIdentifiers': match.report.extractedIdentifiers?.toMap(),
         },
         'result': match.result.toString().split('.').last,
-        'score': match.score, // Save the score
+        'score': match.score,
         'reportItemName': reportItemName,
         'createdAt': FieldValue.serverTimestamp(),
       });

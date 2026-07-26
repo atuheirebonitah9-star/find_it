@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../matching_logic.dart';
 import '../services/report_service.dart';
 import '../services/image_classification_service.dart';
+import '../services/cloudinary_service.dart';
 import '../providers/chat_provider.dart';
 import '../theme/app_colors.dart';
 import 'chat/chat_screen.dart';
@@ -26,7 +27,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
   final stt.SpeechToText _speech = stt.SpeechToText();
   final ImagePicker _imagePicker = ImagePicker();
   final ImageClassificationService _classificationService =
-      ImageClassificationService();
+  ImageClassificationService();
 
   bool isLost = true;
   String? selectedCategory;
@@ -36,6 +37,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
   bool _isClassifying = false;
 
   File? _selectedImage;
+  String? _uploadedImageUrl;
   String? _autoCategory;
 
   final TextEditingController itemNameController = TextEditingController();
@@ -241,27 +243,48 @@ class _ReportItemScreenState extends State<ReportItemScreen>
       _selectedImage = File(pickedFile.path);
       _isUploadingImage = true;
       _isClassifying = true;
+      _uploadedImageUrl = null;
     });
 
     try {
+      // 1. Upload to Cloudinary using the static method
+      final cloudinaryUrl = await CloudinaryService.uploadItemImage(
+        File(pickedFile.path),
+      );
+
+      if (cloudinaryUrl == null) {
+        throw Exception('Upload failed - returned null');
+      }
+
+      setState(() {
+        _uploadedImageUrl = cloudinaryUrl;
+        _isUploadingImage = false;
+      });
+
+      // 2. Classify the image using AI
       final category = await _classificationService.classifyImage(
         pickedFile.path,
       );
+
       if (mounted && category != null) {
         setState(() {
           _autoCategory = category;
           selectedCategory = category;
           _isClassifying = false;
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
                 const Icon(Icons.auto_awesome, color: Colors.black, size: 18),
                 const SizedBox(width: 8),
-                Text(
-                  'AI detected: $category',
-                  style: const TextStyle(color: Colors.black),
+                Expanded(
+                  child: Text(
+                    'AI detected: $category | Image stored in cloud',
+                    style: const TextStyle(color: Colors.black),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -274,13 +297,26 @@ class _ReportItemScreenState extends State<ReportItemScreen>
         );
       } else if (mounted) {
         setState(() => _isClassifying = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Image uploaded but classification failed'),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isClassifying = false);
+        setState(() {
+          _isUploadingImage = false;
+          _isClassifying = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Classification failed: $e'),
+            content: Text('Upload failed: $e'),
             backgroundColor: AppColors.errorContainer,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -289,16 +325,13 @@ class _ReportItemScreenState extends State<ReportItemScreen>
           ),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() => _isUploadingImage = false);
-      }
     }
   }
 
   void _removeImage() {
     setState(() {
       _selectedImage = null;
+      _uploadedImageUrl = null;
       _autoCategory = null;
       selectedCategory = null;
     });
@@ -326,13 +359,10 @@ class _ReportItemScreenState extends State<ReportItemScreen>
     }
   }
 
-  // ============ UPDATED: ALWAYS SHOW POSSIBLE MATCHES ============
   Future<void> _handleMatches(List<MatchDocument> matches) async {
-    // Clear the form first
     _clearForm();
 
     if (matches.isEmpty) {
-      // No matches found
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -352,8 +382,6 @@ class _ReportItemScreenState extends State<ReportItemScreen>
       return;
     }
 
-    // ALWAYS show the Possible Matches screen first
-    // This lets users see all potential matches before deciding to chat
     if (mounted) {
       Navigator.push(
         context,
@@ -370,25 +398,57 @@ class _ReportItemScreenState extends State<ReportItemScreen>
     if (_formKey.currentState!.validate() &&
         selectedCategory != null &&
         selectedDate != null) {
+
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Processing your report...'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
       try {
+        // Use Cloudinary URL if uploaded
+        final imageUrl = _uploadedImageUrl;
+
         final report = Report(
           category: selectedCategory!,
           location: locationText.trim(),
           date: selectedDate!,
           description: descriptionController.text.trim(),
           itemName: itemNameController.text.trim(),
-          imageUrl: _selectedImage?.path,
+          imageUrl: imageUrl, // Cloudinary URL
         );
 
+        List<MatchDocument> matches;
+
         if (isLost) {
-          final matches = await _reportService.submitLostReport(report);
-          await _handleMatches(matches);
+          matches = await _reportService.submitLostReport(report);
         } else {
-          final matches = await _reportService.submitFoundReport(report);
+          matches = await _reportService.submitFoundReport(report);
+        }
+
+        // Close loading dialog
+        if (mounted) {
+          Navigator.pop(context);
           await _handleMatches(matches);
         }
       } catch (e) {
         if (mounted) {
+          Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to submit report: $e'),
@@ -412,6 +472,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
       itemNameController.clear();
       descriptionController.clear();
       _selectedImage = null;
+      _uploadedImageUrl = null;
       _autoCategory = null;
     });
   }
@@ -440,12 +501,12 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isLost
                       ? [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
                       : null,
                 ),
                 child: Row(
@@ -483,12 +544,12 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: !isLost
                       ? [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
                       : null,
                 ),
                 child: Row(
@@ -568,14 +629,14 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                 fit: StackFit.expand,
                 children: [
                   Image.file(_selectedImage!, fit: BoxFit.cover),
-                  if (_isClassifying)
+                  if (_isUploadingImage || _isClassifying)
                     Container(
                       color: Colors.black.withOpacity(0.6),
-                      child: const Center(
+                      child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SizedBox(
+                            const SizedBox(
                               width: 40,
                               height: 40,
                               child: CircularProgressIndicator(
@@ -583,10 +644,12 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                                 strokeWidth: 3,
                               ),
                             ),
-                            SizedBox(height: 12),
+                            const SizedBox(height: 12),
                             Text(
-                              'AI Analyzing image...',
-                              style: TextStyle(
+                              _isUploadingImage
+                                  ? 'Uploading to Cloudinary...'
+                                  : 'AI Analyzing image...',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w500,
                                 fontFamily: 'Inter',
@@ -619,7 +682,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                       ),
                     ),
                   ),
-                  if (_autoCategory != null && !_isClassifying)
+                  if (_autoCategory != null && !_isClassifying && !_isUploadingImage)
                     Positioned(
                       bottom: 12,
                       left: 12,
@@ -654,6 +717,41 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
                                 fontFamily: 'Plus Jakarta Sans',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (_uploadedImageUrl != null && !_isUploadingImage)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.cloud_done,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Cloud',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Inter',
                               ),
                             ),
                           ],
@@ -787,7 +885,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
               setState(() => selectedCategory = value);
             },
             validator: (value) =>
-                value == null ? 'Please select a category' : null,
+            value == null ? 'Please select a category' : null,
           ),
         ),
       ],
@@ -1025,7 +1123,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
             ),
           ),
           validator: (value) =>
-              value == null || value.isEmpty ? 'Required' : null,
+          value == null || value.isEmpty ? 'Required' : null,
         ),
       ],
     );
