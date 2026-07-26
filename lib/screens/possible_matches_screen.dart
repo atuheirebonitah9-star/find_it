@@ -1,11 +1,13 @@
 
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../matching_logic.dart';
 import '../providers/chat_provider.dart';
 import '../theme/app_colors.dart';
 import 'chat/chat_screen.dart';
+import 'item_details_screen.dart';
 
 class PossibleMatchesScreen extends StatelessWidget {
   final List<MatchDocument> matches;
@@ -32,6 +34,30 @@ class PossibleMatchesScreen extends StatelessWidget {
         ),
       );
     }
+  }
+
+  void _openDetails(BuildContext context, MatchDocument match) {
+    // Convert Report to the Map<String, dynamic> that ItemDetailsScreen expects
+    final data = <String, dynamic>{
+      'itemName': match.report.itemName,
+      'category': match.report.category,
+      'location': match.report.location,
+      'description': match.report.description,
+      'status': 'found', // matches are always from the opposite collection
+      'userId': match.report.userId,
+      'date': Timestamp.fromDate(match.report.date),
+      if (match.report.imageUrl != null) 'imageUrl': match.report.imageUrl,
+    };
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ItemDetailsScreen(
+          itemId: match.report.userId ?? '',
+          data: data,
+        ),
+      ),
+    );
   }
 
   @override
@@ -212,6 +238,7 @@ class PossibleMatchesScreen extends StatelessWidget {
                   match: match,
                   isStrong: true,
                   onChat: () => _openChat(context, match),
+                  onViewDetails: () => _openDetails(context, match),
                 ),
               )),
               const SizedBox(height: 24),
@@ -268,6 +295,7 @@ class PossibleMatchesScreen extends StatelessWidget {
                   match: match,
                   isStrong: false,
                   onChat: () => _openChat(context, match),
+                  onViewDetails: () => _openDetails(context, match),
                 ),
               )),
             ],
@@ -283,11 +311,13 @@ class _MatchCard extends StatelessWidget {
   final MatchDocument match;
   final bool isStrong;
   final VoidCallback onChat;
+  final VoidCallback onViewDetails;
 
   const _MatchCard({
     required this.match,
     required this.isStrong,
     required this.onChat,
+    required this.onViewDetails,
   });
 
   @override
@@ -456,35 +486,72 @@ class _MatchCard extends StatelessWidget {
             const SizedBox(height: 12),
           ],
 
-          // Chat Button
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton.icon(
-              onPressed: onChat,
-              icon: Icon(
-                Icons.chat_bubble_outline,
-                color: isStrong ? Colors.black : Colors.black,
-                size: 18,
-              ),
-              label: Text(
-                isStrong ? 'Chat About This Item' : 'Chat About This Item',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                  fontFamily: 'Plus Jakarta Sans',
+          // Buttons row
+          Row(
+            children: [
+              // View Details button
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: onViewDetails,
+                    icon: Icon(
+                      Icons.info_outline,
+                      size: 18,
+                      color: matchColor,
+                    ),
+                    label: Text(
+                      'View Details',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: matchColor,
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: matchColor.withOpacity(0.5)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isStrong ? AppColors.secondary : AppColors.primary,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              const SizedBox(width: 10),
+              // Chat button
+              Expanded(
+                child: SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: onChat,
+                    icon: const Icon(
+                      Icons.chat_bubble_outline,
+                      color: Colors.black,
+                      size: 18,
+                    ),
+                    label: const Text(
+                      'Chat',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          isStrong ? AppColors.secondary : AppColors.primary,
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
                 ),
-                elevation: 0,
               ),
-            ),
+            ],
           ),
         ],
       ),
