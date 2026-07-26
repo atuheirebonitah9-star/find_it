@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../theme/app_colors.dart';
+import '../providers/user_profile_provider.dart';
 import '../services/notification_event_service.dart';
 import 'report_item_screen.dart';
 import 'profile_screen.dart';
@@ -35,7 +37,6 @@ class _HomeScreenState extends State<HomeScreen> {
     // Calculate initial unread count
     final allEvents = _myEvents();
     _unreadCount = allEvents.where((e) => !_readEvents.contains(e)).length;
-    // Subscribe to new events
     _notificationService.subscribe(_onNotificationEvent);
   }
 
@@ -136,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         final isUnread = !_readEvents.contains(event);
                         final body =
                             event.data['body']?.toString() ??
-                            'Tap a notification for more details.';
+                                'Tap a notification for more details.';
                         return ListTile(
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 0,
@@ -144,13 +145,13 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           leading: isUnread
                               ? Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                )
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          )
                               : const SizedBox(width: 8),
                           title: Text(
                             _notificationTitle(event),
@@ -213,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
         .collection('items')
         .where('status', isEqualTo: 'found')
         .get();
-    
+
     return {
       'All': allSnapshot.docs.length,
       'Lost': lostSnapshot.docs.length,
@@ -225,6 +226,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     final userName = user?.displayName ?? 'User';
+    final profileProvider = Provider.of<UserProfileProvider>(context);
+    final profileImageUrl = profileProvider.profileImageUrl;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -235,23 +238,14 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ============ WELCOME SECTION ============
-              _buildWelcomeSection(userName),
+              _buildWelcomeSection(userName, profileImageUrl),
               const SizedBox(height: 16),
-
-              // ============ QUICK STATS ============
               _buildQuickStats(),
               const SizedBox(height: 24),
-
-              // ============ QUICK ACTIONS ============
               _buildQuickActions(context),
               const SizedBox(height: 24),
-
-              // ============ COMMUNITY CONDUCT ============
               _buildCommunityConduct(),
               const SizedBox(height: 24),
-
-              // ============ SAFETY GUIDE ============
               _buildSafetyGuide(),
             ],
           ),
@@ -262,7 +256,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============ APP BAR ============
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       title: Row(
@@ -345,12 +338,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActionButton(
-    BuildContext context, {
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onTap,
-    int badgeCount = 0,
-  }) {
+      BuildContext context, {
+        required IconData icon,
+        required String tooltip,
+        required VoidCallback onTap,
+        int badgeCount = 0,
+      }) {
     return Padding(
       padding: const EdgeInsets.only(right: 4),
       child: Material(
@@ -412,8 +405,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============ WELCOME SECTION ============
-  Widget _buildWelcomeSection(String userName) {
+  Widget _buildWelcomeSection(String userName, String? profileImageUrl) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -426,19 +418,21 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: Colors.black26,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.white.withOpacity(0.15),
+                backgroundImage: profileImageUrl != null && profileImageUrl.isNotEmpty
+                    ? NetworkImage(profileImageUrl)
+                    : null,
+                child: profileImageUrl == null || profileImageUrl.isEmpty
+                    ? const Icon(
                   Icons.person_outline,
+                  size: 36,
                   color: Colors.white,
-                  size: 24,
-                ),
+                )
+                    : null,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -532,7 +526,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============ QUICK STATS ============
   Widget _buildQuickStats() {
     return FutureBuilder<Map<String, int>>(
       future: _getFilterCounts(),
@@ -627,7 +620,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============ QUICK ACTIONS ============
   Widget _buildQuickActions(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,7 +729,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============ COMMUNITY CONDUCT ============
   Widget _buildCommunityConduct() {
     return Container(
       width: double.infinity,
@@ -782,7 +773,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 4),
                 Text(
                   'Do not impersonate another student or falsely claim an item that is not yours. '
-                  'Reports are matched to real people — misuse may be reported to campus administration.',
+                      'Reports are matched to real people — misuse may be reported to campus administration.',
                   style: TextStyle(
                     fontSize: 12.5,
                     color: AppColors.textSecondary,
@@ -798,7 +789,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============ SAFETY GUIDE ============
   Widget _buildSafetyGuide() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -899,7 +889,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // ============ FLOATING ACTION BUTTON ============
   Widget _buildFloatingActionButton(BuildContext context) {
     return FloatingActionButton.extended(
       onPressed: () {
