@@ -1,16 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:image_picker/image_picker.dart';
 import '../matching_logic.dart';
 import '../services/report_service.dart';
 import '../services/image_classification_service.dart';
 import '../services/cloudinary_service.dart';
-import '../providers/chat_provider.dart';
 import '../theme/app_colors.dart';
-import 'chat/chat_screen.dart';
 import 'possible_matches_screen.dart';
 
 class ReportItemScreen extends StatefulWidget {
@@ -247,67 +243,54 @@ class _ReportItemScreenState extends State<ReportItemScreen>
     });
 
     try {
-      // 1. Upload to Cloudinary using the static method
-      final cloudinaryUrl = await CloudinaryService.uploadItemImage(
-        File(pickedFile.path),
-      );
+      // Run Cloudinary upload and AI classification in parallel.
+      // Classification reads the local file so it does not need to wait for upload.
+      final uploadFuture = CloudinaryService.uploadItemImage(File(pickedFile.path));
+      final classifyFuture = _classificationService.classifyImage(pickedFile.path);
+
+      final cloudinaryUrl = await uploadFuture;
+      final category = await classifyFuture;
 
       if (cloudinaryUrl == null) {
-        throw Exception('Upload failed - returned null');
+        throw Exception('Image upload failed. Check your network and try again.');
       }
+
+      if (!mounted) return;
 
       setState(() {
         _uploadedImageUrl = cloudinaryUrl;
         _isUploadingImage = false;
-      });
-
-      // 2. Classify the image using AI
-      final category = await _classificationService.classifyImage(
-        pickedFile.path,
-      );
-
-      if (mounted && category != null) {
-        setState(() {
+        _isClassifying = false;
+        if (category != null) {
           _autoCategory = category;
           selectedCategory = category;
-          _isClassifying = false;
-        });
+        }
+      });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.auto_awesome, color: Colors.black, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'AI detected: $category | Image stored in cloud',
-                    style: const TextStyle(color: Colors.black),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.black, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  category != null
+                      ? 'AI detected: $category | Saved to cloud'
+                      : 'Image saved to cloud | Category not detected',
+                  style: const TextStyle(color: Colors.black),
+                  overflow: TextOverflow.ellipsis,
                 ),
-              ],
-            ),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+              ),
+            ],
           ),
-        );
-      } else if (mounted) {
-        setState(() => _isClassifying = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Image uploaded but classification failed'),
-            backgroundColor: Colors.orange,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -335,28 +318,6 @@ class _ReportItemScreenState extends State<ReportItemScreen>
       _autoCategory = null;
       selectedCategory = null;
     });
-  }
-
-  Future<void> _openChatWithMatch(MatchDocument match) async {
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    final chatId = await chatProvider.createChat(
-      finderUid: FirebaseAuth.instance.currentUser?.uid ?? '',
-      ownerUid: match.report.userId ?? '',
-      itemName: match.report.itemName,
-    );
-
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatScreen(
-            chatId: chatId,
-            otherUserUid: match.report.userId ?? '',
-            itemName: match.report.itemName,
-          ),
-        ),
-      );
-    }
   }
 
   Future<void> _handleMatches(List<MatchDocument> matches) async {

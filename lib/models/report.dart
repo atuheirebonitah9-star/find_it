@@ -62,7 +62,7 @@ class Report {
   Report copyWith({
     String? category,
     String? location,
-    DateTime? datsse,
+    DateTime? date,
     String? description,
     String? itemName,
     String? userId,

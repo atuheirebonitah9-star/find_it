@@ -124,8 +124,3 @@ class AppColors {
   );
 }
 
-extension AppColorsExtension on Color {
-  Color withOpacity(double opacity) {
-    return this.withOpacity(opacity);
-  }
-}

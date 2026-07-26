@@ -25,7 +25,7 @@ class ImageClassificationService {
               'parts': [
                 {
                   'text':
-                      'Analyze this image and categorize it into one of these categories: Wallet, Phone, ID Card, Keys, Bag, Other. Return only the category name, nothing else.',
+                      'Analyze this image and categorize it into one of these categories: Wallet, Phone, ID Card, Keys, Bag, Laptop, Glasses, Other. Return only the category name, nothing else.',
                 },
                 {
                   'inline_data': {
@@ -62,6 +62,8 @@ class ImageClassificationService {
       'ID Card',
       'Keys',
       'Bag',
+      'Laptop',
+      'Glasses',
       'Other',
     ];
 

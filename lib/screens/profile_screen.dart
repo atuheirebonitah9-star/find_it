@@ -63,31 +63,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (pickedFile == null) return;
 
+    // Guard before showing spinner — if no user, nothing to do
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
     setState(() => _isUploading = true);
 
     try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) return;
-
       // Upload to Cloudinary
       final downloadUrl = await CloudinaryService.uploadProfilePicture(
         File(pickedFile.path),
       );
 
       if (downloadUrl == null) {
-        throw Exception('Upload failed, please try again.');
+        throw Exception('Cloudinary upload returned null. Check your upload preset.');
       }
 
-      // Update Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'photoUrl': downloadUrl,
-      });
-
-      // Update the provider
+      // Update the provider (it also writes to Firestore internally)
+      if (!mounted) return;
       final profileProvider = Provider.of<UserProfileProvider>(context, listen: false);
       await profileProvider.updateProfileImage(downloadUrl);
 
-      // Reload profile
+      // Reload local profile state
       await _loadUserProfile();
 
       if (mounted) {
@@ -170,11 +167,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _userProfile!.studentId,
                   Icons.badge_outlined,
                 ),
-                if (_userProfile!.regNumber != null) ...[
+                if (_userProfile!.regNumber.isNotEmpty) ...[
                   const SizedBox(height: 12),
                   _buildInfoCard(
                     'Registration Number',
-                    _userProfile!.regNumber!,
+                    _userProfile!.regNumber,
                     Icons.description_outlined,
                   ),
                 ],

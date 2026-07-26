@@ -82,18 +82,24 @@ class ReportService {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
 
-    // 1. Upload image to Cloudinary and analyze it
+    // 1. Resolve image URL — if already a Cloudinary/https URL skip upload,
+    //    otherwise upload the local file path to Cloudinary first.
     String? imageUrl;
     ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
 
     if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
-      // Upload to Cloudinary
-      imageUrl = await uploadImage(report.imageUrl);
+      if (report.imageUrl!.startsWith('http')) {
+        // Already uploaded — use as-is
+        imageUrl = report.imageUrl;
+      } else {
+        // Local file path — upload to Cloudinary
+        imageUrl = await uploadImage(report.imageUrl);
+      }
 
-      // Analyze the uploaded image for text/identifiers
+      // Analyze the image for text/identifiers using the Cloudinary URL
       if (imageUrl != null) {
         extractedIdentifiers = await analyzeImage(imageUrl);
-        print('AI Analysis Result: ${extractedIdentifiers?.toMap()}');
+        print('AI Analysis Result (lost): ${extractedIdentifiers?.toMap()}');
       }
     }
 
@@ -213,18 +219,24 @@ class ReportService {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
 
-    // 1. Upload image to Cloudinary and analyze it
+    // 1. Resolve image URL — if already a Cloudinary/https URL skip upload,
+    //    otherwise upload the local file path to Cloudinary first.
     String? imageUrl;
     ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
 
     if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
-      // Upload to Cloudinary
-      imageUrl = await uploadImage(report.imageUrl);
+      if (report.imageUrl!.startsWith('http')) {
+        // Already uploaded — use as-is
+        imageUrl = report.imageUrl;
+      } else {
+        // Local file path — upload to Cloudinary
+        imageUrl = await uploadImage(report.imageUrl);
+      }
 
-      // Analyze the uploaded image for text/identifiers
+      // Analyze the image for text/identifiers using the Cloudinary URL
       if (imageUrl != null) {
         extractedIdentifiers = await analyzeImage(imageUrl);
-        print('AI Analysis Result: ${extractedIdentifiers?.toMap()}');
+        print('AI Analysis Result (found): ${extractedIdentifiers?.toMap()}');
       }
     }
 

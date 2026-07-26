@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -12,6 +13,8 @@ class UserProfileProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _error;
 
+  StreamSubscription<User?>? _authSubscription;
+
   String? get profileImageUrl => _profileImageUrl;
   String? get displayName => _displayName;
   Map<String, dynamic>? get userData => _userData;
@@ -19,14 +22,18 @@ class UserProfileProvider extends ChangeNotifier {
   String? get error => _error;
 
   UserProfileProvider() {
-    _loadProfile();
+    // Listen to auth state changes so profile always reflects current user.
+    _authSubscription = _auth.authStateChanges().listen((user) {
+      if (user == null) {
+        _clearProfile();
+      } else {
+        _loadProfile(user);
+      }
+    });
   }
 
-  /// Load current user profile from Firestore
-  Future<void> _loadProfile() async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
+  /// Load profile for the given [user] from Firestore.
+  Future<void> _loadProfile(User user) async {
     _isLoading = true;
     notifyListeners();
 
@@ -34,24 +41,26 @@ class UserProfileProvider extends ChangeNotifier {
       final doc = await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
         _userData = doc.data();
-        _profileImageUrl = _userData?['photoUrl'] ?? '';
-        _displayName = _userData?['fullName'] ?? user.displayName ?? user.email?.split('@').first ?? 'User';
+        _profileImageUrl = (_userData?['photoUrl'] as String?) ?? '';
+        _displayName = (_userData?['fullName'] as String?)?.isNotEmpty == true
+            ? _userData!['fullName'] as String
+            : user.displayName ?? user.email?.split('@').first ?? 'User';
       } else {
         await _createUserDocument(user);
       }
     } catch (e) {
       _error = e.toString();
-      print('Error loading profile: $e');
+      debugPrint('UserProfileProvider: error loading profile: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  /// Create user document when user first signs up
+  /// Creates a Firestore user document for first-time users.
   Future<void> _createUserDocument(User user) async {
     try {
-      final data = {
+      final data = <String, dynamic>{
         'uid': user.uid,
         'email': user.email ?? '',
         'fullName': user.displayName ?? user.email?.split('@').first ?? 'User',
@@ -65,21 +74,22 @@ class UserProfileProvider extends ChangeNotifier {
       await _firestore.collection('users').doc(user.uid).set(data);
       _userData = data;
       _profileImageUrl = '';
-      _displayName = data['fullName'] as String? ?? 'User';
+      _displayName = data['fullName'] as String;
       notifyListeners();
     } catch (e) {
-      print('Error creating user document: $e');
+      debugPrint('UserProfileProvider: error creating user document: $e');
       _error = e.toString();
       rethrow;
     }
   }
 
-  /// Refresh profile data
+  /// Refresh profile data from Firestore.
   Future<void> refreshProfile() async {
-    await _loadProfile();
+    final user = _auth.currentUser;
+    if (user != null) await _loadProfile(user);
   }
 
-  /// Update profile image URL (called after upload)
+  /// Updates the profile image URL in Firestore and locally.
   Future<void> updateProfileImage(String imageUrl) async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -89,27 +99,23 @@ class UserProfileProvider extends ChangeNotifier {
         'photoUrl': imageUrl,
         'updatedAt': FieldValue.serverTimestamp(),
       });
-
       _profileImageUrl = imageUrl;
-      if (_userData != null) {
-        _userData!['photoUrl'] = imageUrl;
-      } else {
-        _userData = {'photoUrl': imageUrl};
-      }
+      _userData ??= {};
+      _userData!['photoUrl'] = imageUrl;
       notifyListeners();
     } catch (e) {
-      print('Error updating profile image: $e');
+      debugPrint('UserProfileProvider: error updating profile image: $e');
       _error = e.toString();
       rethrow;
     }
   }
 
-  /// Get profile image URL for ANY user (for chat screen)
+  /// Fetch the profile image URL for any user by UID (one-time read).
   Future<String?> getProfileImageUrlForUser(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
-        return doc.data()?['photoUrl'] ?? '';
+        return (doc.data()?['photoUrl'] as String?) ?? '';
       }
       return null;
     } catch (e) {
@@ -117,32 +123,26 @@ class UserProfileProvider extends ChangeNotifier {
     }
   }
 
-  /// Stream profile image URL for ANY user (real-time updates)
+  /// Stream the profile image URL for any user in real time.
   Stream<String?> streamProfileImageUrlForUser(String uid) {
-    return _firestore
-        .collection('users')
-        .doc(uid)
-        .snapshots()
-        .map((doc) {
+    return _firestore.collection('users').doc(uid).snapshots().map((doc) {
       if (doc.exists) {
-        return doc.data()?['photoUrl'] as String? ?? '';
+        return (doc.data()?['photoUrl'] as String?) ?? '';
       }
       return null;
     });
   }
 
-  /// Stream full user profile for ANY user (real-time updates)
-  Stream<DocumentSnapshot> streamUserProfile(String uid) {
+  /// Stream the full Firestore document for any user in real time.
+  Stream<DocumentSnapshot<Map<String, dynamic>>> streamUserProfile(String uid) {
     return _firestore.collection('users').doc(uid).snapshots();
   }
 
-  /// Get current user's profile image URL (cached)
-  String? getCurrentUserProfileImage() {
-    return _profileImageUrl;
-  }
+  /// Returns the cached profile image URL for the current user.
+  String? getCurrentUserProfileImage() => _profileImageUrl;
 
-  /// Clear profile data (for sign out)
-  void clearProfile() {
+  /// Clears all cached profile data (called on sign-out).
+  void _clearProfile() {
     _profileImageUrl = null;
     _displayName = null;
     _userData = null;
@@ -153,6 +153,7 @@ class UserProfileProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
     super.dispose();
   }
 }
