@@ -133,34 +133,42 @@ class _ChatScreenState extends State<ChatScreen>
 
   // ============ APP BAR ============
   PreferredSizeWidget _buildAppBar() {
-    // Get the first letter of the user's name for avatar
-    String initial = 'U';
-    if (!_isLoadingProfile && _otherUserProfile?.fullName.isNotEmpty == true) {
-      initial = _otherUserProfile!.fullName[0].toUpperCase();
-    }
+    final String initial =
+        (!_isLoadingProfile && _otherUserProfile?.fullName.isNotEmpty == true)
+            ? _otherUserProfile!.fullName[0].toUpperCase()
+            : 'U';
+
+    final String? photoUrl = _otherUserProfile?.photoUrl?.isNotEmpty == true
+        ? _otherUserProfile!.photoUrl
+        : null;
 
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
       title: Row(
         children: [
+          // Avatar: profile photo if available, otherwise gradient initial
           Container(
-            decoration: const BoxDecoration(
-              gradient: AppColors.primaryGradient,
+            decoration: BoxDecoration(
+              gradient: photoUrl == null ? AppColors.primaryGradient : null,
               shape: BoxShape.circle,
             ),
             child: CircleAvatar(
               radius: 20,
               backgroundColor: Colors.transparent,
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                  fontFamily: 'Plus Jakarta Sans',
-                ),
-              ),
+              backgroundImage:
+                  photoUrl != null ? NetworkImage(photoUrl) : null,
+              child: photoUrl == null
+                  ? Text(
+                      initial,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: 12),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_colors.dart';
+import 'item_details_screen.dart';
 
 /// Helper for building Cloudinary-optimized delivery URLs.
 ///
@@ -171,8 +172,11 @@ class MyLostItemsScreen extends StatelessWidget {
                       childAspectRatio: 0.85,
                     ),
                     itemBuilder: (context, index) {
-                      final data = withImages[index].data();
-                      return _ImageCard(data: data);
+                      final doc = withImages[index];
+                      return _ImageCard(
+                        docId: doc.id,
+                        data: doc.data(),
+                      );
                     },
                   ),
                   const SizedBox(height: 28),
@@ -196,8 +200,11 @@ class MyLostItemsScreen extends StatelessWidget {
                   itemCount: docs.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-                    final data = docs[index].data();
-                    return _ReportListTile(data: data);
+                    final doc = docs[index];
+                    return _ReportListTile(
+                      docId: doc.id,
+                      data: doc.data(),
+                    );
                   },
                 ),
               ],
@@ -212,18 +219,29 @@ class MyLostItemsScreen extends StatelessWidget {
 // ── Image card widget ────────────────────────────────────────────────────────
 
 class _ImageCard extends StatelessWidget {
+  final String docId;
   final Map<String, dynamic> data;
 
-  const _ImageCard({required this.data});
+  const _ImageCard({required this.docId, required this.data});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        final imageUrl = (data['imageUrl'] ?? '').toString().trim();
-        if (imageUrl.isNotEmpty) {
-          _showFullImage(context, imageUrl);
-        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ItemDetailsScreen(
+              itemId: docId,
+              data: {
+                ...data,
+                // lost_reports use 'open'/'resolved'; ItemDetailsScreen
+                // expects a 'status' field of 'lost' or 'found'.
+                'status': data['status'] == 'resolved' ? 'resolved' : 'lost',
+              },
+            ),
+          ),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -321,41 +339,15 @@ class _ImageCard extends StatelessWidget {
     );
   }
 
-  void _showFullImage(BuildContext context, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.network(
-            // Full-resolution original for the detail view.
-            imageUrl,
-            fit: BoxFit.contain,
-            errorBuilder: (context, _, _) => Container(
-              color: AppColors.surface,
-              child: const Center(
-                child: Icon(
-                  Icons.broken_image_outlined,
-                  color: AppColors.muted,
-                  size: 60,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // ── Report list tile widget ──────────────────────────────────────────────────
 
 class _ReportListTile extends StatelessWidget {
+  final String docId;
   final Map<String, dynamic> data;
 
-  const _ReportListTile({required this.data});
+  const _ReportListTile({required this.docId, required this.data});
 
   @override
   Widget build(BuildContext context) {
@@ -364,7 +356,23 @@ class _ReportListTile extends StatelessWidget {
 
     final isResolved = data['status']?.toString().toLowerCase() == 'resolved';
 
-    return Container(
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ItemDetailsScreen(
+              itemId: docId,
+              data: {
+                ...data,
+                'status': isResolved ? 'resolved' : 'lost',
+              },
+            ),
+          ),
+        );
+      },
+      child: Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
@@ -462,6 +470,7 @@ class _ReportListTile extends StatelessWidget {
           ),
         ),
       ),
+    ),  // closes InkWell
     );
   }
 
