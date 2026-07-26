@@ -3,9 +3,6 @@
 import 'dart:io';
 import 'package:cloudinary_public/cloudinary_public.dart';
 
-/// Shared Cloudinary upload service — single source of truth for every
-/// screen that needs to upload images or voice notes. Import this instead
-/// of defining a local CloudinaryService in individual screens.
 class CloudinaryService {
   static final CloudinaryPublic _cloudinary = CloudinaryPublic(
     'zcymmion',
@@ -23,8 +20,7 @@ class CloudinaryService {
     return _upload(imageFile, resourceType: CloudinaryResourceType.Image);
   }
 
-  /// Uploads a voice message recording. Cloudinary serves audio through
-  /// its "video" resource type — there's no separate "audio" type.
+  /// Uploads a voice message recording.
   static Future<String?> uploadVoiceMessage(File audioFile) {
     return _upload(audioFile, resourceType: CloudinaryResourceType.Video);
   }

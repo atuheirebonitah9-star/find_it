@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:find_it/theme/app_colors.dart';
+import '../theme/app_colors.dart';
 import '../models/user_profile.dart';
 import 'terms_screen.dart';
 import '../services/notification_event_service.dart';
@@ -72,8 +72,8 @@ class _SignUpScreenState extends State<SignUpScreen>
     if (!_formKey.currentState!.validate()) return;
     if (!_agreedToTerms) {
       setState(
-        () => _errorMessage =
-            'Please agree to the Terms of Service and Privacy Policy',
+            () => _errorMessage =
+        'Please agree to the Terms of Service and Privacy Policy',
       );
       return;
     }
@@ -84,33 +84,45 @@ class _SignUpScreenState extends State<SignUpScreen>
     });
 
     try {
+      // 1. Create user with Firebase Auth
       final credential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
-            email: _emailController.text.trim(),
-            password: _passwordController.text.trim(),
-          );
-
-      await credential.user?.updateDisplayName(_nameController.text.trim());
-
-      final userProfile = UserProfile(
-        uid: credential.user!.uid,
-        fullName: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        studentId: _studentNumberController.text.trim(),
-        regNumber: _regNumberController.text.trim(),
-        course: _courseController.text.trim(),
-        createdAt: DateTime.now(),
+        password: _passwordController.text.trim(),
       );
 
+      // 2. Update display name
+      final fullName = _nameController.text.trim();
+      await credential.user?.updateDisplayName(fullName);
+      await credential.user?.reload();
+
+      // 3. Prepare user data with server timestamps
+      final userData = {
+        'uid': credential.user!.uid,
+        'fullName': fullName,
+        'email': _emailController.text.trim(),
+        'studentId': _studentNumberController.text.trim(),
+        'regNumber': _regNumberController.text.trim(),
+        'course': _courseController.text.trim(),
+        'photoUrl': '',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      // 4. Save to Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(credential.user!.uid)
-          .set(userProfile.toMap());
+          .set(userData);
 
+      // 5. Emit success notification
       NotificationEventService().emit(
         NotificationEvent(
           type: NotificationEventType.signUpSuccess,
-          data: {'fullName': userProfile.fullName, 'email': userProfile.email},
+          data: {
+            'fullName': fullName,
+            'email': _emailController.text.trim(),
+          },
         ),
       );
 
@@ -161,7 +173,7 @@ class _SignUpScreenState extends State<SignUpScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                "Welcome to the network. Let's start by securing your first item.",
+                "Welcome to FindIt! You can now upload a profile picture from your profile screen.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
@@ -482,21 +494,21 @@ class _SignUpScreenState extends State<SignUpScreen>
           obscureText: _obscurePassword,
           style: const TextStyle(color: AppColors.text),
           decoration:
-              _fieldDecoration(
-                hint: 'Min. 8 characters',
-                icon: Icons.lock_outline,
-              ).copyWith(
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                    color: AppColors.muted,
-                  ),
-                  onPressed: () =>
-                      setState(() => _obscurePassword = !_obscurePassword),
-                ),
+          _fieldDecoration(
+            hint: 'Min. 8 characters',
+            icon: Icons.lock_outline,
+          ).copyWith(
+            suffixIcon: IconButton(
+              icon: Icon(
+                _obscurePassword
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: AppColors.muted,
               ),
+              onPressed: () =>
+                  setState(() => _obscurePassword = !_obscurePassword),
+            ),
+          ),
           validator: (v) {
             if (v == null || v.isEmpty) return 'Required';
             if (v.length < 8) return 'Minimum 8 characters';
@@ -631,17 +643,17 @@ class _SignUpScreenState extends State<SignUpScreen>
         ),
         child: _isLoading
             ? const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.black,
-                  strokeWidth: 2.5,
-                ),
-              )
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            color: Colors.black,
+            strokeWidth: 2.5,
+          ),
+        )
             : const Text(
-                'Create Account',
-                style: TextStyle(color: Colors.black),
-              ),
+          'Create Account',
+          style: TextStyle(color: Colors.black),
+        ),
       ),
     );
   }

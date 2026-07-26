@@ -10,11 +10,13 @@ class UserProfileProvider extends ChangeNotifier {
   String? _displayName;
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
+  String? _error;
 
   String? get profileImageUrl => _profileImageUrl;
   String? get displayName => _displayName;
   Map<String, dynamic>? get userData => _userData;
   bool get isLoading => _isLoading;
+  String? get error => _error;
 
   UserProfileProvider() {
     _loadProfile();
@@ -32,13 +34,13 @@ class UserProfileProvider extends ChangeNotifier {
       final doc = await _firestore.collection('users').doc(user.uid).get();
       if (doc.exists) {
         _userData = doc.data();
-        _profileImageUrl = _userData?['profileImageUrl'];
-        _displayName = _userData?['displayName'] ?? user.displayName;
+        _profileImageUrl = _userData?['photoUrl'] ?? '';
+        _displayName = _userData?['fullName'] ?? user.displayName ?? user.email?.split('@').first ?? 'User';
       } else {
-        // Create user document if it doesn't exist
         await _createUserDocument(user);
       }
     } catch (e) {
+      _error = e.toString();
       print('Error loading profile: $e');
     } finally {
       _isLoading = false;
@@ -46,20 +48,30 @@ class UserProfileProvider extends ChangeNotifier {
     }
   }
 
-  /// Create user document if it doesn't exist
+  /// Create user document when user first signs up
   Future<void> _createUserDocument(User user) async {
-    final data = {
-      'uid': user.uid,
-      'email': user.email,
-      'displayName': user.displayName ?? '',
-      'profileImageUrl': '',
-      'createdAt': FieldValue.serverTimestamp(),
-    };
-    await _firestore.collection('users').doc(user.uid).set(data);
-    _userData = data;
-    _profileImageUrl = '';
-    _displayName = user.displayName;
-    notifyListeners();
+    try {
+      final data = {
+        'uid': user.uid,
+        'email': user.email ?? '',
+        'fullName': user.displayName ?? user.email?.split('@').first ?? 'User',
+        'photoUrl': '',
+        'studentId': '',
+        'regNumber': '',
+        'course': '',
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      await _firestore.collection('users').doc(user.uid).set(data);
+      _userData = data;
+      _profileImageUrl = '';
+      _displayName = data['fullName'] as String? ?? 'User';
+      notifyListeners();
+    } catch (e) {
+      print('Error creating user document: $e');
+      _error = e.toString();
+      rethrow;
+    }
   }
 
   /// Refresh profile data
@@ -67,12 +79,37 @@ class UserProfileProvider extends ChangeNotifier {
     await _loadProfile();
   }
 
+  /// Update profile image URL (called after upload)
+  Future<void> updateProfileImage(String imageUrl) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore.collection('users').doc(user.uid).update({
+        'photoUrl': imageUrl,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      _profileImageUrl = imageUrl;
+      if (_userData != null) {
+        _userData!['photoUrl'] = imageUrl;
+      } else {
+        _userData = {'photoUrl': imageUrl};
+      }
+      notifyListeners();
+    } catch (e) {
+      print('Error updating profile image: $e');
+      _error = e.toString();
+      rethrow;
+    }
+  }
+
   /// Get profile image URL for ANY user (for chat screen)
   Future<String?> getProfileImageUrlForUser(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
-        return doc.data()?['profileImageUrl'];
+        return doc.data()?['photoUrl'] ?? '';
       }
       return null;
     } catch (e) {
@@ -86,7 +123,12 @@ class UserProfileProvider extends ChangeNotifier {
         .collection('users')
         .doc(uid)
         .snapshots()
-        .map((doc) => doc.data()?['profileImageUrl'] as String?);
+        .map((doc) {
+      if (doc.exists) {
+        return doc.data()?['photoUrl'] as String? ?? '';
+      }
+      return null;
+    });
   }
 
   /// Stream full user profile for ANY user (real-time updates)
@@ -97,5 +139,20 @@ class UserProfileProvider extends ChangeNotifier {
   /// Get current user's profile image URL (cached)
   String? getCurrentUserProfileImage() {
     return _profileImageUrl;
+  }
+
+  /// Clear profile data (for sign out)
+  void clearProfile() {
+    _profileImageUrl = null;
+    _displayName = null;
+    _userData = null;
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }

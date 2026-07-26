@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
+import '../providers/user_profile_provider.dart';
 import '../services/auth_service.dart';
 import '../services/cloudinary_service.dart';
 import '../theme/app_colors.dart';
@@ -45,6 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           setState(() => _isLoading = false);
         }
       } catch (e) {
+        print('Error loading profile: $e');
         setState(() => _isLoading = false);
       }
     } else {
@@ -79,6 +82,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'photoUrl': downloadUrl,
       });
+
+      // Update the provider
+      final profileProvider = Provider.of<UserProfileProvider>(context, listen: false);
+      await profileProvider.updateProfileImage(downloadUrl);
 
       // Reload profile
       await _loadUserProfile();
@@ -115,6 +122,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final profileProvider = Provider.of<UserProfileProvider>(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -141,13 +150,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ============ PROFILE PICTURE ============
-              _buildProfilePicture(),
-
+              _buildProfilePicture(profileProvider),
               const SizedBox(height: 24),
-
               if (_userProfile != null) ...[
-                // ============ PROFILE INFO CARDS ============
                 _buildInfoCard(
                   'Full Name',
                   _userProfile!.fullName,
@@ -179,10 +184,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _userProfile!.course,
                   Icons.school_outlined,
                 ),
-
                 const SizedBox(height: 32),
-
-                // ============ SIGN OUT BUTTON ============
                 _buildSignOutButton(),
               ] else ...[
                 _buildEmptyState(),
@@ -194,8 +196,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ============ PROFILE PICTURE ============
-  Widget _buildProfilePicture() {
+  Widget _buildProfilePicture(UserProfileProvider provider) {
+    final imageUrl = provider.profileImageUrl ?? _userProfile?.photoUrl;
+
     return Center(
       child: Stack(
         children: [
@@ -213,10 +216,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: CircleAvatar(
               radius: 56,
               backgroundColor: AppColors.surface,
-              backgroundImage: _userProfile?.photoUrl != null
-                  ? NetworkImage(_userProfile!.photoUrl!)
+              backgroundImage: imageUrl != null && imageUrl.isNotEmpty
+                  ? NetworkImage(imageUrl)
                   : null,
-              child: _userProfile?.photoUrl == null
+              child: imageUrl == null || imageUrl.isEmpty
                   ? Icon(
                 Icons.person_outline,
                 size: 56,
@@ -243,7 +246,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             bottom: 0,
             right: 0,
             child: GestureDetector(
-              onTap: _pickAndUploadProfilePicture,
+              onTap: _isUploading ? null : _pickAndUploadProfilePicture,
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
@@ -257,8 +260,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.camera_alt,
+                child: Icon(
+                  _isUploading ? Icons.hourglass_empty : Icons.camera_alt,
                   color: Colors.black,
                   size: 20,
                 ),
@@ -270,7 +273,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ============ INFO CARD ============
   Widget _buildInfoCard(String label, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -313,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  value,
+                  value.isEmpty ? 'Not set' : value,
                   style: const TextStyle(
                     fontSize: 16,
                     color: AppColors.text,
@@ -329,13 +331,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ============ SIGN OUT BUTTON ============
   Widget _buildSignOutButton() {
     return SizedBox(
       height: 56,
       child: ElevatedButton.icon(
         onPressed: () => _authService.signOut(),
-        icon: Icon(
+        icon: const Icon(
           Icons.logout_outlined,
           color: Colors.white,
           size: 22,
@@ -361,7 +362,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ============ EMPTY STATE ============
   Widget _buildEmptyState() {
     return Center(
       child: Column(
