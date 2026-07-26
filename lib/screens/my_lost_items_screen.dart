@@ -3,6 +3,25 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../theme/app_colors.dart';
 
+/// Helper for building Cloudinary-optimized delivery URLs.
+///
+/// Cloudinary lets you inject transformation params directly into the
+/// delivery URL path, e.g.:
+///   https://res.cloudinary.com/<cloud>/image/upload/v123/foo.jpg
+///   -> https://res.cloudinary.com/<cloud>/image/upload/w_300,h_300,c_fill,f_auto,q_auto/v123/foo.jpg
+///
+/// If the URL isn't a Cloudinary URL (doesn't contain '/upload/'), it's
+/// returned unchanged so this is safe to call on any imageUrl string.
+class CloudinaryUrl {
+  static String thumbnail(String url, {int width = 300, int height = 300}) {
+    if (!url.contains('/upload/')) return url;
+    return url.replaceFirst(
+      '/upload/',
+      '/upload/w_$width,h_$height,c_fill,f_auto,q_auto/',
+    );
+  }
+}
+
 class MyLostItemsScreen extends StatelessWidget {
   const MyLostItemsScreen({super.key});
 
@@ -145,7 +164,7 @@ class MyLostItemsScreen extends StatelessWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: withImages.length,
                     gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
+                    const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
@@ -223,7 +242,13 @@ class _ImageCard extends StatelessWidget {
                   top: Radius.circular(16),
                 ),
                 child: Image.network(
-                  data['imageUrl'] as String,
+                  // Use a Cloudinary-generated thumbnail instead of the
+                  // full-size original for faster grid loads.
+                  CloudinaryUrl.thumbnail(
+                    data['imageUrl'] as String,
+                    width: 300,
+                    height: 300,
+                  ),
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, progress) {
                     if (progress == null) return child;
@@ -305,6 +330,7 @@ class _ImageCard extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Image.network(
+            // Full-resolution original for the detail view.
             imageUrl,
             fit: BoxFit.contain,
             errorBuilder: (context, _, _) => Container(
@@ -348,17 +374,22 @@ class _ReportListTile extends StatelessWidget {
       ),
       child: ListTile(
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: hasImage
               ? Image.network(
-                  data['imageUrl'] as String,
-                  width: 52,
-                  height: 52,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _placeholder(),
-                )
+            // Small thumbnail for the list avatar.
+            CloudinaryUrl.thumbnail(
+              data['imageUrl'] as String,
+              width: 104,
+              height: 104,
+            ),
+            width: 52,
+            height: 52,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _placeholder(),
+          )
               : _placeholder(),
         ),
         title: Text(
