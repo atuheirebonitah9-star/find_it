@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../../models/message_model.dart';
+import '../../theme/app_colors.dart';
 
 class MessageBubble extends StatefulWidget {
   final MessageModel message;
@@ -80,10 +81,10 @@ class _MessageBubbleState extends State<MessageBubble> {
             : MainAxisAlignment.start,
         children: [
           if (!widget.isMe) ...[
-            const CircleAvatar(
+            CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.grey,
-              child: Icon(Icons.person, size: 16, color: Colors.white),
+              backgroundColor: AppColors.primary.withOpacity(0.12),
+              child: Icon(Icons.person, size: 16, color: AppColors.primary),
             ),
             const SizedBox(width: 8),
           ],
@@ -91,7 +92,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: widget.isMe ? Colors.blue : Colors.grey[200],
+                color: widget.isMe ? AppColors.primary : AppColors.surface,
                 borderRadius: BorderRadius.circular(16).copyWith(
                   bottomLeft: widget.isMe
                       ? const Radius.circular(16)
@@ -100,6 +101,9 @@ class _MessageBubbleState extends State<MessageBubble> {
                       ? const Radius.circular(4)
                       : const Radius.circular(16),
                 ),
+                border: widget.isMe
+                    ? null
+                    : Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +115,9 @@ class _MessageBubbleState extends State<MessageBubble> {
                         IconButton(
                           icon: Icon(
                             _isPlaying ? Icons.pause : Icons.play_arrow,
-                            color: widget.isMe ? Colors.white : Colors.black87,
+                            color: widget.isMe
+                                ? Colors.white
+                                : AppColors.text,
                           ),
                           onPressed: _togglePlay,
                           constraints: const BoxConstraints(),
@@ -121,7 +127,9 @@ class _MessageBubbleState extends State<MessageBubble> {
                         Expanded(
                           child: Slider(
                             value: _position.inSeconds.toDouble(),
-                            max: _duration.inSeconds.toDouble(),
+                            max: _duration.inSeconds.toDouble() > 0
+                                ? _duration.inSeconds.toDouble()
+                                : 1,
                             onChanged: (value) async {
                               await _audioPlayer.seek(
                                 Duration(seconds: value.toInt()),
@@ -129,10 +137,10 @@ class _MessageBubbleState extends State<MessageBubble> {
                             },
                             activeColor: widget.isMe
                                 ? Colors.white
-                                : Colors.blue,
+                                : AppColors.primary,
                             inactiveColor: widget.isMe
                                 ? Colors.white54
-                                : Colors.grey,
+                                : AppColors.muted,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -141,8 +149,9 @@ class _MessageBubbleState extends State<MessageBubble> {
                           style: TextStyle(
                             color: widget.isMe
                                 ? Colors.white70
-                                : Colors.grey[600],
+                                : AppColors.textSecondary,
                             fontSize: 12,
+                            fontFamily: 'Inter',
                           ),
                         ),
                       ],
@@ -151,8 +160,10 @@ class _MessageBubbleState extends State<MessageBubble> {
                     Text(
                       widget.message.text,
                       style: TextStyle(
-                        color: widget.isMe ? Colors.white : Colors.black87,
-                        fontSize: 16,
+                        color: widget.isMe ? Colors.white : AppColors.text,
+                        fontSize: 15,
+                        fontFamily: 'Inter',
+                        height: 1.3,
                       ),
                     ),
                   ],
@@ -160,8 +171,11 @@ class _MessageBubbleState extends State<MessageBubble> {
                   Text(
                     DateFormat('h:mm a').format(widget.message.timestamp),
                     style: TextStyle(
-                      color: widget.isMe ? Colors.white70 : Colors.grey[600],
+                      color: widget.isMe
+                          ? Colors.white70
+                          : AppColors.textSecondary,
                       fontSize: 10,
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ],
@@ -173,7 +187,9 @@ class _MessageBubbleState extends State<MessageBubble> {
             Icon(
               widget.message.isRead ? Icons.done_all : Icons.done,
               size: 16,
-              color: widget.message.isRead ? Colors.blue : Colors.grey,
+              color: widget.message.isRead
+                  ? AppColors.primary
+                  : AppColors.muted,
             ),
           ],
         ],

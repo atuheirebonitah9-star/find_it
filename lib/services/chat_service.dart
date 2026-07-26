@@ -154,16 +154,23 @@ class ChatService {
   Future<void> markMessagesAsRead(String chatId) async {
     if (currentUserUid == null) return;
 
-    final messages = await _firestore
-        .collection('chats')
-        .doc(chatId)
-        .collection('messages')
-        .where('senderUid', isNotEqualTo: currentUserUid)
-        .where('isRead', isEqualTo: false)
-        .get();
+    try {
+      final messages = await _firestore
+          .collection('chats')
+          .doc(chatId)
+          .collection('messages')
+          .where('isRead', isEqualTo: false)
+          .get();
 
-    for (var doc in messages.docs) {
-      await doc.reference.update({'isRead': true});
+      final fromOthers = messages.docs.where((doc) {
+        return doc.data()['senderUid'] != currentUserUid;
+      });
+
+      for (var doc in fromOthers) {
+        await doc.reference.update({'isRead': true});
+      }
+    } catch (e) {
+      print('Error marking messages as read: $e');
     }
   }
 
@@ -195,10 +202,12 @@ class ChatService {
           .collection('chats')
           .doc(chatId)
           .collection('messages')
-          .where('senderUid', isNotEqualTo: currentUserUid)
           .where('isRead', isEqualTo: false)
           .get();
-      return snapshot.docs.length;
+
+      return snapshot.docs.where((doc) {
+        return doc.data()['senderUid'] != currentUserUid;
+      }).length;
     } catch (e) {
       print('Error getting unread count: $e');
       return 0;
