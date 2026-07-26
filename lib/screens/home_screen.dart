@@ -22,15 +22,26 @@ class _HomeScreenState extends State<HomeScreen> {
   int _unreadCount = 0;
   final List<NotificationEvent> _readEvents = [];
 
+  bool _isForCurrentUser(NotificationEvent event) {
+    if (event.targetUserId == null) return true;
+    return event.targetUserId == FirebaseAuth.instance.currentUser?.uid;
+  }
+
+  List<NotificationEvent> _myEvents() {
+    return _notificationService.getEventHistory().where(_isForCurrentUser).toList();
+  }
+
   @override
   void initState() {
     super.initState();
-    final allEvents = _notificationService.getEventHistory();
+    // Calculate initial unread count
+    final allEvents = _myEvents();
     _unreadCount = allEvents.where((e) => !_readEvents.contains(e)).length;
     _notificationService.subscribe(_onNotificationEvent);
   }
 
   void _onNotificationEvent(NotificationEvent event) {
+    if (!_isForCurrentUser(event)) return;
     if (!_readEvents.contains(event)) {
       setState(() => _unreadCount++);
     }
@@ -43,10 +54,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showNotifications() {
-    final events = _notificationService
-        .getEventHistory()
-        .reversed
-        .toList();
+    final events = _myEvents().reversed.toList();
+    // Mark all notifications as read
     setState(() {
       _readEvents.addAll(events.where((e) => !_readEvents.contains(e)));
       _unreadCount = 0;

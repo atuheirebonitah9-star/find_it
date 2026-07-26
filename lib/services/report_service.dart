@@ -159,6 +159,7 @@ class ReportService {
           'isLost': true,
           'imageUrl': imageUrl ?? '',
         },
+        targetUserId: currentUser?.uid,
       ),
     );
 
@@ -183,31 +184,59 @@ class ReportService {
       );
     }
 
-    // 7. Emit match notifications
+    // ============ EMIT NOTIFICATIONS ============
+    final lostReportUserId = _auth.currentUser?.uid;
     for (var match in matches) {
+      final foundReportUserId = match.report.userId;
+      final commonData = {
+        'itemName': match.report.itemName,
+        'location': match.report.location,
+        'lostReportUserId': lostReportUserId,
+        'foundReportUserId': foundReportUserId,
+      };
+
       if (match.result == MatchResult.strong) {
-        _eventService.emit(
-          NotificationEvent(
-            type: NotificationEventType.matchFound,
-            data: {
-              'itemName': match.report.itemName,
-              'location': match.report.location,
-              'lostReportUserId': _auth.currentUser?.uid,
-              'foundReportUserId': match.report.userId,
-              'imageUrl': match.report.imageUrl ?? '',
-            },
-          ),
-        );
+        // Notify lost report user (current reporter)
+        if (lostReportUserId != null) {
+          _eventService.emit(
+            NotificationEvent(
+              type: NotificationEventType.matchFound,
+              data: {...commonData, 'role': 'lost'},
+              targetUserId: lostReportUserId,
+            ),
+          );
+        }
+        // Notify found report user (match owner)
+        if (foundReportUserId != null && foundReportUserId != lostReportUserId) {
+          _eventService.emit(
+            NotificationEvent(
+              type: NotificationEventType.matchFound,
+              data: {...commonData, 'role': 'found'},
+              targetUserId: foundReportUserId,
+            ),
+          );
+        }
       } else if (match.result == MatchResult.weak) {
-        _eventService.emit(
-          NotificationEvent(
-            type: NotificationEventType.matchFoundWeak,
-            data: {
-              'itemName': match.report.itemName,
-              'location': match.report.location,
-            },
-          ),
-        );
+        // Notify lost report user (current reporter)
+        if (lostReportUserId != null) {
+          _eventService.emit(
+            NotificationEvent(
+              type: NotificationEventType.matchFoundWeak,
+              data: {...commonData, 'role': 'lost'},
+              targetUserId: lostReportUserId,
+            ),
+          );
+        }
+        // Notify found report user (match owner)
+        if (foundReportUserId != null && foundReportUserId != lostReportUserId) {
+          _eventService.emit(
+            NotificationEvent(
+              type: NotificationEventType.matchFoundWeak,
+              data: {...commonData, 'role': 'found'},
+              targetUserId: foundReportUserId,
+            ),
+          );
+        }
       }
     }
 
@@ -296,6 +325,7 @@ class ReportService {
           'isLost': false,
           'imageUrl': imageUrl ?? '',
         },
+        targetUserId: currentUser?.uid,
       ),
     );
 
@@ -320,31 +350,59 @@ class ReportService {
       );
     }
 
-    // 7. Emit match notifications
+    // ============ EMIT NOTIFICATIONS ============
+    final foundReportUserId = _auth.currentUser?.uid;
     for (var match in matches) {
+      final lostReportUserId = match.report.userId;
+      final commonData = {
+        'itemName': match.report.itemName,
+        'location': match.report.location,
+        'lostReportUserId': lostReportUserId,
+        'foundReportUserId': foundReportUserId,
+      };
+
       if (match.result == MatchResult.strong) {
-        _eventService.emit(
-          NotificationEvent(
-            type: NotificationEventType.matchFound,
-            data: {
-              'itemName': match.report.itemName,
-              'location': match.report.location,
-              'lostReportUserId': match.report.userId,
-              'foundReportUserId': _auth.currentUser?.uid,
-              'imageUrl': match.report.imageUrl ?? '',
-            },
-          ),
-        );
+        // Notify found report user (current reporter)
+        if (foundReportUserId != null) {
+          _eventService.emit(
+            NotificationEvent(
+              type: NotificationEventType.matchFound,
+              data: {...commonData, 'role': 'found'},
+              targetUserId: foundReportUserId,
+            ),
+          );
+        }
+        // Notify lost report user (match owner)
+        if (lostReportUserId != null && lostReportUserId != foundReportUserId) {
+          _eventService.emit(
+            NotificationEvent(
+              type: NotificationEventType.matchFound,
+              data: {...commonData, 'role': 'lost'},
+              targetUserId: lostReportUserId,
+            ),
+          );
+        }
       } else if (match.result == MatchResult.weak) {
-        _eventService.emit(
-          NotificationEvent(
-            type: NotificationEventType.matchFoundWeak,
-            data: {
-              'itemName': match.report.itemName,
-              'location': match.report.location,
-            },
-          ),
-        );
+        // Notify found report user (current reporter)
+        if (foundReportUserId != null) {
+          _eventService.emit(
+            NotificationEvent(
+              type: NotificationEventType.matchFoundWeak,
+              data: {...commonData, 'role': 'found'},
+              targetUserId: foundReportUserId,
+            ),
+          );
+        }
+        // Notify lost report user (match owner)
+        if (lostReportUserId != null && lostReportUserId != foundReportUserId) {
+          _eventService.emit(
+            NotificationEvent(
+              type: NotificationEventType.matchFoundWeak,
+              data: {...commonData, 'role': 'lost'},
+              targetUserId: lostReportUserId,
+            ),
+          );
+        }
       }
     }
 
