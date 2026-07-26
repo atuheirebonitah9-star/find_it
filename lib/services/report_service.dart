@@ -193,6 +193,7 @@ class ReportService {
         'location': match.report.location,
         'lostReportUserId': lostReportUserId,
         'foundReportUserId': foundReportUserId,
+        'imageUrl': match.report.imageUrl ?? '',
       };
 
       if (match.result == MatchResult.strong) {
@@ -359,6 +360,7 @@ class ReportService {
         'location': match.report.location,
         'lostReportUserId': lostReportUserId,
         'foundReportUserId': foundReportUserId,
+        'imageUrl': match.report.imageUrl ?? '',
       };
 
       if (match.result == MatchResult.strong) {
