@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'auth_gate.dart';
 import 'firebase_options.dart';
 import 'providers/chat_provider.dart';
+import 'providers/user_profile_provider.dart';  // ← Add this import
 import 'services/notification_event_listener_example.dart';
 import 'services/notification_service.dart';
 import 'theme/app_theme.dart';
@@ -26,8 +27,15 @@ class FindItApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => ChatProvider(),
+    return MultiProvider(  // ← Changed from ChangeNotifierProvider to MultiProvider
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => ChatProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (context) => UserProfileProvider(),  // ← Added UserProfileProvider
+        ),
+      ],
       child: MaterialApp(
         title: 'FindIt',
         debugShowCheckedModeBanner: false,
