@@ -392,6 +392,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
           description: descriptionController.text.trim(),
           itemName: itemNameController.text.trim(),
           imageUrl: imageUrl, // Cloudinary URL
+          isLost: isLost,
         );
 
         List<MatchDocument> matches;
