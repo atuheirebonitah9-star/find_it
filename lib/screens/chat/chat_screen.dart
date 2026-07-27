@@ -178,23 +178,28 @@ class _ChatScreenState extends State<ChatScreen> {
       elevation: 0,
       title: Row(
         children: [
+          // Avatar: profile photo if available, otherwise gradient initial
           Container(
-            decoration: const BoxDecoration(
-              gradient: AppColors.primaryGradient,
+            decoration: BoxDecoration(
+              gradient: photoUrl == null ? AppColors.primaryGradient : null,
               shape: BoxShape.circle,
             ),
             child: CircleAvatar(
               radius: 20,
               backgroundColor: Colors.transparent,
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 18,
-                  fontFamily: 'Plus Jakarta Sans',
-                ),
-              ),
+              backgroundImage:
+                  photoUrl != null ? NetworkImage(photoUrl) : null,
+              child: photoUrl == null
+                  ? Text(
+                      initial,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: 12),
