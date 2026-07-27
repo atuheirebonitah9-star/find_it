@@ -146,6 +146,7 @@ class ReportService {
       embedding: embedding,
       imageUrl: imageUrl,
       extractedIdentifiers: extractedIdentifiers,
+      isLost: true,
     );
 
     // 4. Emit notification event
@@ -313,6 +314,7 @@ class ReportService {
       embedding: embedding,
       imageUrl: imageUrl,
       extractedIdentifiers: extractedIdentifiers,
+      isLost: false,
     );
 
     // 4. Emit notification event
@@ -440,6 +442,7 @@ class ReportService {
           Map<String, dynamic>.from(data['extractedIdentifiers']),
         )
             : null,
+        isLost: true,
       );
 
       if (lostReport.userId == currentUserUid) continue;
@@ -497,6 +500,7 @@ class ReportService {
           Map<String, dynamic>.from(data['extractedIdentifiers']),
         )
             : null,
+        isLost: false,
       );
 
       if (foundReport.userId == currentUserUid) continue;

@@ -23,12 +23,12 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen>
-    with SingleTickerProviderStateMixin {
+class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final ChatService _chatService = ChatService();
   UserProfile? _otherUserProfile;
   bool _isLoadingProfile = true;
+  int _lastMessageCount = 0;
 
   @override
   void initState() {
@@ -53,19 +53,23 @@ class _ChatScreenState extends State<ChatScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) return;
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      chatProvider.clearMessages();
+    });
     _scrollController.dispose();
     super.dispose();
   }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      if (!mounted || !_scrollController.hasClients) return;
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -79,7 +83,7 @@ class _ChatScreenState extends State<ChatScreen>
           Expanded(
             child: Consumer<ChatProvider>(
               builder: (context, chatProvider, child) {
-                if (chatProvider.isLoading) {
+                if (chatProvider.isLoading && chatProvider.messages.isEmpty) {
                   return const Center(
                     child: CircularProgressIndicator(
                       color: AppColors.primary,
@@ -87,18 +91,20 @@ class _ChatScreenState extends State<ChatScreen>
                   );
                 }
 
+                final msgCount = chatProvider.messages.length;
+                if (msgCount != _lastMessageCount) {
+                  _lastMessageCount = msgCount;
+                  _scrollToBottom();
+                }
+
                 if (chatProvider.messages.isEmpty) {
                   return _buildEmptyState();
                 }
 
-                WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => _scrollToBottom(),
-                );
-
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: chatProvider.messages.length,
+                  itemCount: msgCount,
                   itemBuilder: (context, index) {
                     final message = chatProvider.messages[index];
                     final isMe =
@@ -112,18 +118,26 @@ class _ChatScreenState extends State<ChatScreen>
           ),
           MessageInputField(
             onSend: (text) async {
-              await Provider.of<ChatProvider>(
-                context,
-                listen: false,
-              ).sendMessage(widget.chatId, text);
-              _scrollToBottom();
+              try {
+                await Provider.of<ChatProvider>(
+                  context,
+                  listen: false,
+                ).sendMessage(widget.chatId, text);
+                _scrollToBottom();
+              } catch (e) {
+                _showError(e.toString());
+              }
             },
             onSendVoice: (voiceUrl, duration) async {
-              await Provider.of<ChatProvider>(
-                context,
-                listen: false,
-              ).sendVoiceMessage(widget.chatId, voiceUrl, duration);
-              _scrollToBottom();
+              try {
+                await Provider.of<ChatProvider>(
+                  context,
+                  listen: false,
+                ).sendVoiceMessage(widget.chatId, voiceUrl, duration);
+                _scrollToBottom();
+              } catch (e) {
+                _showError(e.toString());
+              }
             },
           ),
         ],
@@ -131,9 +145,29 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error: $message'),
+        backgroundColor: AppColors.errorContainer,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+  }
+
   // ============ APP BAR ============
   PreferredSizeWidget _buildAppBar() {
-    // Get the first letter of the user's name for avatar
     String initial = 'U';
     if (!_isLoadingProfile && _otherUserProfile?.fullName.isNotEmpty == true) {
       initial = _otherUserProfile!.fullName[0].toUpperCase();
@@ -211,7 +245,10 @@ class _ChatScreenState extends State<ChatScreen>
       ),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back, color: AppColors.text),
-        onPressed: () => Navigator.pop(context),
+        onPressed: () {
+          Provider.of<ChatProvider>(context, listen: false).clearMessages();
+          Navigator.pop(context);
+        },
       ),
       actions: [
         IconButton(
@@ -510,12 +547,14 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   void _deleteChat() async {
-    await Provider.of<ChatProvider>(
-      context,
-      listen: false,
-    ).deleteChat(widget.chatId);
-    if (mounted) {
+    try {
+      await Provider.of<ChatProvider>(
+        context,
+        listen: false,
+      ).deleteChat(widget.chatId);
+      if (!mounted) return;
       Navigator.pop(context);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Chat deleted successfully'),
@@ -526,6 +565,8 @@ class _ChatScreenState extends State<ChatScreen>
           ),
         ),
       );
+    } catch (e) {
+      _showError(e.toString());
     }
   }
 
@@ -614,6 +655,7 @@ class _ChatScreenState extends State<ChatScreen>
                         ),
                         onPressed: () {
                           Navigator.pop(context);
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('User reported successfully'),
@@ -730,6 +772,7 @@ class _ChatScreenState extends State<ChatScreen>
                         ),
                         onPressed: () {
                           Navigator.pop(context);
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('User blocked successfully'),
@@ -762,21 +805,27 @@ class _ChatScreenState extends State<ChatScreen>
   }
 
   void _archiveChat() async {
-    await Provider.of<ChatProvider>(
-      context,
-      listen: false,
-    ).archiveChat(widget.chatId);
-    if (!mounted) return;
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Chat archived'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(12)),
+    try {
+      await Provider.of<ChatProvider>(
+        context,
+        listen: false,
+      ).archiveChat(widget.chatId);
+      if (!mounted) return;
+      Provider.of<ChatProvider>(context, listen: false).clearMessages();
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Chat archived'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      _showError(e.toString());
+    }
   }
 }

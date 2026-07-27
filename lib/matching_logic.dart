@@ -15,6 +15,7 @@ class Report {
   final List<double>? embedding;
   final String? imageUrl;
   final ExtractedIdentifiers? extractedIdentifiers;
+  final bool isLost;
 
   Report({
     required this.category,
@@ -26,6 +27,7 @@ class Report {
     this.embedding,
     this.imageUrl,
     this.extractedIdentifiers,
+    this.isLost = true,
   });
 }
 

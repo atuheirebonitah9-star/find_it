@@ -14,9 +14,37 @@ class PossibleMatchesScreen extends StatelessWidget {
 
   Future<void> _openChat(BuildContext context, MatchDocument match) async {
     final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+    final matchUserUid = match.report.userId;
+
+    if (currentUserUid == null || matchUserUid == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not identify users for chat'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    final String finderUid;
+    final String ownerUid;
+
+    if (match.report.isLost) {
+      // Match report is a LOST report → match.user is OWNER, current user is FINDER
+      finderUid = currentUserUid;
+      ownerUid = matchUserUid;
+    } else {
+      // Match report is a FOUND report → match.user is FINDER, current user is OWNER
+      finderUid = matchUserUid;
+      ownerUid = currentUserUid;
+    }
+
     final chatId = await chatProvider.createChat(
-      finderUid: FirebaseAuth.instance.currentUser?.uid ?? '',
-      ownerUid: match.report.userId ?? '',
+      finderUid: finderUid,
+      ownerUid: ownerUid,
       itemName: match.report.itemName,
     );
 
@@ -26,7 +54,7 @@ class PossibleMatchesScreen extends StatelessWidget {
         MaterialPageRoute(
           builder: (context) => ChatScreen(
             chatId: chatId,
-            otherUserUid: match.report.userId ?? '',
+            otherUserUid: matchUserUid,
             itemName: match.report.itemName,
           ),
         ),
