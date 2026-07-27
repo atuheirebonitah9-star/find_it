@@ -206,7 +206,7 @@ class ChatService {
           .get();
 
       return snapshot.docs.where((doc) {
-        return doc.data()['senderUid'] != currentUserUid;
+        return (doc.data()as Map<String, dynamic>)['senderUid'] != currentUserUid;
       }).length;
     } catch (e) {
       print('Error getting unread count: $e');
