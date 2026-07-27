@@ -168,10 +168,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ============ APP BAR ============
   PreferredSizeWidget _buildAppBar() {
-    String initial = 'U';
-    if (!_isLoadingProfile && _otherUserProfile?.fullName.isNotEmpty == true) {
-      initial = _otherUserProfile!.fullName[0].toUpperCase();
-    }
+    final String initial =
+        (!_isLoadingProfile && _otherUserProfile?.fullName.isNotEmpty == true)
+            ? _otherUserProfile!.fullName[0].toUpperCase()
+            : 'U';
+
+    final String? photoUrl = _otherUserProfile?.photoUrl?.isNotEmpty == true
+        ? _otherUserProfile!.photoUrl
+        : null;
 
     return AppBar(
       backgroundColor: Colors.transparent,
