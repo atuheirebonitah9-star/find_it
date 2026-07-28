@@ -80,27 +80,29 @@ class ReportService {
   // ============ SUBMIT LOST REPORT ============
   Future<List<MatchDocument>> submitLostReport(Report report) async {
     final currentUser = _auth.currentUser;
-    final embedding = await _getEmbedding(report);
 
-    // 1. Resolve image URL — if already a Cloudinary/https URL skip upload,
-    //    otherwise upload the local file path to Cloudinary first.
+    // 1. Resolve image URL first (already uploaded from report screen)
     String? imageUrl;
-    ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
-
     if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
       if (report.imageUrl!.startsWith('http')) {
-        // Already uploaded — use as-is
         imageUrl = report.imageUrl;
       } else {
-        // Local file path — upload to Cloudinary
         imageUrl = await uploadImage(report.imageUrl);
       }
+    }
 
-      // Analyze the image for text/identifiers using the Cloudinary URL
-      if (imageUrl != null) {
-        extractedIdentifiers = await analyzeImage(imageUrl);
-        print('AI Analysis Result (lost): ${extractedIdentifiers?.toMap()}');
-      }
+    // 2. Run embedding and image analysis in parallel to save time
+    final results = await Future.wait([
+      _getEmbedding(report),
+      analyzeImage(imageUrl),
+    ]);
+
+    final embedding = results[0] as List<double>?;
+    final extractedIdentifiers =
+        (results[1] as ExtractedIdentifiers?) ?? report.extractedIdentifiers;
+
+    if (imageUrl != null) {
+      print('AI Analysis Result (lost): ${extractedIdentifiers?.toMap()}');
     }
 
     // 2. Save to lost_reports collection
@@ -248,27 +250,29 @@ class ReportService {
   // ============ SUBMIT FOUND REPORT ============
   Future<List<MatchDocument>> submitFoundReport(Report report) async {
     final currentUser = _auth.currentUser;
-    final embedding = await _getEmbedding(report);
 
-    // 1. Resolve image URL — if already a Cloudinary/https URL skip upload,
-    //    otherwise upload the local file path to Cloudinary first.
+    // 1. Resolve image URL first (already uploaded from report screen)
     String? imageUrl;
-    ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
-
     if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
       if (report.imageUrl!.startsWith('http')) {
-        // Already uploaded — use as-is
         imageUrl = report.imageUrl;
       } else {
-        // Local file path — upload to Cloudinary
         imageUrl = await uploadImage(report.imageUrl);
       }
+    }
 
-      // Analyze the image for text/identifiers using the Cloudinary URL
-      if (imageUrl != null) {
-        extractedIdentifiers = await analyzeImage(imageUrl);
-        print('AI Analysis Result (found): ${extractedIdentifiers?.toMap()}');
-      }
+    // 2. Run embedding and image analysis in parallel to save time
+    final results = await Future.wait([
+      _getEmbedding(report),
+      analyzeImage(imageUrl),
+    ]);
+
+    final embedding = results[0] as List<double>?;
+    final extractedIdentifiers =
+        (results[1] as ExtractedIdentifiers?) ?? report.extractedIdentifiers;
+
+    if (imageUrl != null) {
+      print('AI Analysis Result (found): ${extractedIdentifiers?.toMap()}');
     }
 
     // 2. Save to found_reports collection

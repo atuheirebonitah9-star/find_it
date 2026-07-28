@@ -323,7 +323,12 @@ class _ReportItemScreenState extends State<ReportItemScreen>
   Future<void> _handleMatches(List<MatchDocument> matches) async {
     _clearForm();
 
-    if (matches.isEmpty) {
+    // Filter out MatchResult.none — only show real matches
+    final realMatches = matches
+        .where((m) => m.result != MatchResult.none)
+        .toList();
+
+    if (realMatches.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -348,7 +353,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
         context,
         MaterialPageRoute(
           builder: (context) => PossibleMatchesScreen(
-            matches: matches,
+            matches: realMatches,
           ),
         ),
       );

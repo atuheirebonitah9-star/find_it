@@ -64,14 +64,52 @@ class PossibleMatchesScreen extends StatelessWidget {
     }
   }
 
-  void _openDetails(BuildContext context, MatchDocument match) {
-    // Convert Report to the Map<String, dynamic> that ItemDetailsScreen expects
+  Future<void> _openDetails(
+      BuildContext context, MatchDocument match, bool isStrong) async {
+    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+    final matchUserUid = match.report.userId;
+
+    // For strong matches, pre-create/resolve the chat so Contact Finder
+    // opens it directly from ItemDetailsScreen.
+    String? resolvedChatId;
+    if (isStrong && currentUserUid != null && matchUserUid != null) {
+      try {
+        final chatProvider =
+            Provider.of<ChatProvider>(context, listen: false);
+
+        final String finderUid;
+        final String ownerUid;
+        if (match.report.isLost) {
+          // Match is a LOST report → current user is finder
+          finderUid = currentUserUid;
+          ownerUid = matchUserUid;
+        } else {
+          // Match is a FOUND report → match user is finder
+          finderUid = matchUserUid;
+          ownerUid = currentUserUid;
+        }
+
+        resolvedChatId = await chatProvider.createChat(
+          finderUid: finderUid,
+          ownerUid: ownerUid,
+          itemName: match.report.itemName,
+        );
+      } catch (_) {
+        // Non-fatal — ItemDetailsScreen will create the chat itself
+      }
+    }
+
+    if (!context.mounted) return;
+
+    // Status shown in ItemDetailsScreen reflects the match report itself
+    final status = match.report.isLost ? 'lost' : 'found';
+
     final data = <String, dynamic>{
       'itemName': match.report.itemName,
       'category': match.report.category,
       'location': match.report.location,
       'description': match.report.description,
-      'status': 'found', // matches are always from the opposite collection
+      'status': status,
       'userId': match.report.userId,
       'date': Timestamp.fromDate(match.report.date),
       if (match.report.imageUrl != null) 'imageUrl': match.report.imageUrl,
@@ -83,6 +121,7 @@ class PossibleMatchesScreen extends StatelessWidget {
         builder: (_) => ItemDetailsScreen(
           itemId: match.report.userId ?? '',
           data: data,
+          chatId: resolvedChatId,
         ),
       ),
     );
@@ -266,7 +305,7 @@ class PossibleMatchesScreen extends StatelessWidget {
                   match: match,
                   isStrong: true,
                   onChat: () => _openChat(context, match),
-                  onViewDetails: () => _openDetails(context, match),
+                  onViewDetails: () => _openDetails(context, match, true),
                 ),
               )),
               const SizedBox(height: 24),
@@ -323,7 +362,7 @@ class PossibleMatchesScreen extends StatelessWidget {
                   match: match,
                   isStrong: false,
                   onChat: () => _openChat(context, match),
-                  onViewDetails: () => _openDetails(context, match),
+                  onViewDetails: () => _openDetails(context, match, false),
                 ),
               )),
             ],
@@ -339,7 +378,7 @@ class _MatchCard extends StatelessWidget {
   final MatchDocument match;
   final bool isStrong;
   final VoidCallback onChat;
-  final VoidCallback onViewDetails;
+  final Future<void> Function() onViewDetails;
 
   const _MatchCard({
     required this.match,
