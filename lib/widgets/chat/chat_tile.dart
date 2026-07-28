@@ -22,7 +22,6 @@ class _ChatTileState extends State<ChatTile> {
   int _unreadCount = 0;
   bool _isLoadingProfile = true;
   StreamSubscription<int>? _unreadSubscription;
-  StreamSubscription? _profileSubscription;
 
   @override
   void initState() {
@@ -69,25 +68,42 @@ class _ChatTileState extends State<ChatTile> {
   @override
   void dispose() {
     _unreadSubscription?.cancel();
-    _profileSubscription?.cancel();
     super.dispose();
+  }
+
+  String _getDisplayName() {
+    if (_isLoadingProfile) return 'Loading...';
+    final profileName = (_otherUserProfile?.fullName ?? '').trim();
+    if (profileName.isNotEmpty) return profileName;
+
+    final otherUserUid = _chatService.getOtherUserUid(
+      widget.chat.finderUid,
+      widget.chat.ownerUid,
+    );
+    final chatStoredName = widget.chat.nameForUser(otherUserUid)?.trim() ?? '';
+    if (chatStoredName.isNotEmpty) return chatStoredName;
+
+    final email = (_otherUserProfile?.email ?? '').trim();
+    if (email.isNotEmpty) {
+      return email.contains('@') ? email.split('@')[0] : email;
+    }
+
+    return 'Unknown User';
+  }
+
+  String _getAvatarInitial() {
+    final displayName = _getDisplayName();
+    if (_isLoadingProfile) return 'L';
+    if (displayName.isEmpty || displayName == 'Unknown User') return '?';
+    return displayName[0].toUpperCase();
   }
 
   @override
   Widget build(BuildContext context) {
-    final name = _isLoadingProfile
-        ? 'Loading...'
-        : _otherUserProfile?.fullName ?? widget.chat.itemName;
+    final displayName = _getDisplayName();
     final isBold = _unreadCount > 0;
-
-    String initial = 'U';
-    if (!_isLoadingProfile &&
-        _otherUserProfile != null &&
-        _otherUserProfile!.fullName.isNotEmpty) {
-      initial = _otherUserProfile!.fullName[0].toUpperCase();
-    } else if (widget.chat.itemName.isNotEmpty) {
-      initial = widget.chat.itemName[0].toUpperCase();
-    }
+    final avatarInitial = _getAvatarInitial();
+    final hasItemContext = widget.chat.itemName.trim().isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -108,11 +124,15 @@ class _ChatTileState extends State<ChatTile> {
                 children: [
                   CircleAvatar(
                     radius: 24,
-                    backgroundColor: AppColors.primary.withOpacity(0.12),
+                    backgroundColor: displayName == 'Unknown User'
+                        ? AppColors.muted.withOpacity(0.18)
+                        : AppColors.primary.withOpacity(0.12),
                     child: Text(
-                      initial,
-                      style: const TextStyle(
-                        color: AppColors.primary,
+                      avatarInitial,
+                      style: TextStyle(
+                        color: displayName == 'Unknown User'
+                            ? AppColors.muted
+                            : AppColors.primary,
                         fontWeight: FontWeight.w700,
                         fontFamily: 'Plus Jakarta Sans',
                       ),
@@ -122,31 +142,76 @@ class _ChatTileState extends State<ChatTile> {
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          name,
-                          style: TextStyle(
-                            fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
-                            color: AppColors.text,
-                            fontFamily: 'Plus Jakarta Sans',
-                            fontSize: 15,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                displayName,
+                                style: TextStyle(
+                                  fontWeight:
+                                      isBold ? FontWeight.w700 : FontWeight.w600,
+                                  color: AppColors.text,
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  fontSize: 15,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.chat.lastMessage.isEmpty
-                              ? 'No messages yet'
-                              : widget.chat.lastMessage,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isBold ? AppColors.text : AppColors.textSecondary,
-                            fontWeight: isBold ? FontWeight.w500 : FontWeight.w400,
-                            fontFamily: 'Inter',
-                            fontSize: 13,
+                        const SizedBox(height: 2),
+                        if (hasItemContext)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 11,
+                                  color: AppColors.muted,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    widget.chat.itemName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: AppColors.muted,
+                                      fontFamily: 'Inter',
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                widget.chat.lastMessage.isEmpty
+                                    ? 'No messages yet'
+                                    : widget.chat.lastMessage,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isBold
+                                      ? AppColors.text
+                                      : AppColors.textSecondary,
+                                  fontWeight: isBold
+                                      ? FontWeight.w500
+                                      : FontWeight.w400,
+                                  fontFamily: 'Inter',
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),

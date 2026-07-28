@@ -3,7 +3,6 @@ import 'package:flutter/gestures.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../theme/app_colors.dart';
-import '../models/user_profile.dart';
 import 'terms_screen.dart';
 import '../services/notification_event_service.dart';
 

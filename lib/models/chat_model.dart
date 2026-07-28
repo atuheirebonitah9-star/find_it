@@ -7,6 +7,8 @@ class ChatModel {
   final String itemName;
   final String finderUid;
   final String ownerUid;
+  final String? finderName;
+  final String? ownerName;
   final String lastMessage;
   final DateTime lastMessageTime;
   final bool isActive;
@@ -16,6 +18,8 @@ class ChatModel {
     required this.itemName,
     required this.finderUid,
     required this.ownerUid,
+    this.finderName,
+    this.ownerName,
     required this.lastMessage,
     required this.lastMessageTime,
     this.isActive = true,
@@ -28,6 +32,12 @@ class ChatModel {
         itemName: data['itemName'] as String? ?? 'Lost Item',
         finderUid: data['finderUid'] as String? ?? '',
         ownerUid: data['ownerUid'] as String? ?? '',
+        finderName: (data['finderName'] as String?)?.trim().isEmpty == true
+            ? null
+            : (data['finderName'] as String?),
+        ownerName: (data['ownerName'] as String?)?.trim().isEmpty == true
+            ? null
+            : (data['ownerName'] as String?),
         lastMessage: data['lastMessage'] as String? ?? 'No messages yet',
         lastMessageTime:
             (data['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
@@ -45,5 +55,11 @@ class ChatModel {
         isActive: true,
       );
     }
+  }
+
+  String? nameForUser(String uid) {
+    if (uid == finderUid) return finderName;
+    if (uid == ownerUid) return ownerName;
+    return null;
   }
 }
