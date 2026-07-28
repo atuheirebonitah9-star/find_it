@@ -55,11 +55,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) return;
+    // Clear provider messages immediately when this screen is disposed.
+    try {
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
       chatProvider.clearMessages();
-    });
+    } catch (_) {
+      // If provider is not available during dispose, ignore silently.
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -87,9 +89,7 @@ class _ChatScreenState extends State<ChatScreen> {
               builder: (context, chatProvider, child) {
                 if (chatProvider.isLoading && chatProvider.messages.isEmpty) {
                   return const Center(
-                    child: CircularProgressIndicator(
-                      color: AppColors.primary,
-                    ),
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   );
                 }
 
@@ -155,9 +155,7 @@ class _ChatScreenState extends State<ChatScreen> {
         content: Text('Error: $message'),
         backgroundColor: AppColors.errorContainer,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 3),
         action: SnackBarAction(
           label: 'Dismiss',
@@ -210,8 +208,8 @@ class _ChatScreenState extends State<ChatScreen> {
             decoration: BoxDecoration(
               gradient: photoUrl == null
                   ? (displayName == 'Unknown User'
-                      ? null
-                      : AppColors.primaryGradient)
+                        ? null
+                        : AppColors.primaryGradient)
                   : null,
               color: displayName == 'Unknown User' && photoUrl == null
                   ? AppColors.muted.withOpacity(0.25)
@@ -221,8 +219,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: CircleAvatar(
               radius: 20,
               backgroundColor: Colors.transparent,
-              backgroundImage:
-                  photoUrl != null ? NetworkImage(photoUrl) : null,
+              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
               child: photoUrl == null
                   ? Text(
                       initial,
@@ -701,7 +698,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               backgroundColor: AppColors.primary,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.all(Radius.circular(12)),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
                               ),
                             ),
                           );
@@ -818,7 +817,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               backgroundColor: AppColors.primary,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.all(Radius.circular(12)),
+                                borderRadius: BorderRadius.all(
+                                  Radius.circular(12),
+                                ),
                               ),
                             ),
                           );
