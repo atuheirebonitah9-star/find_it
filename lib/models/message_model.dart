@@ -8,6 +8,8 @@ class MessageModel {
   final String id;
   final String text;
   final String senderUid;
+  final String? senderName;
+  final String? senderPhotoUrl;
   final DateTime timestamp;
   final bool isRead;
   final MessageType type;
@@ -18,6 +20,8 @@ class MessageModel {
     required this.id,
     required this.text,
     required this.senderUid,
+    this.senderName,
+    this.senderPhotoUrl,
     required this.timestamp,
     this.isRead = false,
     this.type = MessageType.text,
@@ -36,6 +40,13 @@ class MessageModel {
         id: id,
         text: data['text'] as String? ?? '',
         senderUid: data['senderUid'] as String? ?? '',
+        senderName: (data['senderName'] as String?)?.trim().isEmpty == true
+            ? null
+            : (data['senderName'] as String?),
+        senderPhotoUrl:
+            (data['senderPhotoUrl'] as String?)?.trim().isEmpty == true
+                ? null
+                : (data['senderPhotoUrl'] as String?),
         timestamp:
             (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
         isRead: data['isRead'] as bool? ?? false,
@@ -61,6 +72,8 @@ class MessageModel {
     return {
       'text': text,
       'senderUid': senderUid,
+      'senderName': senderName ?? '',
+      'senderPhotoUrl': senderPhotoUrl ?? '',
       'timestamp': Timestamp.fromDate(timestamp),
       'isRead': isRead,
       'type': type.name,

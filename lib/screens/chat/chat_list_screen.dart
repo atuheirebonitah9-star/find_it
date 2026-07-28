@@ -214,16 +214,18 @@ class _ChatListScreenState extends State<ChatListScreen>
                   child: ChatTile(
                     chat: chat,
                     onTap: () {
+                      final otherUid = chat.finderUid == chatProvider.currentUserUid
+                          ? chat.ownerUid
+                          : chat.finderUid;
+                      final chatStoredName = chat.nameForUser(otherUid);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ChatScreen(
                             chatId: chat.chatId,
-                            otherUserUid:
-                                chat.finderUid == chatProvider.currentUserUid
-                                ? chat.ownerUid
-                                : chat.finderUid,
+                            otherUserUid: otherUid,
                             itemName: chat.itemName,
+                            otherUserNameHint: chatStoredName,
                           ),
                         ),
                       );

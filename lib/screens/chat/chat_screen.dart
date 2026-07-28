@@ -11,12 +11,14 @@ class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUserUid;
   final String itemName;
+  final String? otherUserNameHint;
 
   const ChatScreen({
     super.key,
     required this.chatId,
     required this.otherUserUid,
     required this.itemName,
+    this.otherUserNameHint,
   });
 
   @override
@@ -168,10 +170,32 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ============ APP BAR ============
   PreferredSizeWidget _buildAppBar() {
-    final String initial =
-        (!_isLoadingProfile && _otherUserProfile?.fullName.isNotEmpty == true)
-            ? _otherUserProfile!.fullName[0].toUpperCase()
-            : 'U';
+    final profileName = (_otherUserProfile?.fullName ?? '').trim();
+    final profileEmail = (_otherUserProfile?.email ?? '').trim();
+    final String hint = (widget.otherUserNameHint ?? '').trim();
+    final String displayName;
+    if (_isLoadingProfile) {
+      displayName = 'Loading...';
+    } else if (profileName.isNotEmpty) {
+      displayName = profileName;
+    } else if (hint.isNotEmpty) {
+      displayName = hint;
+    } else if (profileEmail.isNotEmpty) {
+      displayName = profileEmail.contains('@')
+          ? profileEmail.split('@')[0]
+          : profileEmail;
+    } else {
+      displayName = 'Unknown User';
+    }
+
+    final String initial;
+    if (_isLoadingProfile) {
+      initial = 'L';
+    } else if (displayName.isEmpty || displayName == 'Unknown User') {
+      initial = '?';
+    } else {
+      initial = displayName[0].toUpperCase();
+    }
 
     final String? photoUrl = _otherUserProfile?.photoUrl?.isNotEmpty == true
         ? _otherUserProfile!.photoUrl
@@ -182,10 +206,16 @@ class _ChatScreenState extends State<ChatScreen> {
       elevation: 0,
       title: Row(
         children: [
-          // Avatar: profile photo if available, otherwise gradient initial
           Container(
             decoration: BoxDecoration(
-              gradient: photoUrl == null ? AppColors.primaryGradient : null,
+              gradient: photoUrl == null
+                  ? (displayName == 'Unknown User'
+                      ? null
+                      : AppColors.primaryGradient)
+                  : null,
+              color: displayName == 'Unknown User' && photoUrl == null
+                  ? AppColors.muted.withOpacity(0.25)
+                  : null,
               shape: BoxShape.circle,
             ),
             child: CircleAvatar(
@@ -196,8 +226,10 @@ class _ChatScreenState extends State<ChatScreen> {
               child: photoUrl == null
                   ? Text(
                       initial,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: displayName == 'Unknown User'
+                            ? AppColors.muted
+                            : Colors.white,
                         fontWeight: FontWeight.w700,
                         fontSize: 18,
                         fontFamily: 'Plus Jakarta Sans',
@@ -212,9 +244,7 @@ class _ChatScreenState extends State<ChatScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _isLoadingProfile
-                      ? 'Loading...'
-                      : _otherUserProfile?.fullName ?? 'User',
+                  displayName,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -224,29 +254,29 @@ class _ChatScreenState extends State<ChatScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                Row(
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.secondary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Item: ${widget.itemName}',
-                      style: const TextStyle(
-                        fontSize: 12,
+                if (widget.itemName.trim().isNotEmpty)
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        size: 10,
                         color: AppColors.muted,
-                        fontFamily: 'Inter',
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          widget.itemName,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.muted,
+                            fontFamily: 'Inter',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ),

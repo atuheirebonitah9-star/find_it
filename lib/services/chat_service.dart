@@ -18,6 +18,90 @@ class ChatService {
     return '${sorted[0]}_${sorted[1]}';
   }
 
+  String? _getAuthDisplayNameFor(String uid) {
+    if (uid == _auth.currentUser?.uid) {
+      final dn = _auth.currentUser?.displayName?.trim();
+      if (dn != null && dn.isNotEmpty) return dn;
+    }
+    return null;
+  }
+
+  String _inferDisplayName(String uid) {
+    if (uid == _auth.currentUser?.uid) {
+      final dn = _auth.currentUser?.displayName?.trim();
+      if (dn != null && dn.isNotEmpty) return dn;
+      final email = _auth.currentUser?.email?.trim();
+      if (email != null && email.isNotEmpty) {
+        return email.contains('@') ? email.split('@')[0] : email;
+      }
+    }
+    return '';
+  }
+
+  Future<void> _ensureUserDocument(String uid, {String? fallbackName}) async {
+    if (uid.trim().isEmpty) return;
+    try {
+      final doc = _firestore.collection('users').doc(uid);
+      final snapshot = await doc.get();
+      if (snapshot.exists) {
+        final data = snapshot.data() ?? <String, dynamic>{};
+        final existingName = (data['fullName'] as String?)?.trim() ?? '';
+        if (existingName.isEmpty) {
+          final authName = (uid == _auth.currentUser?.uid)
+              ? _auth.currentUser?.displayName?.trim()
+              : null;
+          final bestName = (authName != null && authName.isNotEmpty)
+              ? authName
+              : (fallbackName ?? '').trim();
+          if (bestName.isNotEmpty) {
+            await doc.set(<String, dynamic>{
+              'uid': uid,
+              'email': data['email'] ??
+                  (uid == _auth.currentUser?.uid
+                      ? _auth.currentUser?.email ?? ''
+                      : ''),
+              'fullName': bestName,
+              'photoUrl': data['photoUrl'] ??
+                  (uid == _auth.currentUser?.uid
+                      ? _auth.currentUser?.photoURL ?? ''
+                      : ''),
+              'studentId': data['studentId'] ?? '',
+              'regNumber': data['regNumber'] ?? '',
+              'course': data['course'] ?? '',
+              'updatedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+          }
+        }
+      } else {
+        final authName = (uid == _auth.currentUser?.uid)
+            ? _auth.currentUser?.displayName?.trim()
+            : null;
+        final bestName = (authName != null && authName.isNotEmpty)
+            ? authName
+            : (fallbackName ?? '').trim();
+        if (bestName.isNotEmpty) {
+          await doc.set(<String, dynamic>{
+            'uid': uid,
+            'email': uid == _auth.currentUser?.uid
+                ? _auth.currentUser?.email ?? ''
+                : '',
+            'fullName': bestName,
+            'photoUrl': uid == _auth.currentUser?.uid
+                ? _auth.currentUser?.photoURL ?? ''
+                : '',
+            'studentId': '',
+            'regNumber': '',
+            'course': '',
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('ChatService: ensureUserDocument failed for $uid: $e');
+    }
+  }
+
   Future<String> createChat({
     required String finderUid,
     required String ownerUid,
@@ -40,6 +124,21 @@ class ChatService {
       return chatId;
     }
 
+    final finderNameFuture = getUserProfile(finderUid);
+    final ownerNameFuture = getUserProfile(ownerUid);
+    final results = await Future.wait([finderNameFuture, ownerNameFuture]);
+    final finderProfile = results[0];
+    final ownerProfile = results[1];
+
+    final finderName =
+        (finderProfile?.fullName.trim().isNotEmpty == true)
+            ? finderProfile!.fullName.trim()
+            : _inferDisplayName(finderUid);
+    final ownerName =
+        (ownerProfile?.fullName.trim().isNotEmpty == true)
+            ? ownerProfile!.fullName.trim()
+            : _inferDisplayName(ownerUid);
+
     await _firestore.collection('chats').doc(chatId).set({
       'finderUid': finderUid,
       'ownerUid': ownerUid,
@@ -49,7 +148,16 @@ class ChatService {
       'lastMessageTime': FieldValue.serverTimestamp(),
       'isActive': true,
       'createdAt': FieldValue.serverTimestamp(),
+      if (finderName.isNotEmpty) 'finderName': finderName,
+      if (ownerName.isNotEmpty) 'ownerName': ownerName,
     });
+
+    if (finderName.isNotEmpty) {
+      _ensureUserDocument(finderUid, fallbackName: finderName);
+    }
+    if (ownerName.isNotEmpty) {
+      _ensureUserDocument(ownerUid, fallbackName: ownerName);
+    }
 
     return chatId;
   }
@@ -74,6 +182,17 @@ class ChatService {
       final chatData = chatDoc.data() as Map<String, dynamic>;
       final finderUid = chatData['finderUid'] as String? ?? '';
       final ownerUid = chatData['ownerUid'] as String? ?? '';
+      final senderUid = currentUserUid!;
+
+      final senderNameFromAuth = _getAuthDisplayNameFor(senderUid) ?? '';
+      final senderPhotoFromAuth =
+          (senderUid == _auth.currentUser?.uid)
+              ? _auth.currentUser?.photoURL?.trim()
+              : null;
+      final senderPhotoUrl =
+          (senderPhotoFromAuth != null && senderPhotoFromAuth.isNotEmpty)
+              ? senderPhotoFromAuth
+              : '';
 
       final batch = _firestore.batch();
 
@@ -85,29 +204,52 @@ class ChatService {
 
       batch.set(messageRef, {
         'text': trimmedText,
-        'senderUid': currentUserUid,
+        'senderUid': senderUid,
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
         'type': 'text',
+        'senderName': senderNameFromAuth,
+        'senderPhotoUrl': senderPhotoUrl,
       });
 
-      batch.update(_firestore.collection('chats').doc(chatId), {
+      final chatUpdate = <String, dynamic>{
         'lastMessage': trimmedText,
         'lastMessageTime': FieldValue.serverTimestamp(),
-      });
+      };
+      if (senderNameFromAuth.isNotEmpty) {
+        if (senderUid == finderUid) {
+          chatUpdate['finderName'] = senderNameFromAuth;
+        } else if (senderUid == ownerUid) {
+          chatUpdate['ownerName'] = senderNameFromAuth;
+        }
+      }
+      if (senderPhotoUrl.isNotEmpty) {
+        if (senderUid == finderUid) {
+          chatUpdate['finderPhotoUrl'] = senderPhotoUrl;
+        } else if (senderUid == ownerUid) {
+          chatUpdate['ownerPhotoUrl'] = senderPhotoUrl;
+        }
+      }
+
+      batch.update(_firestore.collection('chats').doc(chatId), chatUpdate);
 
       await batch.commit();
 
-      final recipientUid = (finderUid == currentUserUid) ? ownerUid : finderUid;
+      if (senderNameFromAuth.isNotEmpty) {
+        _ensureUserDocument(senderUid, fallbackName: senderNameFromAuth);
+      }
+
+      final recipientUid = (finderUid == senderUid) ? ownerUid : finderUid;
       final itemName = chatData['itemName'] as String? ?? '';
 
-      if (recipientUid.isNotEmpty && recipientUid != currentUserUid) {
+      if (recipientUid.isNotEmpty && recipientUid != senderUid) {
         _eventService.emit(
           NotificationEvent(
             type: NotificationEventType.messageReceived,
             data: {
               'chatId': chatId,
-              'senderUid': currentUserUid,
+              'senderUid': senderUid,
+              'senderName': senderNameFromAuth,
               'text': trimmedText,
               'itemName': itemName,
             },
@@ -139,6 +281,17 @@ class ChatService {
       final chatData = chatDoc.data() as Map<String, dynamic>;
       final finderUid = chatData['finderUid'] as String? ?? '';
       final ownerUid = chatData['ownerUid'] as String? ?? '';
+      final senderUid = currentUserUid!;
+
+      final senderNameFromAuth = _getAuthDisplayNameFor(senderUid) ?? '';
+      final senderPhotoFromAuth =
+          (senderUid == _auth.currentUser?.uid)
+              ? _auth.currentUser?.photoURL?.trim()
+              : null;
+      final senderPhotoUrl =
+          (senderPhotoFromAuth != null && senderPhotoFromAuth.isNotEmpty)
+              ? senderPhotoFromAuth
+              : '';
 
       final batch = _firestore.batch();
 
@@ -150,31 +303,54 @@ class ChatService {
 
       batch.set(messageRef, {
         'text': '',
-        'senderUid': currentUserUid,
+        'senderUid': senderUid,
         'timestamp': FieldValue.serverTimestamp(),
         'isRead': false,
         'type': 'voice',
         'voiceUrl': voiceUrl,
         'voiceDuration': voiceDuration,
+        'senderName': senderNameFromAuth,
+        'senderPhotoUrl': senderPhotoUrl,
       });
 
-      batch.update(_firestore.collection('chats').doc(chatId), {
+      final chatUpdate = <String, dynamic>{
         'lastMessage': 'Voice message',
         'lastMessageTime': FieldValue.serverTimestamp(),
-      });
+      };
+      if (senderNameFromAuth.isNotEmpty) {
+        if (senderUid == finderUid) {
+          chatUpdate['finderName'] = senderNameFromAuth;
+        } else if (senderUid == ownerUid) {
+          chatUpdate['ownerName'] = senderNameFromAuth;
+        }
+      }
+      if (senderPhotoUrl.isNotEmpty) {
+        if (senderUid == finderUid) {
+          chatUpdate['finderPhotoUrl'] = senderPhotoUrl;
+        } else if (senderUid == ownerUid) {
+          chatUpdate['ownerPhotoUrl'] = senderPhotoUrl;
+        }
+      }
+
+      batch.update(_firestore.collection('chats').doc(chatId), chatUpdate);
 
       await batch.commit();
 
-      final recipientUid = (finderUid == currentUserUid) ? ownerUid : finderUid;
+      if (senderNameFromAuth.isNotEmpty) {
+        _ensureUserDocument(senderUid, fallbackName: senderNameFromAuth);
+      }
+
+      final recipientUid = (finderUid == senderUid) ? ownerUid : finderUid;
       final itemName = chatData['itemName'] as String? ?? '';
 
-      if (recipientUid.isNotEmpty && recipientUid != currentUserUid) {
+      if (recipientUid.isNotEmpty && recipientUid != senderUid) {
         _eventService.emit(
           NotificationEvent(
             type: NotificationEventType.messageReceived,
             data: {
               'chatId': chatId,
-              'senderUid': currentUserUid,
+              'senderUid': senderUid,
+              'senderName': senderNameFromAuth,
               'text': 'Voice message',
               'itemName': itemName,
             },
@@ -270,8 +446,48 @@ class ChatService {
           .collection('users')
           .doc(uid)
           .get();
-      if (!doc.exists) return null;
-      return UserProfile.fromMap(uid, doc.data() as Map<String, dynamic>);
+      if (doc.exists) {
+        final data = doc.data() as Map<String, dynamic>;
+        var profile = UserProfile.fromMap(uid, data);
+
+        if (profile.fullName.trim().isEmpty && uid == currentUserUid) {
+          final displayName = _auth.currentUser?.displayName;
+          if (displayName != null && displayName.trim().isNotEmpty) {
+            profile = UserProfile(
+              uid: profile.uid,
+              fullName: displayName,
+              email: profile.email,
+              studentId: profile.studentId,
+              regNumber: profile.regNumber,
+              course: profile.course,
+              photoUrl: profile.photoUrl,
+              createdAt: profile.createdAt,
+              updatedAt: profile.updatedAt,
+            );
+          }
+        }
+        return profile;
+      }
+
+      if (uid == currentUserUid) {
+        final authUser = _auth.currentUser;
+        if (authUser != null) {
+          final constructed = UserProfile(
+            uid: uid,
+            fullName: authUser.displayName ?? authUser.email ?? 'Unknown User',
+            email: authUser.email ?? '',
+            studentId: '',
+            regNumber: '',
+            course: '',
+            photoUrl: authUser.photoURL,
+            createdAt: DateTime.now(),
+            updatedAt: null,
+          );
+          _ensureUserDocument(uid, fallbackName: constructed.fullName);
+          return constructed;
+        }
+      }
+      return null;
     } catch (e) {
       debugPrint('Error getting user profile: $e');
       return null;
