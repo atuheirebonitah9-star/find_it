@@ -13,8 +13,7 @@ import '../../theme/app_colors.dart';
 /// Cloudinary URL and its recorded duration once recording finishes.
 class MessageInputField extends StatefulWidget {
   final Future<void> Function(String text) onSend;
-  final Future<void> Function(String voiceUrl, int durationSeconds)
-  onSendVoice;
+  final Future<void> Function(String voiceUrl, int durationSeconds) onSendVoice;
 
   const MessageInputField({
     super.key,
@@ -246,8 +245,10 @@ class _MessageInputFieldState extends State<MessageInputField> {
                   fontFamily: 'Inter',
                 ),
                 border: InputBorder.none,
-                contentPadding:
-                EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -255,14 +256,11 @@ class _MessageInputFieldState extends State<MessageInputField> {
         const SizedBox(width: 8),
         _hasText
             ? _RoundIconButton(
-          icon: Icons.send_rounded,
-          loading: _isSendingText,
-          onTap: _isSendingText ? null : _handleSendText,
-        )
-            : _RoundIconButton(
-          icon: Icons.mic,
-          onTap: _startRecording,
-        ),
+                icon: Icons.send_rounded,
+                loading: _isSendingText,
+                onTap: _isSendingText ? null : _handleSendText,
+              )
+            : _RoundIconButton(icon: Icons.mic, onTap: _startRecording),
       ],
     );
   }
@@ -364,13 +362,13 @@ class _RoundIconButton extends StatelessWidget {
         child: Center(
           child: loading
               ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white,
-            ),
-          )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
               : Icon(icon, color: Colors.white, size: 22),
         ),
       ),

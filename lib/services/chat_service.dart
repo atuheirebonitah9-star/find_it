@@ -56,12 +56,14 @@ class ChatService {
           if (bestName.isNotEmpty) {
             await doc.set(<String, dynamic>{
               'uid': uid,
-              'email': data['email'] ??
+              'email':
+                  data['email'] ??
                   (uid == _auth.currentUser?.uid
                       ? _auth.currentUser?.email ?? ''
                       : ''),
               'fullName': bestName,
-              'photoUrl': data['photoUrl'] ??
+              'photoUrl':
+                  data['photoUrl'] ??
                   (uid == _auth.currentUser?.uid
                       ? _auth.currentUser?.photoURL ?? ''
                       : ''),
@@ -116,11 +118,13 @@ class ChatService {
 
     String chatId = generateChatId(finderUid, ownerUid);
 
-    DocumentSnapshot doc = await _firestore
-        .collection('chats')
-        .doc(chatId)
-        .get();
+    final chatRef = _firestore.collection('chats').doc(chatId);
+    final doc = await chatRef.get();
     if (doc.exists) {
+      await chatRef.set({
+        'participants': FieldValue.arrayUnion([finderUid, ownerUid]),
+        'isActive': true,
+      }, SetOptions(merge: true));
       return chatId;
     }
 
@@ -130,14 +134,12 @@ class ChatService {
     final finderProfile = results[0];
     final ownerProfile = results[1];
 
-    final finderName =
-        (finderProfile?.fullName.trim().isNotEmpty == true)
-            ? finderProfile!.fullName.trim()
-            : _inferDisplayName(finderUid);
-    final ownerName =
-        (ownerProfile?.fullName.trim().isNotEmpty == true)
-            ? ownerProfile!.fullName.trim()
-            : _inferDisplayName(ownerUid);
+    final finderName = (finderProfile?.fullName.trim().isNotEmpty == true)
+        ? finderProfile!.fullName.trim()
+        : _inferDisplayName(finderUid);
+    final ownerName = (ownerProfile?.fullName.trim().isNotEmpty == true)
+        ? ownerProfile!.fullName.trim()
+        : _inferDisplayName(ownerUid);
 
     await _firestore.collection('chats').doc(chatId).set({
       'finderUid': finderUid,
@@ -185,16 +187,16 @@ class ChatService {
       final senderUid = currentUserUid!;
 
       final senderNameFromAuth = _getAuthDisplayNameFor(senderUid) ?? '';
-      final senderPhotoFromAuth =
-          (senderUid == _auth.currentUser?.uid)
-              ? _auth.currentUser?.photoURL?.trim()
-              : null;
+      final senderPhotoFromAuth = (senderUid == _auth.currentUser?.uid)
+          ? _auth.currentUser?.photoURL?.trim()
+          : null;
       final senderPhotoUrl =
           (senderPhotoFromAuth != null && senderPhotoFromAuth.isNotEmpty)
-              ? senderPhotoFromAuth
-              : '';
+          ? senderPhotoFromAuth
+          : '';
 
       final batch = _firestore.batch();
+      final now = Timestamp.now();
 
       final messageRef = _firestore
           .collection('chats')
@@ -205,7 +207,7 @@ class ChatService {
       batch.set(messageRef, {
         'text': trimmedText,
         'senderUid': senderUid,
-        'timestamp': FieldValue.serverTimestamp(),
+        'timestamp': now,
         'isRead': false,
         'type': 'text',
         'senderName': senderNameFromAuth,
@@ -214,7 +216,9 @@ class ChatService {
 
       final chatUpdate = <String, dynamic>{
         'lastMessage': trimmedText,
-        'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastMessageTime': now,
+        'participants': FieldValue.arrayUnion([finderUid, ownerUid]),
+        'isActive': true,
       };
       if (senderNameFromAuth.isNotEmpty) {
         if (senderUid == finderUid) {
@@ -284,14 +288,13 @@ class ChatService {
       final senderUid = currentUserUid!;
 
       final senderNameFromAuth = _getAuthDisplayNameFor(senderUid) ?? '';
-      final senderPhotoFromAuth =
-          (senderUid == _auth.currentUser?.uid)
-              ? _auth.currentUser?.photoURL?.trim()
-              : null;
+      final senderPhotoFromAuth = (senderUid == _auth.currentUser?.uid)
+          ? _auth.currentUser?.photoURL?.trim()
+          : null;
       final senderPhotoUrl =
           (senderPhotoFromAuth != null && senderPhotoFromAuth.isNotEmpty)
-              ? senderPhotoFromAuth
-              : '';
+          ? senderPhotoFromAuth
+          : '';
 
       final batch = _firestore.batch();
 
@@ -301,10 +304,11 @@ class ChatService {
           .collection('messages')
           .doc();
 
+      final now = Timestamp.now();
       batch.set(messageRef, {
         'text': '',
         'senderUid': senderUid,
-        'timestamp': FieldValue.serverTimestamp(),
+        'timestamp': now,
         'isRead': false,
         'type': 'voice',
         'voiceUrl': voiceUrl,
@@ -315,7 +319,9 @@ class ChatService {
 
       final chatUpdate = <String, dynamic>{
         'lastMessage': 'Voice message',
-        'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastMessageTime': now,
+        'participants': FieldValue.arrayUnion([finderUid, ownerUid]),
+        'isActive': true,
       };
       if (senderNameFromAuth.isNotEmpty) {
         if (senderUid == finderUid) {
@@ -399,10 +405,7 @@ class ChatService {
                 return finderUid == uid || ownerUid == uid;
               })
               .map((doc) {
-                return ChatModel.fromFirestore(
-                  doc.data(),
-                  doc.id,
-                );
+                return ChatModel.fromFirestore(doc.data(), doc.id);
               })
               .toList();
           chats.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));

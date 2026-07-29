@@ -52,26 +52,73 @@ class ChatProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    _messagesSubscription = _chatService.getMessages(chatId).listen(
-      (messageList) {
-        debugPrint('Messages loaded: ${messageList.length}');
-        _messages = messageList;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (error) {
-        debugPrint('Error loading messages: $error');
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+    _messagesSubscription = _chatService
+        .getMessages(chatId)
+        .listen(
+          (messageList) {
+            debugPrint('Messages loaded: ${messageList.length}');
+            final placeholderMessages = _messages
+                .where((message) => message.id.startsWith('local-'))
+                .toList();
+
+            final mixedMessages = <MessageModel>[];
+            mixedMessages.addAll(messageList);
+
+            for (final placeholder in placeholderMessages) {
+              final existsOnServer = messageList.any((serverMessage) {
+                final sameText = serverMessage.text == placeholder.text;
+                final sameSender =
+                    serverMessage.senderUid == placeholder.senderUid;
+                final sameType = serverMessage.type == placeholder.type;
+                final sameVoiceUrl =
+                    serverMessage.voiceUrl == placeholder.voiceUrl;
+                return sameText && sameSender && sameType && sameVoiceUrl;
+              });
+              if (!existsOnServer) {
+                mixedMessages.add(placeholder);
+              }
+            }
+
+            mixedMessages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+            _messages = mixedMessages;
+            _isLoading = false;
+            notifyListeners();
+          },
+          onError: (error) {
+            debugPrint('Error loading messages: $error');
+            _isLoading = false;
+            notifyListeners();
+          },
+        );
   }
 
   Future<void> sendMessage(String chatId, String text) async {
+    final currentUid = currentUserUid;
+    if (currentUid != null && _currentChatId == chatId) {
+      final optimistic = MessageModel(
+        id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+        text: text,
+        senderUid: currentUid,
+        senderName: null,
+        senderPhotoUrl: null,
+        timestamp: DateTime.now(),
+        isRead: true,
+        type: MessageType.text,
+      );
+      _messages = [..._messages, optimistic];
+      notifyListeners();
+    }
+
     try {
       await _chatService.sendMessage(chatId: chatId, text: text);
     } catch (e) {
       debugPrint('Error in provider sendMessage: $e');
+      if (_currentChatId == chatId) {
+        _messages.removeWhere(
+          (m) => m.id.startsWith('local-') && m.text == text,
+        );
+        notifyListeners();
+      }
       rethrow;
     }
   }
@@ -81,6 +128,24 @@ class ChatProvider extends ChangeNotifier {
     String voiceUrl,
     int voiceDuration,
   ) async {
+    final currentUid = currentUserUid;
+    if (currentUid != null && _currentChatId == chatId) {
+      final optimistic = MessageModel(
+        id: 'local-${DateTime.now().microsecondsSinceEpoch}',
+        text: 'Voice message',
+        senderUid: currentUid,
+        senderName: null,
+        senderPhotoUrl: null,
+        timestamp: DateTime.now(),
+        isRead: true,
+        type: MessageType.voice,
+        voiceUrl: voiceUrl,
+        voiceDuration: voiceDuration,
+      );
+      _messages = [..._messages, optimistic];
+      notifyListeners();
+    }
+
     try {
       await _chatService.sendVoiceMessage(
         chatId: chatId,
@@ -89,6 +154,12 @@ class ChatProvider extends ChangeNotifier {
       );
     } catch (e) {
       debugPrint('Error in provider sendVoiceMessage: $e');
+      if (_currentChatId == chatId) {
+        _messages.removeWhere(
+          (m) => m.id.startsWith('local-') && m.voiceUrl == voiceUrl,
+        );
+        notifyListeners();
+      }
       rethrow;
     }
   }
