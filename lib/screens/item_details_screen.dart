@@ -9,11 +9,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ItemDetailsScreen extends StatelessWidget {
   final String itemId;
   final Map<String, dynamic> data;
+  /// When provided, the Contact button opens this existing chat directly
+  /// instead of creating a new one (used when navigating from a strong match).
+  final String? chatId;
 
   const ItemDetailsScreen({
     super.key,
     required this.itemId,
     required this.data,
+    this.chatId,
   });
 
   @override
@@ -344,62 +348,69 @@ class ItemDetailsScreen extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: () async {
           final currentUser = FirebaseAuth.instance.currentUser;
-          final reporterUid = data['userId'];
+          final reporterUid = data['userId'] as String?;
 
-          if (currentUser != null && reporterUid != null) {
-            final String finderUid;
-            final String ownerUid;
-
-            if (isLost) {
-              finderUid = currentUser.uid;
-              ownerUid = reporterUid;
-            } else {
-              finderUid = reporterUid;
-              ownerUid = currentUser.uid;
-            }
-
-            try {
-              final chatProvider = Provider.of<ChatProvider>(
-                context,
-                listen: false,
+          if (currentUser == null || reporterUid == null) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Could not contact reporter'),
+                  backgroundColor: AppColors.errorContainer,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
               );
-              final chatId = await chatProvider.createChat(
+            }
+            return;
+          }
+
+          try {
+            final String resolvedChatId;
+
+            if (chatId != null) {
+              // Strong-match path: chat already exists, open it directly
+              resolvedChatId = chatId!;
+            } else {
+              // Normal path: create or reuse a chat
+              final chatProvider =
+                  Provider.of<ChatProvider>(context, listen: false);
+              final String finderUid;
+              final String ownerUid;
+
+              if (isLost) {
+                finderUid = currentUser.uid;
+                ownerUid = reporterUid;
+              } else {
+                finderUid = reporterUid;
+                ownerUid = currentUser.uid;
+              }
+
+              resolvedChatId = await chatProvider.createChat(
                 finderUid: finderUid,
                 ownerUid: ownerUid,
                 itemName: data['itemName'] ?? 'Item',
               );
-
-              if (context.mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatScreen(
-                      chatId: chatId,
-                      otherUserUid: reporterUid,
-                      itemName: data['itemName'] ?? 'Item',
-                    ),
-                  ),
-                );
-              }
-            } catch (e) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to open chat: $e'),
-                    backgroundColor: AppColors.errorContainer,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                );
-              }
             }
-          } else {
+
+            if (context.mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    chatId: resolvedChatId,
+                    otherUserUid: reporterUid,
+                    itemName: data['itemName'] ?? 'Item',
+                  ),
+                ),
+              );
+            }
+          } catch (e) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Could not contact reporter'),
+                  content: Text('Failed to open chat: $e'),
                   backgroundColor: AppColors.errorContainer,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(
@@ -410,7 +421,7 @@ class ItemDetailsScreen extends StatelessWidget {
             }
           }
         },
-        icon: Icon(
+        icon: const Icon(
           Icons.message_outlined,
           color: Colors.black,
           size: 22,

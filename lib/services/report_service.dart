@@ -54,7 +54,6 @@ class ReportService {
     return geminiResult ?? embeddingResult;
   }
 
-  /// Uploads an image file to Cloudinary and returns the secure URL.
   Future<String?> uploadImage(String? imagePath) async {
     if (imagePath == null || imagePath.isEmpty) return null;
     try {
@@ -66,7 +65,6 @@ class ReportService {
     }
   }
 
-  /// Analyzes image and extracts text/identifiers from it
   Future<ExtractedIdentifiers?> analyzeImage(String? imageUrl) async {
     if (imageUrl == null || imageUrl.isEmpty) return null;
     try {
