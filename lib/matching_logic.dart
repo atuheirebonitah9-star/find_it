@@ -16,6 +16,7 @@ class Report {
   final String? imageUrl;
   final ExtractedIdentifiers? extractedIdentifiers;
   final bool isLost;
+  final String? status;
 
   Report({
     required this.category,
@@ -28,6 +29,7 @@ class Report {
     this.imageUrl,
     this.extractedIdentifiers,
     this.isLost = true,
+    this.status,
   });
 }
 
@@ -174,7 +176,7 @@ Future<MatchResult> compareReports(Report lost, Report found) async {
   }
 }
 
-// ============ NEW: Get Match with Details ============
+// ============ FIXED: Get Match with Details ============
 Future<MatchDocument> compareReportsWithDetails(Report lost, Report found) async {
   final result = await compareReports(lost, found);
   
@@ -194,8 +196,23 @@ Future<MatchDocument> compareReportsWithDetails(Report lost, Report found) async
   // Cap score at 1.0
   if (score > 1.0) score = 1.0;
   
+  // FIX: Create a new Report that explicitly preserves isLost and status
+  final reportWithStatus = Report(
+    category: found.category,
+    location: found.location,
+    date: found.date,
+    description: found.description,
+    userId: found.userId,
+    itemName: found.itemName,
+    embedding: found.embedding,
+    imageUrl: found.imageUrl,
+    extractedIdentifiers: found.extractedIdentifiers,
+    isLost: found.isLost,  // PRESERVE isLost
+    status: found.status,   // PRESERVE status
+  );
+  
   return MatchDocument(
-    report: found,
+    report: reportWithStatus,  // Use the preserved report
     result: result,
     score: score,
     details: MatchDetails(

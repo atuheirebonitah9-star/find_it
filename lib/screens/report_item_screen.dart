@@ -23,7 +23,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
   final stt.SpeechToText _speech = stt.SpeechToText();
   final ImagePicker _imagePicker = ImagePicker();
   final ImageClassificationService _classificationService =
-  ImageClassificationService();
+      ImageClassificationService();
 
   bool isLost = true;
   String? selectedCategory;
@@ -128,7 +128,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
               surface: AppColors.surface,
               onSurface: AppColors.text,
             ),
-            dialogBackgroundColor: AppColors.surface,
+            dialogTheme: DialogThemeData(backgroundColor: AppColors.surface),
           ),
           child: child!,
         );
@@ -210,7 +210,10 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppColors.primary),
+                leading: const Icon(
+                  Icons.photo_library,
+                  color: AppColors.primary,
+                ),
                 title: const Text(
                   'Choose from Gallery',
                   style: TextStyle(color: AppColors.text),
@@ -245,14 +248,20 @@ class _ReportItemScreenState extends State<ReportItemScreen>
     try {
       // Run Cloudinary upload and AI classification in parallel.
       // Classification reads the local file so it does not need to wait for upload.
-      final uploadFuture = CloudinaryService.uploadItemImage(File(pickedFile.path));
-      final classifyFuture = _classificationService.classifyImage(pickedFile.path);
+      final uploadFuture = CloudinaryService.uploadItemImage(
+        File(pickedFile.path),
+      );
+      final classifyFuture = _classificationService.classifyImage(
+        pickedFile.path,
+      );
 
       final cloudinaryUrl = await uploadFuture;
       final category = await classifyFuture;
 
       if (cloudinaryUrl == null) {
-        throw Exception('Image upload failed. Check your network and try again.');
+        throw Exception(
+          'Image upload failed. Check your network and try again.',
+        );
       }
 
       if (!mounted) return;
@@ -321,50 +330,45 @@ class _ReportItemScreenState extends State<ReportItemScreen>
   }
 
   Future<void> _handleMatches(List<MatchDocument> matches) async {
-    _clearForm();
+  _clearForm();
 
-    // Filter out MatchResult.none — only show real matches
-    final realMatches = matches
-        .where((m) => m.result != MatchResult.none)
-        .toList();
+  final realMatches =
+      matches.where((m) => m.result != MatchResult.none).toList();
 
-    if (realMatches.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isLost
-                  ? 'Lost report submitted. No matches found yet.'
-                  : 'Found report submitted. No matches found yet.',
-            ),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
+  if (realMatches.isEmpty) {
     if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PossibleMatchesScreen(
-            matches: realMatches,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isLost
+                ? 'Lost report submitted. No matches found yet.'
+                : 'Found report submitted. No matches found yet.',
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       );
     }
+    return;
   }
+
+  if (mounted) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PossibleMatchesScreen(matches: realMatches),
+      ),
+    );
+  }
+}
 
   Future<void> _submitReport() async {
     if (_formKey.currentState!.validate() &&
         selectedCategory != null &&
         selectedDate != null) {
-
       // Show loading indicator
       showDialog(
         context: context,
@@ -468,12 +472,12 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: isLost
                       ? [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
                       : null,
                 ),
                 child: Row(
@@ -511,12 +515,12 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   borderRadius: BorderRadius.circular(10),
                   boxShadow: !isLost
                       ? [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
                       : null,
                 ),
                 child: Row(
@@ -566,7 +570,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.15),
+                color: AppColors.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -598,7 +602,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   Image.file(_selectedImage!, fit: BoxFit.cover),
                   if (_isUploadingImage || _isClassifying)
                     Container(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -631,7 +635,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                     right: 8,
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         shape: BoxShape.circle,
                       ),
                       child: IconButton(
@@ -649,7 +653,9 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                       ),
                     ),
                   ),
-                  if (_autoCategory != null && !_isClassifying && !_isUploadingImage)
+                  if (_autoCategory != null &&
+                      !_isClassifying &&
+                      !_isUploadingImage)
                     Positioned(
                       bottom: 12,
                       left: 12,
@@ -663,7 +669,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.black.withValues(alpha: 0.2),
                               blurRadius: 8,
                             ),
                           ],
@@ -700,7 +706,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.9),
+                          color: Colors.green.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Row(
@@ -750,7 +756,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.15),
+                      color: AppColors.primary.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -852,7 +858,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
               setState(() => selectedCategory = value);
             },
             validator: (value) =>
-            value == null ? 'Please select a category' : null,
+                value == null ? 'Please select a category' : null,
           ),
         ),
       ],
@@ -935,7 +941,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: AppColors.primary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(Icons.arrow_drop_down, color: AppColors.primary),
@@ -1090,7 +1096,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
             ),
           ),
           validator: (value) =>
-          value == null || value.isEmpty ? 'Required' : null,
+              value == null || value.isEmpty ? 'Required' : null,
         ),
       ],
     );
@@ -1172,7 +1178,9 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                     color: AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.surfaceContainerHighest.withOpacity(0.3),
+                      color: AppColors.surfaceContainerHighest.withValues(
+                        alpha: 0.3,
+                      ),
                     ),
                   ),
                   child: Row(
@@ -1180,7 +1188,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.15),
+                          color: AppColors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(
@@ -1195,9 +1203,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              isLost
-                                  ? 'Report Lost Item'
-                                  : 'Report Found Item',
+                              isLost ? 'Report Lost Item' : 'Report Found Item',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.text,
@@ -1270,9 +1276,7 @@ class _ReportItemScreenState extends State<ReportItemScreen>
                   suffixIcon: IconButton(
                     icon: Icon(
                       _isListening ? Icons.mic : Icons.mic_none,
-                      color: _isListening
-                          ? AppColors.primary
-                          : AppColors.muted,
+                      color: _isListening ? AppColors.primary : AppColors.muted,
                     ),
                     onPressed: () {
                       if (_isListening) {

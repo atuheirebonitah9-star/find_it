@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -15,101 +14,73 @@ class PossibleMatchesScreen extends StatelessWidget {
   const PossibleMatchesScreen({super.key, required this.matches});
 
   Future<void> _openChat(BuildContext context, MatchDocument match) async {
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
-    final matchUserUid = match.report.userId;
+    try {
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+      final matchUserUid = match.report.userId;
 
-    if (currentUserUid == null || matchUserUid == null) {
+      if (currentUserUid == null || matchUserUid == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not identify users for chat'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      final bool isMatchLost = match.report.isLost ?? false;
+
+      final String finderUid;
+      final String ownerUid;
+
+      if (isMatchLost) {
+        finderUid = currentUserUid;
+        ownerUid = matchUserUid;
+      } else {
+        finderUid = matchUserUid;
+        ownerUid = currentUserUid;
+      }
+
+      final chatId = await chatProvider.createChat(
+        finderUid: finderUid,
+        ownerUid: ownerUid,
+        itemName: match.report.itemName,
+      );
+
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              chatId: chatId,
+              otherUserUid: matchUserUid,
+              itemName: match.report.itemName,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not identify users for chat'),
+          SnackBar(
+            content: Text('Could not open chat: $e'),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
-      return;
-    }
-
-    final String finderUid;
-    final String ownerUid;
-
-    if (match.report.isLost) {
-      // Match report is a LOST report → match.user is OWNER, current user is FINDER
-      finderUid = currentUserUid;
-      ownerUid = matchUserUid;
-    } else {
-      // Match report is a FOUND report → match.user is FINDER, current user is OWNER
-      finderUid = matchUserUid;
-      ownerUid = currentUserUid;
-    }
-
-    final chatId = await chatProvider.createChat(
-      finderUid: finderUid,
-      ownerUid: ownerUid,
-      itemName: match.report.itemName,
-    );
-
-    if (context.mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatScreen(
-            chatId: chatId,
-            otherUserUid: matchUserUid,
-            itemName: match.report.itemName,
-          ),
-        ),
-      );
     }
   }
 
-  Future<void> _openDetails(
-      BuildContext context, MatchDocument match, bool isStrong) async {
-    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
-    final matchUserUid = match.report.userId;
-
-    // For strong matches, pre-create/resolve the chat so Contact Finder
-    // opens it directly from ItemDetailsScreen.
-    String? resolvedChatId;
-    if (isStrong && currentUserUid != null && matchUserUid != null) {
-      try {
-        final chatProvider =
-            Provider.of<ChatProvider>(context, listen: false);
-
-        final String finderUid;
-        final String ownerUid;
-        if (match.report.isLost) {
-          // Match is a LOST report → current user is finder
-          finderUid = currentUserUid;
-          ownerUid = matchUserUid;
-        } else {
-          // Match is a FOUND report → match user is finder
-          finderUid = matchUserUid;
-          ownerUid = currentUserUid;
-        }
-
-        resolvedChatId = await chatProvider.createChat(
-          finderUid: finderUid,
-          ownerUid: ownerUid,
-          itemName: match.report.itemName,
-        );
-      } catch (_) {
-        // Non-fatal — ItemDetailsScreen will create the chat itself
-      }
-    }
-
-    if (!context.mounted) return;
-
-    // Status shown in ItemDetailsScreen reflects the match report itself
-    final status = match.report.isLost ? 'lost' : 'found';
-
+  void _openDetails(BuildContext context, MatchDocument match) {
     final data = <String, dynamic>{
       'itemName': match.report.itemName,
       'category': match.report.category,
       'location': match.report.location,
       'description': match.report.description,
-      'status': status,
+      'status': match.report.isLost == true ? 'lost' : 'found',
       'userId': match.report.userId,
       'date': Timestamp.fromDate(match.report.date),
       if (match.report.imageUrl != null) 'imageUrl': match.report.imageUrl,
@@ -129,13 +100,106 @@ class PossibleMatchesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // REMOVE DUPLICATES - Keep only unique matches based on userId + itemName
+    final uniqueMatches = <MatchDocument>[];
+    final seen = <String>{};
+    
+    for (var match in matches) {
+      final key = '${match.report.userId}_${match.report.itemName}';
+      if (!seen.contains(key)) {
+        seen.add(key);
+        uniqueMatches.add(match);
+      }
+    }
+
     // Separate matches by strength
-    final strongMatches = matches
+    final strongMatches = uniqueMatches
         .where((m) => m.result == MatchResult.strong)
         .toList();
-    final weakMatches = matches
+    final weakMatches = uniqueMatches
         .where((m) => m.result == MatchResult.weak)
         .toList();
+
+    // If no matches, show empty state
+    if (uniqueMatches.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text(
+            'Possible Matches',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.text,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.text),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.06),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.search_off_rounded,
+                  size: 56,
+                  color: AppColors.primary.withOpacity(0.4),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'No Matches Found',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'When items match your report, they will appear here.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  fontFamily: 'Inter',
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Go Back',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -190,7 +254,7 @@ class PossibleMatchesScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${matches.length} Match${matches.length > 1 ? 'es' : ''} Found',
+                          '${uniqueMatches.length} Match${uniqueMatches.length > 1 ? 'es' : ''} Found',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -390,6 +454,7 @@ class _MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final matchColor = isStrong ? AppColors.secondary : AppColors.primary;
+    final scorePercentage = ((match.score) * 100).round();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -461,7 +526,7 @@ class _MatchCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  isStrong ? '90%' : '60%',
+                  '$scorePercentage%',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,

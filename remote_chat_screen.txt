@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../widgets/chat/message_bubble.dart';
@@ -11,14 +11,12 @@ class ChatScreen extends StatefulWidget {
   final String chatId;
   final String otherUserUid;
   final String itemName;
-  final String? otherUserNameHint;
 
   const ChatScreen({
     super.key,
     required this.chatId,
     required this.otherUserUid,
     required this.itemName,
-    this.otherUserNameHint,
   });
 
   @override
@@ -55,13 +53,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    // Clear provider messages immediately when this screen is disposed.
-    try {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) return;
       final chatProvider = Provider.of<ChatProvider>(context, listen: false);
       chatProvider.clearMessages();
-    } catch (_) {
-      // If provider is not available during dispose, ignore silently.
-    }
+    });
     _scrollController.dispose();
     super.dispose();
   }
@@ -89,7 +85,9 @@ class _ChatScreenState extends State<ChatScreen> {
               builder: (context, chatProvider, child) {
                 if (chatProvider.isLoading && chatProvider.messages.isEmpty) {
                   return const Center(
-                    child: CircularProgressIndicator(color: AppColors.primary),
+                    child: CircularProgressIndicator(
+                      color: AppColors.primary,
+                    ),
                   );
                 }
 
@@ -155,7 +153,9 @@ class _ChatScreenState extends State<ChatScreen> {
         content: Text('Error: $message'),
         backgroundColor: AppColors.errorContainer,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
         duration: const Duration(seconds: 3),
         action: SnackBarAction(
           label: 'Dismiss',
@@ -168,15 +168,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ============ APP BAR ============
   PreferredSizeWidget _buildAppBar() {
-    final String displayName = (_otherUserProfile?.fullName.isNotEmpty == true)
-        ? _otherUserProfile!.fullName
-        : (widget.otherUserNameHint?.isNotEmpty == true
-              ? widget.otherUserNameHint!
-              : 'Unknown User');
-
-    final String initial = displayName == 'Unknown User'
-        ? 'U'
-        : displayName[0].toUpperCase();
+    final String initial =
+        (!_isLoadingProfile && _otherUserProfile?.fullName.isNotEmpty == true)
+            ? _otherUserProfile!.fullName[0].toUpperCase()
+            : 'U';
 
     final String? photoUrl = _otherUserProfile?.photoUrl?.isNotEmpty == true
         ? _otherUserProfile!.photoUrl
@@ -190,20 +185,14 @@ class _ChatScreenState extends State<ChatScreen> {
           // Avatar: profile photo if available, otherwise gradient initial
           Container(
             decoration: BoxDecoration(
-              gradient: photoUrl == null
-                  ? (displayName == 'Unknown User'
-                        ? null
-                        : AppColors.primaryGradient)
-                  : null,
-              color: displayName == 'Unknown User' && photoUrl == null
-                  ? AppColors.muted.withValues(alpha: 0.25)
-                  : null,
+              gradient: photoUrl == null ? AppColors.primaryGradient : null,
               shape: BoxShape.circle,
             ),
             child: CircleAvatar(
               radius: 20,
               backgroundColor: Colors.transparent,
-              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+              backgroundImage:
+                  photoUrl != null ? NetworkImage(photoUrl) : null,
               child: photoUrl == null
                   ? Text(
                       initial,
@@ -224,10 +213,8 @@ class _ChatScreenState extends State<ChatScreen> {
               children: [
                 Text(
                   _isLoadingProfile
-                      ? (widget.otherUserNameHint?.isNotEmpty == true
-                            ? widget.otherUserNameHint!
-                            : 'Loading...')
-                      : displayName,
+                      ? 'Loading...'
+                      : _otherUserProfile?.fullName ?? 'User',
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -293,13 +280,13 @@ class _ChatScreenState extends State<ChatScreen> {
             width: 80,
             height: 80,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.06),
+              color: AppColors.primary.withOpacity(0.06),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.chat_outlined,
               size: 40,
-              color: AppColors.primary.withValues(alpha: 0.3),
+              color: AppColors.primary.withOpacity(0.3),
             ),
           ),
           const SizedBox(height: 16),
@@ -358,7 +345,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.errorContainer.withValues(alpha: 0.15),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -383,7 +370,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.15),
+                    color: AppColors.primary.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -408,7 +395,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.errorContainer.withValues(alpha: 0.15),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -433,7 +420,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: AppColors.errorContainer.withValues(alpha: 0.15),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -480,7 +467,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.errorContainer.withValues(alpha: 0.15),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -611,7 +598,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.errorContainer.withValues(alpha: 0.15),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -684,9 +671,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               backgroundColor: AppColors.primary,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(12),
-                                ),
+                                borderRadius: BorderRadius.all(Radius.circular(12)),
                               ),
                             ),
                           );
@@ -730,7 +715,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.errorContainer.withValues(alpha: 0.15),
+                    color: AppColors.errorContainer.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -803,9 +788,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               backgroundColor: AppColors.primary,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.all(
-                                  Radius.circular(12),
-                                ),
+                                borderRadius: BorderRadius.all(Radius.circular(12)),
                               ),
                             ),
                           );
