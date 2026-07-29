@@ -82,29 +82,23 @@ class ReportService {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
 
-    // 1. Resolve image URL — if already a Cloudinary/https URL skip upload,
-    //    otherwise upload the local file path to Cloudinary first.
     String? imageUrl;
     ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
 
     if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
       if (report.imageUrl!.startsWith('http')) {
-        // Already uploaded — use as-is
         imageUrl = report.imageUrl;
       } else {
-        // Local file path — upload to Cloudinary
         imageUrl = await uploadImage(report.imageUrl);
       }
 
-      // Analyze the image for text/identifiers using the Cloudinary URL
       if (imageUrl != null) {
         extractedIdentifiers = await analyzeImage(imageUrl);
         print('AI Analysis Result (lost): ${extractedIdentifiers?.toMap()}');
       }
     }
 
-    // 2. Save to lost_reports collection
-    final lostReportData = {
+    await lostReports.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
@@ -117,11 +111,8 @@ class ReportService {
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (extractedIdentifiers != null)
         'extractedIdentifiers': extractedIdentifiers.toMap(),
-    };
+    });
 
-    await lostReports.add(lostReportData);
-
-    // 3. Also save to items collection for home feed
     await items.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
@@ -147,9 +138,9 @@ class ReportService {
       imageUrl: imageUrl,
       extractedIdentifiers: extractedIdentifiers,
       isLost: true,
+      status: 'lost',
     );
 
-    // 4. Emit notification event
     _eventService.emit(
       NotificationEvent(
         type: NotificationEventType.itemReported,
@@ -164,10 +155,8 @@ class ReportService {
       ),
     );
 
-    // 5. Check for matches
     final matches = await checkForFoundMatches(reportWithEmbedding);
 
-    // Sort matches by result (strong first) and then by score if available
     matches.sort((a, b) {
       if (a.result == MatchResult.strong && b.result != MatchResult.strong) return -1;
       if (a.result != MatchResult.strong && b.result == MatchResult.strong) return 1;
@@ -176,7 +165,6 @@ class ReportService {
       return b.score.compareTo(a.score);
     });
 
-    // 6. Save matches
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
         currentUser?.uid ?? '',
@@ -185,7 +173,6 @@ class ReportService {
       );
     }
 
-    // ============ EMIT NOTIFICATIONS ============
     final lostReportUserId = _auth.currentUser?.uid;
     for (var match in matches) {
       final foundReportUserId = match.report.userId;
@@ -198,7 +185,6 @@ class ReportService {
       };
 
       if (match.result == MatchResult.strong) {
-        // Notify lost report user (current reporter)
         if (lostReportUserId != null) {
           _eventService.emit(
             NotificationEvent(
@@ -208,7 +194,6 @@ class ReportService {
             ),
           );
         }
-        // Notify found report user (match owner)
         if (foundReportUserId != null && foundReportUserId != lostReportUserId) {
           _eventService.emit(
             NotificationEvent(
@@ -219,7 +204,6 @@ class ReportService {
           );
         }
       } else if (match.result == MatchResult.weak) {
-        // Notify lost report user (current reporter)
         if (lostReportUserId != null) {
           _eventService.emit(
             NotificationEvent(
@@ -229,7 +213,6 @@ class ReportService {
             ),
           );
         }
-        // Notify found report user (match owner)
         if (foundReportUserId != null && foundReportUserId != lostReportUserId) {
           _eventService.emit(
             NotificationEvent(
@@ -250,29 +233,23 @@ class ReportService {
     final currentUser = _auth.currentUser;
     final embedding = await _getEmbedding(report);
 
-    // 1. Resolve image URL — if already a Cloudinary/https URL skip upload,
-    //    otherwise upload the local file path to Cloudinary first.
     String? imageUrl;
     ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
 
     if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
       if (report.imageUrl!.startsWith('http')) {
-        // Already uploaded — use as-is
         imageUrl = report.imageUrl;
       } else {
-        // Local file path — upload to Cloudinary
         imageUrl = await uploadImage(report.imageUrl);
       }
 
-      // Analyze the image for text/identifiers using the Cloudinary URL
       if (imageUrl != null) {
         extractedIdentifiers = await analyzeImage(imageUrl);
         print('AI Analysis Result (found): ${extractedIdentifiers?.toMap()}');
       }
     }
 
-    // 2. Save to found_reports collection
-    final foundReportData = {
+    await foundReports.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
       'date': report.date,
@@ -285,11 +262,8 @@ class ReportService {
       if (imageUrl != null) 'imageUrl': imageUrl,
       if (extractedIdentifiers != null)
         'extractedIdentifiers': extractedIdentifiers.toMap(),
-    };
+    });
 
-    await foundReports.add(foundReportData);
-
-    // 3. Also save to items collection for home feed
     await items.add({
       'category': report.category.toLowerCase(),
       'location': report.location,
@@ -315,9 +289,9 @@ class ReportService {
       imageUrl: imageUrl,
       extractedIdentifiers: extractedIdentifiers,
       isLost: false,
+      status: 'found',
     );
 
-    // 4. Emit notification event
     _eventService.emit(
       NotificationEvent(
         type: NotificationEventType.itemReported,
@@ -332,10 +306,8 @@ class ReportService {
       ),
     );
 
-    // 5. Check for matches
     final matches = await checkForMatches(reportWithEmbedding);
 
-    // Sort matches by result (strong first) and then by score if available
     matches.sort((a, b) {
       if (a.result == MatchResult.strong && b.result != MatchResult.strong) return -1;
       if (a.result != MatchResult.strong && b.result == MatchResult.strong) return 1;
@@ -344,7 +316,6 @@ class ReportService {
       return b.score.compareTo(a.score);
     });
 
-    // 6. Save matches
     if (currentUser?.uid != null) {
       await _saveMatchesForUser(
         currentUser?.uid ?? '',
@@ -353,7 +324,6 @@ class ReportService {
       );
     }
 
-    // ============ EMIT NOTIFICATIONS ============
     final foundReportUserId = _auth.currentUser?.uid;
     for (var match in matches) {
       final lostReportUserId = match.report.userId;
@@ -366,7 +336,6 @@ class ReportService {
       };
 
       if (match.result == MatchResult.strong) {
-        // Notify found report user (current reporter)
         if (foundReportUserId != null) {
           _eventService.emit(
             NotificationEvent(
@@ -376,7 +345,6 @@ class ReportService {
             ),
           );
         }
-        // Notify lost report user (match owner)
         if (lostReportUserId != null && lostReportUserId != foundReportUserId) {
           _eventService.emit(
             NotificationEvent(
@@ -387,7 +355,6 @@ class ReportService {
           );
         }
       } else if (match.result == MatchResult.weak) {
-        // Notify found report user (current reporter)
         if (foundReportUserId != null) {
           _eventService.emit(
             NotificationEvent(
@@ -397,7 +364,6 @@ class ReportService {
             ),
           );
         }
-        // Notify lost report user (match owner)
         if (lostReportUserId != null && lostReportUserId != foundReportUserId) {
           _eventService.emit(
             NotificationEvent(
@@ -443,6 +409,7 @@ class ReportService {
         )
             : null,
         isLost: true,
+        status: 'lost',
       );
 
       if (lostReport.userId == currentUserUid) continue;
@@ -456,15 +423,15 @@ class ReportService {
           newFoundReport,
         );
 
+        if (refinedResult == MatchResult.none) continue;
+
         final updatedMatch = MatchDocument(
-          report: matchResult.report,
+          report: lostReport,
           result: refinedResult,
           score: matchResult.score,
           details: matchResult.details,
         );
         matches.add(updatedMatch);
-      } else {
-        matches.add(matchResult);
       }
     }
 
@@ -501,6 +468,7 @@ class ReportService {
         )
             : null,
         isLost: false,
+        status: 'found',
       );
 
       if (foundReport.userId == currentUserUid) continue;
@@ -514,15 +482,15 @@ class ReportService {
           foundReport,
         );
 
+        if (refinedResult == MatchResult.none) continue;
+
         final updatedMatch = MatchDocument(
-          report: matchResult.report,
+          report: foundReport,
           result: refinedResult,
           score: matchResult.score,
           details: matchResult.details,
         );
         matches.add(updatedMatch);
-      } else {
-        matches.add(matchResult);
       }
     }
 
@@ -531,11 +499,12 @@ class ReportService {
 
   // ============ SAVE MATCHES FOR USER ============
   Future<void> _saveMatchesForUser(String userId, List<MatchDocument> matches, String reportItemName) async {
+    final realMatches = matches.where((m) => m.result != MatchResult.none).toList();
+    if (realMatches.isEmpty) return;
+
     final batch = FirebaseFirestore.instance.batch();
 
-    for (var match in matches) {
-      if (match.result == MatchResult.none) continue;
-
+    for (var match in realMatches) {
       final matchDoc = userMatches.doc();
       batch.set(matchDoc, {
         'userId': userId,
@@ -548,6 +517,8 @@ class ReportService {
           'userId': match.report.userId,
           'imageUrl': match.report.imageUrl,
           'extractedIdentifiers': match.report.extractedIdentifiers?.toMap(),
+          'isLost': match.report.isLost,
+          'status': match.report.status,
         },
         'result': match.result.toString().split('.').last,
         'score': match.score,

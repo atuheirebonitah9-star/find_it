@@ -330,37 +330,40 @@ class _ReportItemScreenState extends State<ReportItemScreen>
   }
 
   Future<void> _handleMatches(List<MatchDocument> matches) async {
-    _clearForm();
+  _clearForm();
 
-    if (matches.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              isLost
-                  ? 'Lost report submitted. No matches found yet.'
-                  : 'Found report submitted. No matches found yet.',
-            ),
-            backgroundColor: AppColors.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        );
-      }
-      return;
-    }
+  final realMatches =
+      matches.where((m) => m.result != MatchResult.none).toList();
 
+  if (realMatches.isEmpty) {
     if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PossibleMatchesScreen(matches: matches),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isLost
+                ? 'Lost report submitted. No matches found yet.'
+                : 'Found report submitted. No matches found yet.',
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
     }
+    return;
   }
+
+  if (mounted) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PossibleMatchesScreen(matches: realMatches),
+      ),
+    );
+  }
+}
 
   Future<void> _submitReport() async {
     if (_formKey.currentState!.validate() &&

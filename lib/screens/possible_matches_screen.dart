@@ -14,57 +14,63 @@ class PossibleMatchesScreen extends StatelessWidget {
   const PossibleMatchesScreen({super.key, required this.matches});
 
   Future<void> _openChat(BuildContext context, MatchDocument match) async {
-    final chatProvider = Provider.of<ChatProvider>(context, listen: false);
-    final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
-    final matchUserUid = match.report.userId;
+    try {
+      final chatProvider = Provider.of<ChatProvider>(context, listen: false);
+      final currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+      final matchUserUid = match.report.userId;
 
-    if (currentUserUid == null || matchUserUid == null) {
+      if (currentUserUid == null || matchUserUid == null) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not identify users for chat'),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      final bool isMatchLost = match.report.isLost ?? false;
+
+      final String finderUid;
+      final String ownerUid;
+
+      if (isMatchLost) {
+        finderUid = currentUserUid;
+        ownerUid = matchUserUid;
+      } else {
+        finderUid = matchUserUid;
+        ownerUid = currentUserUid;
+      }
+
+      final chatId = await chatProvider.createChat(
+        finderUid: finderUid,
+        ownerUid: ownerUid,
+        itemName: match.report.itemName,
+      );
+
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatScreen(
+              chatId: chatId,
+              otherUserUid: matchUserUid,
+              itemName: match.report.itemName,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not identify users for chat'),
+          SnackBar(
+            content: Text('Could not open chat: $e'),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
-      return;
-    }
-
-    // Determine if the match report is LOST or FOUND
-    // We need to check the actual status from the match report
-    // If match.report doesn't have isLost, we need to determine it from the data
-    final bool isMatchLost = match.report.isLost ?? false;
-    
-    final String finderUid;
-    final String ownerUid;
-
-    if (isMatchLost) {
-      // Match report is LOST → match.user is OWNER, current user is FINDER
-      finderUid = currentUserUid;
-      ownerUid = matchUserUid;
-    } else {
-      // Match report is FOUND → match.user is FINDER, current user is OWNER
-      finderUid = matchUserUid;
-      ownerUid = currentUserUid;
-    }
-
-    final chatId = await chatProvider.createChat(
-      finderUid: finderUid,
-      ownerUid: ownerUid,
-      itemName: match.report.itemName,
-    );
-
-    if (context.mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatScreen(
-            chatId: chatId,
-            otherUserUid: matchUserUid,
-            itemName: match.report.itemName,
-          ),
-        ),
-      );
     }
   }
 
@@ -93,16 +99,28 @@ class PossibleMatchesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // REMOVE DUPLICATES - Keep only unique matches based on userId + itemName
+    final uniqueMatches = <MatchDocument>[];
+    final seen = <String>{};
+    
+    for (var match in matches) {
+      final key = '${match.report.userId}_${match.report.itemName}';
+      if (!seen.contains(key)) {
+        seen.add(key);
+        uniqueMatches.add(match);
+      }
+    }
+
     // Separate matches by strength
-    final strongMatches = matches
+    final strongMatches = uniqueMatches
         .where((m) => m.result == MatchResult.strong)
         .toList();
-    final weakMatches = matches
+    final weakMatches = uniqueMatches
         .where((m) => m.result == MatchResult.weak)
         .toList();
 
     // If no matches, show empty state
-    if (matches.isEmpty) {
+    if (uniqueMatches.isEmpty) {
       return Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
@@ -235,7 +253,7 @@ class PossibleMatchesScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${matches.length} Match${matches.length > 1 ? 'es' : ''} Found',
+                          '${uniqueMatches.length} Match${uniqueMatches.length > 1 ? 'es' : ''} Found',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -432,13 +450,10 @@ class _MatchCard extends StatelessWidget {
     required this.onViewDetails,
   });
 
-  // Get the actual match score from the match document
-  double get _matchScore => match.score ?? (isStrong ? 0.85 : 0.65);
-
   @override
   Widget build(BuildContext context) {
     final matchColor = isStrong ? AppColors.secondary : AppColors.primary;
-    final scorePercentage = (_matchScore * 100).round();
+    final scorePercentage = ((match.score) * 100).round();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -499,7 +514,7 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Match Score - Now using actual score
+              // Match Score
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -635,7 +650,7 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              // Chat button - Now properly directs to chat
+              // Chat button
               Expanded(
                 child: SizedBox(
                   height: 48,
