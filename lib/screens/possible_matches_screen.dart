@@ -31,7 +31,7 @@ class PossibleMatchesScreen extends StatelessWidget {
         return;
       }
 
-      final bool isMatchLost = match.report.isLost ?? false;
+      final bool isMatchLost = match.report.isLost == true;
 
       final String finderUid;
       final String ownerUid;
@@ -42,6 +42,19 @@ class PossibleMatchesScreen extends StatelessWidget {
       } else {
         finderUid = matchUserUid;
         ownerUid = currentUserUid;
+      }
+
+      if (finderUid == ownerUid) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You cannot chat with yourself.'),
+              backgroundColor: AppColors.errorContainer,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
       }
 
       final chatId = await chatProvider.createChat(
@@ -92,7 +105,6 @@ class PossibleMatchesScreen extends StatelessWidget {
         builder: (_) => ItemDetailsScreen(
           itemId: match.report.userId ?? '',
           data: data,
-          chatId: resolvedChatId,
         ),
       ),
     );
@@ -100,7 +112,6 @@ class PossibleMatchesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // REMOVE DUPLICATES - Keep only unique matches based on userId + itemName
     final uniqueMatches = <MatchDocument>[];
     final seen = <String>{};
     
@@ -112,7 +123,6 @@ class PossibleMatchesScreen extends StatelessWidget {
       }
     }
 
-    // Separate matches by strength
     final strongMatches = uniqueMatches
         .where((m) => m.result == MatchResult.strong)
         .toList();
@@ -120,7 +130,6 @@ class PossibleMatchesScreen extends StatelessWidget {
         .where((m) => m.result == MatchResult.weak)
         .toList();
 
-    // If no matches, show empty state
     if (uniqueMatches.isEmpty) {
       return Scaffold(
         backgroundColor: AppColors.background,
@@ -224,7 +233,6 @@ class PossibleMatchesScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ============ SUMMARY HEADER ============
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -315,10 +323,7 @@ class PossibleMatchesScreen extends StatelessWidget {
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
-
-            // ============ STRONG MATCHES ============
             if (strongMatches.isNotEmpty) ...[
               Row(
                 children: [
@@ -369,13 +374,11 @@ class PossibleMatchesScreen extends StatelessWidget {
                   match: match,
                   isStrong: true,
                   onChat: () => _openChat(context, match),
-                  onViewDetails: () => _openDetails(context, match, true),
+                  onViewDetails: () => _openDetails(context, match),
                 ),
               )),
               const SizedBox(height: 24),
             ],
-
-            // ============ WEAK MATCHES ============
             if (weakMatches.isNotEmpty) ...[
               Row(
                 children: [
@@ -426,7 +429,7 @@ class PossibleMatchesScreen extends StatelessWidget {
                   match: match,
                   isStrong: false,
                   onChat: () => _openChat(context, match),
-                  onViewDetails: () => _openDetails(context, match, false),
+                  onViewDetails: () => _openDetails(context, match),
                 ),
               )),
             ],
@@ -437,12 +440,11 @@ class PossibleMatchesScreen extends StatelessWidget {
   }
 }
 
-// ============ MATCH CARD WIDGET ============
 class _MatchCard extends StatelessWidget {
   final MatchDocument match;
   final bool isStrong;
   final VoidCallback onChat;
-  final Future<void> Function() onViewDetails;
+  final VoidCallback onViewDetails;
 
   const _MatchCard({
     required this.match,
@@ -454,7 +456,7 @@ class _MatchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final matchColor = isStrong ? AppColors.secondary : AppColors.primary;
-    final scorePercentage = ((match.score) * 100).round();
+    final scorePercentage = (match.score * 100).round();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -479,7 +481,6 @@ class _MatchCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Match Badge
           Row(
             children: [
               Container(
@@ -515,7 +516,6 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Match Score
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -537,10 +537,7 @@ class _MatchCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          // Item Info
           Text(
             match.report.itemName,
             style: const TextStyle(
@@ -550,9 +547,7 @@ class _MatchCard extends StatelessWidget {
               fontFamily: 'Plus Jakarta Sans',
             ),
           ),
-
           const SizedBox(height: 8),
-
           Row(
             children: [
               Icon(
@@ -589,10 +584,7 @@ class _MatchCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          // Image if available
           if (match.report.imageUrl != null &&
               match.report.imageUrl!.isNotEmpty) ...[
             ClipRRect(
@@ -617,11 +609,8 @@ class _MatchCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
           ],
-
-          // Buttons row
           Row(
             children: [
-              // View Details button
               Expanded(
                 child: SizedBox(
                   height: 48,
@@ -651,26 +640,11 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              // Chat button
               Expanded(
                 child: SizedBox(
                   height: 48,
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     onPressed: onChat,
-                    icon: const Icon(
-                      Icons.chat_bubble_outline,
-                      color: Colors.black,
-                      size: 18,
-                    ),
-                    label: const Text(
-                      'Chat',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                        fontFamily: 'Plus Jakarta Sans',
-                      ),
-                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           isStrong ? AppColors.secondary : AppColors.primary,
@@ -679,6 +653,26 @@ class _MatchCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.chat_bubble_outline,
+                          color: Colors.black,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Chat',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),

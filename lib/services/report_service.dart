@@ -54,7 +54,6 @@ class ReportService {
     return geminiResult ?? embeddingResult;
   }
 
-  /// Uploads an image file to Cloudinary and returns the secure URL.
   Future<String?> uploadImage(String? imagePath) async {
     if (imagePath == null || imagePath.isEmpty) return null;
     try {
@@ -66,7 +65,6 @@ class ReportService {
     }
   }
 
-  /// Analyzes image and extracts text/identifiers from it
   Future<ExtractedIdentifiers?> analyzeImage(String? imageUrl) async {
     if (imageUrl == null || imageUrl.isEmpty) return null;
     try {
@@ -80,8 +78,11 @@ class ReportService {
   // ============ SUBMIT LOST REPORT ============
   Future<List<MatchDocument>> submitLostReport(Report report) async {
     final currentUser = _auth.currentUser;
+    final embedding = await _getEmbedding(report);
 
     String? imageUrl;
+    ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
+
     if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
       if (report.imageUrl!.startsWith('http')) {
         imageUrl = report.imageUrl;
@@ -228,8 +229,11 @@ class ReportService {
   // ============ SUBMIT FOUND REPORT ============
   Future<List<MatchDocument>> submitFoundReport(Report report) async {
     final currentUser = _auth.currentUser;
+    final embedding = await _getEmbedding(report);
 
     String? imageUrl;
+    ExtractedIdentifiers? extractedIdentifiers = report.extractedIdentifiers;
+
     if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
       if (report.imageUrl!.startsWith('http')) {
         imageUrl = report.imageUrl;
