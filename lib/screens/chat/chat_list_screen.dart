@@ -58,7 +58,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                   width: 64,
                   height: 64,
                   decoration: BoxDecoration(
-                    color: AppColors.errorContainer.withOpacity(0.15),
+                    color: AppColors.errorContainer.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -248,7 +248,7 @@ class _ChatListScreenState extends State<ChatListScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.15),
+              color: AppColors.primary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -296,13 +296,13 @@ class _ChatListScreenState extends State<ChatListScreen>
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.06),
+              color: AppColors.primary.withValues(alpha: 0.06),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.chat_bubble_outline,
               size: 56,
-              color: AppColors.primary.withOpacity(0.3),
+              color: AppColors.primary.withValues(alpha: 0.3),
             ),
           ),
           const SizedBox(height: 24),
@@ -335,3 +335,4 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 }
+
