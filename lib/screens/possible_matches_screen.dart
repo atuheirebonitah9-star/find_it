@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,15 +30,20 @@ class PossibleMatchesScreen extends StatelessWidget {
       return;
     }
 
+    // Determine if the match report is LOST or FOUND
+    // We need to check the actual status from the match report
+    // If match.report doesn't have isLost, we need to determine it from the data
+    final bool isMatchLost = match.report.isLost ?? false;
+    
     final String finderUid;
     final String ownerUid;
 
-    if (match.report.isLost) {
-      // Match report is a LOST report → match.user is OWNER, current user is FINDER
+    if (isMatchLost) {
+      // Match report is LOST → match.user is OWNER, current user is FINDER
       finderUid = currentUserUid;
       ownerUid = matchUserUid;
     } else {
-      // Match report is a FOUND report → match.user is FINDER, current user is OWNER
+      // Match report is FOUND → match.user is FINDER, current user is OWNER
       finderUid = matchUserUid;
       ownerUid = currentUserUid;
     }
@@ -65,13 +69,12 @@ class PossibleMatchesScreen extends StatelessWidget {
   }
 
   void _openDetails(BuildContext context, MatchDocument match) {
-    // Convert Report to the Map<String, dynamic> that ItemDetailsScreen expects
     final data = <String, dynamic>{
       'itemName': match.report.itemName,
       'category': match.report.category,
       'location': match.report.location,
       'description': match.report.description,
-      'status': 'found', // matches are always from the opposite collection
+      'status': match.report.isLost == true ? 'lost' : 'found',
       'userId': match.report.userId,
       'date': Timestamp.fromDate(match.report.date),
       if (match.report.imageUrl != null) 'imageUrl': match.report.imageUrl,
@@ -97,6 +100,87 @@ class PossibleMatchesScreen extends StatelessWidget {
     final weakMatches = matches
         .where((m) => m.result == MatchResult.weak)
         .toList();
+
+    // If no matches, show empty state
+    if (matches.isEmpty) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text(
+            'Possible Matches',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          foregroundColor: AppColors.text,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.text),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.06),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.search_off_rounded,
+                  size: 56,
+                  color: AppColors.primary.withOpacity(0.4),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'No Matches Found',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'When items match your report, they will appear here.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  fontFamily: 'Inter',
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Go Back',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                    fontFamily: 'Plus Jakarta Sans',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -348,9 +432,13 @@ class _MatchCard extends StatelessWidget {
     required this.onViewDetails,
   });
 
+  // Get the actual match score from the match document
+  double get _matchScore => match.score ?? (isStrong ? 0.85 : 0.65);
+
   @override
   Widget build(BuildContext context) {
     final matchColor = isStrong ? AppColors.secondary : AppColors.primary;
+    final scorePercentage = (_matchScore * 100).round();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -411,7 +499,7 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              // Match Score
+              // Match Score - Now using actual score
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 8,
@@ -422,7 +510,7 @@ class _MatchCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  isStrong ? '90%' : '60%',
+                  '$scorePercentage%',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
@@ -547,7 +635,7 @@ class _MatchCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              // Chat button
+              // Chat button - Now properly directs to chat
               Expanded(
                 child: SizedBox(
                   height: 48,
